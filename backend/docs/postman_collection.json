@@ -1,0 +1,977 @@
+{
+  "info": {
+    "name": "小遥搜索API",
+    "description": "\n        # 小遥搜索API\n\n        跨平台本地文件智能搜索服务，提供强大的文件搜索、AI查询理解和隐私保护功能。\n\n        ## 主要功能\n\n        ### 🔍 智能语义搜索\n        - **向量搜索**: 基于BGE模型的中文语义理解\n        - **混合搜索**: 结合向量搜索和传统文本搜索\n        - **多模态支持**: 文本、图像、音频文件搜索\n        - **相关性排序**: 智能相关性评分和结果排序\n\n        ### 📁 文件管理\n        - **文件索引**: 自动文件发现和索引建立\n        - **元数据提取**: 文件内容分析和元数据提取\n        - **预览功能**: 文件内容快速预览\n        - **批量操作**: 支持批量文件处理\n\n        ### 🤖 AI驱动查询\n        - **自然语言理解**: 支持自然语言查询\n        - **查询扩展**: 自动查询词扩展和同义词处理\n        - **意图识别**: 查询意图智能识别\n        - **个性化推荐**: 基于用户行为的搜索推荐\n\n        ### 🔒 安全与隐私\n        - **本地部署**: 数据完全本地存储和处理\n        - **用户认证**: JWT令牌认证机制\n        - **访问控制**: 细粒度权限控制\n        - **审计日志**: 完整的操作审计记录\n\n        ## 技术架构\n\n        ### 后端技术栈\n        - **FastAPI**: 高性能异步Web框架\n        - **SQLAlchemy**: ORM数据库操作\n        - **BGE**: 中文语义向量模型\n        - **Whoosh**: 全文搜索引擎\n        - **Faiss**: 向量相似度搜索\n        - **Whisper**: 音频转文字\n        - **CLIP**: 图文多模态理解\n\n        ### 数据存储\n        - **SQLite**: 轻量级关系数据库\n        - **向量索引**: Faiss向量存储\n        - **倒排索引**: Whoosh文本索引\n\n        ## API使用指南\n\n        ### 认证方式\n        API使用JWT Bearer Token进行认证：\n        ```\n        Authorization: Bearer <your_token>\n        ```\n\n        ### 响应格式\n        所有API响应都遵循统一格式：\n        ```json\n        {\n            \"code\": 200,\n            \"message\": \"success\",\n            \"data\": {},\n            \"timestamp\": \"2023-12-07T10:30:00Z\"\n        }\n        ```\n\n        ### 错误处理\n        错误响应包含详细的错误信息：\n        ```json\n        {\n            \"detail\": \"错误描述\",\n            \"error_code\": \"ERROR_CODE\",\n            \"details\": {},\n            \"timestamp\": \"2023-12-07T10:30:00Z\"\n        }\n        ```\n\n        ### 分页查询\n        列表接口支持分页查询：\n        ```\n        GET /api/v1/search?page=1&size=20\n        ```\n\n        ## 开发指南\n\n        ### 环境要求\n        - Python 3.8+\n        - 8GB+ RAM\n        - 足够的存储空间用于索引\n\n        ### 快速开始\n        1. 安装依赖: `pip install -r requirements.txt`\n        2. 初始化数据库: `python database_cli.py init`\n        3. 启动服务: `python main.py`\n        4. 访问文档: `http://localhost:8000/api/v1/docs`\n\n        ### 配置说明\n        详细配置请参考 `.env` 文件或环境变量设置。\n\n        ## 许可证\n        MIT License - 详见 [LICENSE](https://opensource.org/licenses/MIT) 文件\n\n        ## 支持与反馈\n        - GitHub: https://github.com/xiaoyaosearch\n        - Email: support@xiaoyao.local\n        - 文档: https://docs.xiaoyao.local\n        ",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Root",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            ""
+          ]
+        },
+        "description": "根路径健康检查"
+      },
+      "response": []
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "详细健康检查"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Files",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "",
+              "description": "搜索查询",
+              "type": "text"
+            },
+            {
+              "key": "type",
+              "value": "",
+              "description": "文件类型过滤",
+              "type": "text"
+            },
+            {
+              "key": "start_date",
+              "value": "",
+              "description": "开始日期",
+              "type": "text"
+            },
+            {
+              "key": "end_date",
+              "value": "",
+              "description": "结束日期",
+              "type": "text"
+            },
+            {
+              "key": "size",
+              "value": 20,
+              "description": "返回结果数量",
+              "type": "text"
+            },
+            {
+              "key": "page",
+              "value": 1,
+              "description": "页码",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "搜索文件"
+      },
+      "response": []
+    },
+    {
+      "name": "Understand Query",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "search",
+            "understand"
+          ],
+          "query": [
+            {
+              "key": "query",
+              "value": "",
+              "description": "用户查询",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "理解用户查询意图"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Search Suggestions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "search",
+            "suggestions"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "",
+              "description": "查询前缀",
+              "type": "text"
+            },
+            {
+              "key": "limit",
+              "value": 5,
+              "description": "建议数量",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "获取搜索建议"
+      },
+      "response": []
+    },
+    {
+      "name": "List Files",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "files"
+          ],
+          "query": [
+            {
+              "key": "directory_id",
+              "value": "",
+              "description": "目录ID",
+              "type": "text"
+            },
+            {
+              "key": "type",
+              "value": "",
+              "description": "文件类型过滤",
+              "type": "text"
+            },
+            {
+              "key": "indexed_only",
+              "value": true,
+              "description": "仅显示已索引文件",
+              "type": "text"
+            },
+            {
+              "key": "page",
+              "value": 1,
+              "description": "页码",
+              "type": "text"
+            },
+            {
+              "key": "size",
+              "value": 50,
+              "description": "每页数量",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "获取文件列表"
+      },
+      "response": []
+    },
+    {
+      "name": "Get File Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "files",
+            "{file_id}"
+          ]
+        },
+        "description": "获取文件详细信息"
+      },
+      "response": []
+    },
+    {
+      "name": "Delete File",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "files",
+            "{file_id}"
+          ]
+        },
+        "description": "删除文件"
+      },
+      "response": []
+    },
+    {
+      "name": "Preview File",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "files",
+            "{file_id}",
+            "preview"
+          ],
+          "query": [
+            {
+              "key": "highlights",
+              "value": "",
+              "description": "高亮关键词",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "预览文件内容"
+      },
+      "response": []
+    },
+    {
+      "name": "Open File",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "files",
+            "{file_id}",
+            "open"
+          ]
+        },
+        "description": "使用系统默认应用打开文件"
+      },
+      "response": []
+    },
+    {
+      "name": "Upload File",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "files",
+            "upload"
+          ],
+          "query": [
+            {
+              "key": "directory_id",
+              "value": "",
+              "description": "目标目录ID",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "上传文件"
+      },
+      "response": []
+    },
+    {
+      "name": "List Directories",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "directories"
+          ]
+        },
+        "description": "获取所有索引目录"
+      },
+      "response": []
+    },
+    {
+      "name": "Add Directory",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "directories"
+          ]
+        },
+        "description": "添加索引目录",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Directory",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "directories",
+            "{directory_id}"
+          ]
+        },
+        "description": "获取目录详细信息"
+      },
+      "response": []
+    },
+    {
+      "name": "Remove Directory",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "directories",
+            "{directory_id}"
+          ],
+          "query": [
+            {
+              "key": "remove_files",
+              "value": false,
+              "description": "是否同时删除相关文件索引",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "移除索引目录"
+      },
+      "response": []
+    },
+    {
+      "name": "Scan Directory",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "directories",
+            "{directory_id}",
+            "scan"
+          ],
+          "query": [
+            {
+              "key": "full_scan",
+              "value": false,
+              "description": "是否进行全量扫描",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "扫描目录"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Directory Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "directories",
+            "{directory_id}",
+            "status"
+          ]
+        },
+        "description": "获取目录扫描状态"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Current User",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "users",
+            "current"
+          ]
+        },
+        "description": "获取当前用户信息"
+      },
+      "response": []
+    },
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "users"
+          ]
+        },
+        "description": "创建用户"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Settings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "settings"
+          ]
+        },
+        "description": "获取用户设置"
+      },
+      "response": []
+    },
+    {
+      "name": "Update Settings",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "settings"
+          ]
+        },
+        "description": "更新用户设置",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Reset Settings",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "settings",
+            "reset"
+          ]
+        },
+        "description": "重置用户设置"
+      },
+      "response": []
+    },
+    {
+      "name": "Export Settings",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "settings",
+            "export"
+          ]
+        },
+        "description": "导出设置"
+      },
+      "response": []
+    },
+    {
+      "name": "Import Settings",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "settings",
+            "import"
+          ]
+        },
+        "description": "导入设置",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Database Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "database",
+            "health"
+          ]
+        },
+        "description": "获取数据库健康状态\n\nReturns:\n    DatabaseHealthResponse: 数据库健康状态信息"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Database Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "database",
+            "info"
+          ]
+        },
+        "description": "获取数据库详细信息\n\nReturns:\n    DatabaseInfoResponse: 数据库详细信息"
+      },
+      "response": []
+    },
+    {
+      "name": "Create Database Backup",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "database",
+            "backup"
+          ],
+          "query": [
+            {
+              "key": "backup_dir",
+              "value": "",
+              "description": "",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "创建数据库备份\n\nArgs:\n    backup_dir: 备份目录路径（可选）\n\nReturns:\n    BackupResponse: 备份结果"
+      },
+      "response": []
+    },
+    {
+      "name": "List Database Backups",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "database",
+            "backups"
+          ],
+          "query": [
+            {
+              "key": "backup_dir",
+              "value": "",
+              "description": "",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "列出所有数据库备份文件\n\nArgs:\n    backup_dir: 备份目录路径（可选）\n\nReturns:\n    BackupListResponse: 备份文件列表"
+      },
+      "response": []
+    },
+    {
+      "name": "Restore Database From Backup",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "database",
+            "restore"
+          ]
+        },
+        "description": "从备份恢复数据库\n\nArgs:\n    request: 恢复请求参数\n\nReturns:\n    RestoreResponse: 恢复结果",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Cleanup Old Database Backups",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "database",
+            "backups",
+            "cleanup"
+          ],
+          "query": [
+            {
+              "key": "keep_count",
+              "value": 5,
+              "description": "",
+              "type": "text"
+            },
+            {
+              "key": "backup_dir",
+              "value": "",
+              "description": "",
+              "type": "text"
+            }
+          ]
+        },
+        "description": "清理旧的数据库备份文件\n\nArgs:\n    keep_count: 保留的备份数量\n    backup_dir: 备份目录路径（可选）\n\nReturns:\n    CleanupResponse: 清理结果"
+      },
+      "response": []
+    },
+    {
+      "name": "Vacuum Database",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "database",
+            "vacuum"
+          ]
+        },
+        "description": "清理数据库碎片，优化数据库文件大小\n仅适用于SQLite数据库\n\nReturns:\n    dict: 清理结果"
+      },
+      "response": []
+    },
+    {
+      "name": "Analyze Database",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "database",
+            "analyze"
+          ]
+        },
+        "description": "分析数据库统计信息，优化查询性能\n仅适用于SQLite数据库\n\nReturns:\n    dict: 分析结果"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Database Statistics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "database",
+            "stats"
+          ]
+        },
+        "description": "获取数据库统计信息\n\nReturns:\n    dict: 数据库统计信息"
+      },
+      "response": []
+    },
+    {
+      "name": "获取API信息",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{path}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "v1",
+            "info"
+          ]
+        },
+        "description": "获取API版本和配置信息"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  }
+}

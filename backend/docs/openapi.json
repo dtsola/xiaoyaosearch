@@ -1,0 +1,2680 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "小遥搜索API",
+    "description": "\n        # 小遥搜索API\n\n        跨平台本地文件智能搜索服务，提供强大的文件搜索、AI查询理解和隐私保护功能。\n\n        ## 主要功能\n\n        ### 🔍 智能语义搜索\n        - **向量搜索**: 基于BGE模型的中文语义理解\n        - **混合搜索**: 结合向量搜索和传统文本搜索\n        - **多模态支持**: 文本、图像、音频文件搜索\n        - **相关性排序**: 智能相关性评分和结果排序\n\n        ### 📁 文件管理\n        - **文件索引**: 自动文件发现和索引建立\n        - **元数据提取**: 文件内容分析和元数据提取\n        - **预览功能**: 文件内容快速预览\n        - **批量操作**: 支持批量文件处理\n\n        ### 🤖 AI驱动查询\n        - **自然语言理解**: 支持自然语言查询\n        - **查询扩展**: 自动查询词扩展和同义词处理\n        - **意图识别**: 查询意图智能识别\n        - **个性化推荐**: 基于用户行为的搜索推荐\n\n        ### 🔒 安全与隐私\n        - **本地部署**: 数据完全本地存储和处理\n        - **用户认证**: JWT令牌认证机制\n        - **访问控制**: 细粒度权限控制\n        - **审计日志**: 完整的操作审计记录\n\n        ## 技术架构\n\n        ### 后端技术栈\n        - **FastAPI**: 高性能异步Web框架\n        - **SQLAlchemy**: ORM数据库操作\n        - **BGE**: 中文语义向量模型\n        - **Whoosh**: 全文搜索引擎\n        - **Faiss**: 向量相似度搜索\n        - **Whisper**: 音频转文字\n        - **CLIP**: 图文多模态理解\n\n        ### 数据存储\n        - **SQLite**: 轻量级关系数据库\n        - **向量索引**: Faiss向量存储\n        - **倒排索引**: Whoosh文本索引\n\n        ## API使用指南\n\n        ### 认证方式\n        API使用JWT Bearer Token进行认证：\n        ```\n        Authorization: Bearer <your_token>\n        ```\n\n        ### 响应格式\n        所有API响应都遵循统一格式：\n        ```json\n        {\n            \"code\": 200,\n            \"message\": \"success\",\n            \"data\": {},\n            \"timestamp\": \"2023-12-07T10:30:00Z\"\n        }\n        ```\n\n        ### 错误处理\n        错误响应包含详细的错误信息：\n        ```json\n        {\n            \"detail\": \"错误描述\",\n            \"error_code\": \"ERROR_CODE\",\n            \"details\": {},\n            \"timestamp\": \"2023-12-07T10:30:00Z\"\n        }\n        ```\n\n        ### 分页查询\n        列表接口支持分页查询：\n        ```\n        GET /api/v1/search?page=1&size=20\n        ```\n\n        ## 开发指南\n\n        ### 环境要求\n        - Python 3.8+\n        - 8GB+ RAM\n        - 足够的存储空间用于索引\n\n        ### 快速开始\n        1. 安装依赖: `pip install -r requirements.txt`\n        2. 初始化数据库: `python database_cli.py init`\n        3. 启动服务: `python main.py`\n        4. 访问文档: `http://localhost:8000/api/v1/docs`\n\n        ### 配置说明\n        详细配置请参考 `.env` 文件或环境变量设置。\n\n        ## 许可证\n        MIT License - 详见 [LICENSE](https://opensource.org/licenses/MIT) 文件\n\n        ## 支持与反馈\n        - GitHub: https://github.com/xiaoyaosearch\n        - Email: support@xiaoyao.local\n        - 文档: https://docs.xiaoyao.local\n        ",
+    "contact": {
+      "name": "小遥搜索开发团队",
+      "url": "https://github.com/xiaoyaosearch",
+      "email": "support@xiaoyao.com"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000/api/v1",
+      "description": "开发环境"
+    },
+    {
+      "url": "https://api.xiaoyao.local/api/v1",
+      "description": "生产环境"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "根路径健康检查",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "详细健康检查",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/search/": {
+      "get": {
+        "tags": [
+          "API v1",
+          "搜索"
+        ],
+        "summary": "Search Files",
+        "description": "搜索文件",
+        "operationId": "search_files_api_v1_v1_search__get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "搜索查询",
+              "title": "Q"
+            },
+            "description": "搜索查询"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "文件类型过滤",
+              "title": "Type"
+            },
+            "description": "文件类型过滤"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "开始日期",
+              "title": "Start Date"
+            },
+            "description": "开始日期"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "结束日期",
+              "title": "End Date"
+            },
+            "description": "结束日期"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "返回结果数量",
+              "default": 20,
+              "title": "Size"
+            },
+            "description": "返回结果数量"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "页码",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "页码"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "搜索成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "搜索参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "搜索服务异常"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/search/understand": {
+      "post": {
+        "tags": [
+          "API v1",
+          "搜索"
+        ],
+        "summary": "Understand Query",
+        "description": "理解用户查询意图",
+        "operationId": "understand_query_api_v1_v1_search_understand_post",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "用户查询",
+              "title": "Query"
+            },
+            "description": "用户查询"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "搜索成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Understand Query Api V1 V1 Search Understand Post"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "搜索参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "搜索服务异常"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/search/suggestions": {
+      "get": {
+        "tags": [
+          "API v1",
+          "搜索"
+        ],
+        "summary": "Get Search Suggestions",
+        "description": "获取搜索建议",
+        "operationId": "get_search_suggestions_api_v1_v1_search_suggestions_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "查询前缀",
+              "title": "Q"
+            },
+            "description": "查询前缀"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "description": "建议数量",
+              "default": 5,
+              "title": "Limit"
+            },
+            "description": "建议数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "搜索成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "搜索参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "搜索服务异常"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/files/": {
+      "get": {
+        "tags": [
+          "API v1",
+          "文件管理"
+        ],
+        "summary": "List Files",
+        "description": "获取文件列表",
+        "operationId": "list_files_api_v1_v1_files__get",
+        "parameters": [
+          {
+            "name": "directory_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "目录ID",
+              "title": "Directory Id"
+            },
+            "description": "目录ID"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "文件类型过滤",
+              "title": "Type"
+            },
+            "description": "文件类型过滤"
+          },
+          {
+            "name": "indexed_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "仅显示已索引文件",
+              "default": true,
+              "title": "Indexed Only"
+            },
+            "description": "仅显示已索引文件"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "页码",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "页码"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每页数量",
+              "default": 50,
+              "title": "Size"
+            },
+            "description": "每页数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FileInfo"
+                  },
+                  "title": "Response List Files Api V1 V1 Files  Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "文件不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "文件冲突"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/files/{file_id}": {
+      "get": {
+        "tags": [
+          "API v1",
+          "文件管理"
+        ],
+        "summary": "Get File Info",
+        "description": "获取文件详细信息",
+        "operationId": "get_file_info_api_v1_v1_files__file_id__get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "文件不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "文件冲突"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "API v1",
+          "文件管理"
+        ],
+        "summary": "Delete File",
+        "description": "删除文件",
+        "operationId": "delete_file_api_v1_v1_files__file_id__delete",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "文件不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "文件冲突"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/files/{file_id}/preview": {
+      "get": {
+        "tags": [
+          "API v1",
+          "文件管理"
+        ],
+        "summary": "Preview File",
+        "description": "预览文件内容",
+        "operationId": "preview_file_api_v1_v1_files__file_id__preview_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          },
+          {
+            "name": "highlights",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "高亮关键词",
+              "title": "Highlights"
+            },
+            "description": "高亮关键词"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "文件不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "文件冲突"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/files/{file_id}/open": {
+      "post": {
+        "tags": [
+          "API v1",
+          "文件管理"
+        ],
+        "summary": "Open File",
+        "description": "使用系统默认应用打开文件",
+        "operationId": "open_file_api_v1_v1_files__file_id__open_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "文件不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "文件冲突"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/files/upload": {
+      "post": {
+        "tags": [
+          "API v1",
+          "文件管理"
+        ],
+        "summary": "Upload File",
+        "description": "上传文件",
+        "operationId": "upload_file_api_v1_v1_files_upload_post",
+        "parameters": [
+          {
+            "name": "directory_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "目标目录ID",
+              "title": "Directory Id"
+            },
+            "description": "目标目录ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_file_api_v1_v1_files_upload_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "文件不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "文件冲突"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/directories/": {
+      "get": {
+        "tags": [
+          "API v1",
+          "目录管理"
+        ],
+        "summary": "List Directories",
+        "description": "获取所有索引目录",
+        "operationId": "list_directories_api_v1_v1_directories__get",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DirectoryInfo"
+                  },
+                  "type": "array",
+                  "title": "Response List Directories Api V1 V1 Directories  Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "目录不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "目录冲突"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "API v1",
+          "目录管理"
+        ],
+        "summary": "Add Directory",
+        "description": "添加索引目录",
+        "operationId": "add_directory_api_v1_v1_directories__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "目录不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "目录冲突"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/directories/{directory_id}": {
+      "get": {
+        "tags": [
+          "API v1",
+          "目录管理"
+        ],
+        "summary": "Get Directory",
+        "description": "获取目录详细信息",
+        "operationId": "get_directory_api_v1_v1_directories__directory_id__get",
+        "parameters": [
+          {
+            "name": "directory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Directory Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "目录不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "目录冲突"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "API v1",
+          "目录管理"
+        ],
+        "summary": "Remove Directory",
+        "description": "移除索引目录",
+        "operationId": "remove_directory_api_v1_v1_directories__directory_id__delete",
+        "parameters": [
+          {
+            "name": "directory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Directory Id"
+            }
+          },
+          {
+            "name": "remove_files",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否同时删除相关文件索引",
+              "default": false,
+              "title": "Remove Files"
+            },
+            "description": "是否同时删除相关文件索引"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "目录不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "目录冲突"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/directories/{directory_id}/scan": {
+      "post": {
+        "tags": [
+          "API v1",
+          "目录管理"
+        ],
+        "summary": "Scan Directory",
+        "description": "扫描目录",
+        "operationId": "scan_directory_api_v1_v1_directories__directory_id__scan_post",
+        "parameters": [
+          {
+            "name": "directory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Directory Id"
+            }
+          },
+          {
+            "name": "full_scan",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否进行全量扫描",
+              "default": false,
+              "title": "Full Scan"
+            },
+            "description": "是否进行全量扫描"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "目录不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "目录冲突"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/directories/{directory_id}/status": {
+      "get": {
+        "tags": [
+          "API v1",
+          "目录管理"
+        ],
+        "summary": "Get Directory Status",
+        "description": "获取目录扫描状态",
+        "operationId": "get_directory_status_api_v1_v1_directories__directory_id__status_get",
+        "parameters": [
+          {
+            "name": "directory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Directory Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "目录不存在"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          },
+          "409": {
+            "description": "目录冲突"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/users/current": {
+      "get": {
+        "tags": [
+          "API v1",
+          "用户管理"
+        ],
+        "summary": "Get Current User",
+        "description": "获取当前用户信息",
+        "operationId": "get_current_user_api_v1_v1_users_current_get",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/users/": {
+      "post": {
+        "tags": [
+          "API v1",
+          "用户管理"
+        ],
+        "summary": "Create User",
+        "description": "创建用户",
+        "operationId": "create_user_api_v1_v1_users__post",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/settings/": {
+      "get": {
+        "tags": [
+          "API v1",
+          "设置管理"
+        ],
+        "summary": "Get Settings",
+        "description": "获取用户设置",
+        "operationId": "get_settings_api_v1_v1_settings__get",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "设置参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "设置格式错误"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "API v1",
+          "设置管理"
+        ],
+        "summary": "Update Settings",
+        "description": "更新用户设置",
+        "operationId": "update_settings_api_v1_v1_settings__put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Settings Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "设置参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "设置格式错误"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/settings/reset": {
+      "post": {
+        "tags": [
+          "API v1",
+          "设置管理"
+        ],
+        "summary": "Reset Settings",
+        "description": "重置用户设置",
+        "operationId": "reset_settings_api_v1_v1_settings_reset_post",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "设置参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "设置格式错误"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/settings/export": {
+      "post": {
+        "tags": [
+          "API v1",
+          "设置管理"
+        ],
+        "summary": "Export Settings",
+        "description": "导出设置",
+        "operationId": "export_settings_api_v1_v1_settings_export_post",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "设置参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "设置格式错误"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/settings/import": {
+      "post": {
+        "tags": [
+          "API v1",
+          "设置管理"
+        ],
+        "summary": "Import Settings",
+        "description": "导入设置",
+        "operationId": "import_settings_api_v1_v1_settings_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Settings Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "设置参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "设置格式错误"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/database/health": {
+      "get": {
+        "tags": [
+          "API v1",
+          "数据库管理"
+        ],
+        "summary": "Get Database Health",
+        "description": "获取数据库健康状态\n\nReturns:\n    DatabaseHealthResponse: 数据库健康状态信息",
+        "operationId": "get_database_health_api_v1_v1_database_health_get",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabaseHealthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "数据库操作失败"
+          },
+          "503": {
+            "description": "数据库不可用"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/v1/database/info": {
+      "get": {
+        "tags": [
+          "API v1",
+          "数据库管理"
+        ],
+        "summary": "Get Database Info",
+        "description": "获取数据库详细信息\n\nReturns:\n    DatabaseInfoResponse: 数据库详细信息",
+        "operationId": "get_database_info_api_v1_v1_database_info_get",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabaseInfoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "数据库操作失败"
+          },
+          "503": {
+            "description": "数据库不可用"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/v1/database/backup": {
+      "post": {
+        "tags": [
+          "API v1",
+          "数据库管理"
+        ],
+        "summary": "Create Database Backup",
+        "description": "创建数据库备份\n\nArgs:\n    backup_dir: 备份目录路径（可选）\n\nReturns:\n    BackupResponse: 备份结果",
+        "operationId": "create_database_backup_api_v1_v1_database_backup_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "backup_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Backup Dir"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "数据库操作失败"
+          },
+          "503": {
+            "description": "数据库不可用"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/database/backups": {
+      "get": {
+        "tags": [
+          "API v1",
+          "数据库管理"
+        ],
+        "summary": "List Database Backups",
+        "description": "列出所有数据库备份文件\n\nArgs:\n    backup_dir: 备份目录路径（可选）\n\nReturns:\n    BackupListResponse: 备份文件列表",
+        "operationId": "list_database_backups_api_v1_v1_database_backups_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "backup_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Backup Dir"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "数据库操作失败"
+          },
+          "503": {
+            "description": "数据库不可用"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/database/restore": {
+      "post": {
+        "tags": [
+          "API v1",
+          "数据库管理"
+        ],
+        "summary": "Restore Database From Backup",
+        "description": "从备份恢复数据库\n\nArgs:\n    request: 恢复请求参数\n\nReturns:\n    RestoreResponse: 恢复结果",
+        "operationId": "restore_database_from_backup_api_v1_v1_database_restore_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "数据库操作失败"
+          },
+          "503": {
+            "description": "数据库不可用"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/v1/database/backups/cleanup": {
+      "delete": {
+        "tags": [
+          "API v1",
+          "数据库管理"
+        ],
+        "summary": "Cleanup Old Database Backups",
+        "description": "清理旧的数据库备份文件\n\nArgs:\n    keep_count: 保留的备份数量\n    backup_dir: 备份目录路径（可选）\n\nReturns:\n    CleanupResponse: 清理结果",
+        "operationId": "cleanup_old_database_backups_api_v1_v1_database_backups_cleanup_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "keep_count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "title": "Keep Count"
+            }
+          },
+          {
+            "name": "backup_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Backup Dir"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CleanupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "数据库操作失败"
+          },
+          "503": {
+            "description": "数据库不可用"
+          }
+        }
+      }
+    },
+    "/api/v1/v1/database/vacuum": {
+      "post": {
+        "tags": [
+          "API v1",
+          "数据库管理"
+        ],
+        "summary": "Vacuum Database",
+        "description": "清理数据库碎片，优化数据库文件大小\n仅适用于SQLite数据库\n\nReturns:\n    dict: 清理结果",
+        "operationId": "vacuum_database_api_v1_v1_database_vacuum_post",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "数据库操作失败"
+          },
+          "503": {
+            "description": "数据库不可用"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/v1/database/analyze": {
+      "post": {
+        "tags": [
+          "API v1",
+          "数据库管理"
+        ],
+        "summary": "Analyze Database",
+        "description": "分析数据库统计信息，优化查询性能\n仅适用于SQLite数据库\n\nReturns:\n    dict: 分析结果",
+        "operationId": "analyze_database_api_v1_v1_database_analyze_post",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "数据库操作失败"
+          },
+          "503": {
+            "description": "数据库不可用"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/v1/database/stats": {
+      "get": {
+        "tags": [
+          "API v1",
+          "数据库管理"
+        ],
+        "summary": "Get Database Statistics",
+        "description": "获取数据库统计信息\n\nReturns:\n    dict: 数据库统计信息",
+        "operationId": "get_database_statistics_api_v1_v1_database_stats_get",
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "数据库操作失败"
+          },
+          "503": {
+            "description": "数据库不可用"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/v1/info": {
+      "get": {
+        "tags": [
+          "API v1"
+        ],
+        "summary": "获取API信息",
+        "description": "获取API版本和配置信息",
+        "operationId": "api_info_api_v1_v1_info_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "401": {
+            "description": "未授权"
+          },
+          "403": {
+            "description": "权限不足"
+          },
+          "404": {
+            "description": "资源未找到"
+          },
+          "422": {
+            "description": "请求参数验证失败"
+          },
+          "500": {
+            "description": "服务器内部错误"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BackupInfo": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "size_mb": {
+            "type": "number",
+            "title": "Size Mb"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "modified_at": {
+            "type": "string",
+            "title": "Modified At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "path",
+          "size_bytes",
+          "size_mb",
+          "created_at",
+          "modified_at"
+        ],
+        "title": "BackupInfo"
+      },
+      "BackupListResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "backups": {
+            "items": {
+              "$ref": "#/components/schemas/BackupInfo"
+            },
+            "type": "array",
+            "title": "Backups"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "backups",
+          "count"
+        ],
+        "title": "BackupListResponse"
+      },
+      "BackupResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "backup_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backup Path"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message"
+        ],
+        "title": "BackupResponse"
+      },
+      "Body_upload_file_api_v1_v1_files_upload_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_file_api_v1_v1_files_upload_post"
+      },
+      "CleanupResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "deleted_count": {
+            "type": "integer",
+            "title": "Deleted Count"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "deleted_count"
+        ],
+        "title": "CleanupResponse"
+      },
+      "DatabaseHealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "timestamp"
+        ],
+        "title": "DatabaseHealthResponse"
+      },
+      "DatabaseInfoResponse": {
+        "properties": {
+          "database_type": {
+            "type": "string",
+            "title": "Database Type"
+          },
+          "database_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Database Path"
+          },
+          "file_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size Bytes"
+          },
+          "file_size_mb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size Mb"
+          },
+          "tables_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tables Count"
+          },
+          "connection_pool": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Connection Pool"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "database_type",
+          "connection_pool"
+        ],
+        "title": "DatabaseInfoResponse"
+      },
+      "DirectoryCreate": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "目录路径"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "目录名称"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "title": "DirectoryCreate",
+        "description": "目录创建模式"
+      },
+      "DirectoryInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "目录ID"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "目录路径"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "目录名称"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "状态: active, inactive, error"
+          },
+          "file_count": {
+            "type": "integer",
+            "title": "File Count",
+            "description": "文件数量"
+          },
+          "indexed_count": {
+            "type": "integer",
+            "title": "Indexed Count",
+            "description": "已索引文件数量"
+          },
+          "last_scan_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Scan Time",
+            "description": "最后扫描时间"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At",
+            "description": "创建时间"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At",
+            "description": "更新时间"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message",
+            "description": "错误信息"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "path",
+          "name",
+          "status",
+          "file_count",
+          "indexed_count",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "DirectoryInfo",
+        "description": "目录信息模式"
+      },
+      "FileInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "文件ID"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name",
+            "description": "文件名"
+          },
+          "file_path": {
+            "type": "string",
+            "title": "File Path",
+            "description": "文件路径"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size",
+            "description": "文件大小(字节)"
+          },
+          "file_type": {
+            "type": "string",
+            "title": "File Type",
+            "description": "文件类型"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type",
+            "description": "MIME类型"
+          },
+          "modified_time": {
+            "type": "string",
+            "title": "Modified Time",
+            "description": "修改时间"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At",
+            "description": "创建时间"
+          },
+          "indexed_at": {
+            "type": "string",
+            "title": "Indexed At",
+            "description": "索引时间"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "状态"
+          },
+          "is_deleted": {
+            "type": "boolean",
+            "title": "Is Deleted",
+            "description": "是否已删除",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "file_name",
+          "file_path",
+          "size",
+          "file_type",
+          "modified_time",
+          "created_at",
+          "indexed_at",
+          "status"
+        ],
+        "title": "FileInfo",
+        "description": "文件信息模式"
+      },
+      "FilePreview": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id",
+            "description": "文件ID"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name",
+            "description": "文件名"
+          },
+          "file_type": {
+            "type": "string",
+            "title": "File Type",
+            "description": "文件类型"
+          },
+          "preview_type": {
+            "type": "string",
+            "title": "Preview Type",
+            "description": "预览类型"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "文本内容"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "文件元数据"
+          },
+          "highlights": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Highlights",
+            "description": "高亮关键词"
+          },
+          "preview_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview Url",
+            "description": "预览URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_id",
+          "file_name",
+          "file_type",
+          "preview_type"
+        ],
+        "title": "FilePreview",
+        "description": "文件预览模式"
+      },
+      "RestoreRequest": {
+        "properties": {
+          "backup_path": {
+            "type": "string",
+            "title": "Backup Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "backup_path"
+        ],
+        "title": "RestoreRequest"
+      },
+      "RestoreResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message"
+        ],
+        "title": "RestoreResponse"
+      },
+      "SearchResponse": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "description": "搜索查询"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "结果总数"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            },
+            "type": "array",
+            "title": "Results",
+            "description": "搜索结果列表"
+          },
+          "search_time": {
+            "type": "number",
+            "title": "Search Time",
+            "description": "搜索耗时(秒)"
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggestions",
+            "description": "搜索建议"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "total",
+          "results",
+          "search_time"
+        ],
+        "title": "SearchResponse",
+        "description": "搜索响应模式"
+      },
+      "SearchResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "文件ID"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "文件标题"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "文件路径"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size",
+            "description": "文件大小(字节)"
+          },
+          "modified_time": {
+            "type": "string",
+            "title": "Modified Time",
+            "description": "修改时间"
+          },
+          "file_type": {
+            "type": "string",
+            "title": "File Type",
+            "description": "文件类型"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "相关性得分"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "description": "文件摘要"
+          },
+          "highlights": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Highlights",
+            "description": "高亮关键词"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "path",
+          "size",
+          "modified_time",
+          "file_type",
+          "score",
+          "summary"
+        ],
+        "title": "SearchResult",
+        "description": "搜索结果项模式"
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Bearer Token认证"
+      }
+    },
+    "examples": {
+      "SearchRequest": {
+        "summary": "搜索请求示例",
+        "value": {
+          "query": "人工智能发展趋势",
+          "type": "document",
+          "start_date": "2023-01-01",
+          "end_date": "2023-12-31",
+          "size": 20,
+          "page": 1
+        }
+      },
+      "UserLogin": {
+        "summary": "用户登录示例",
+        "value": {
+          "username": "admin",
+          "password": "password123"
+        }
+      },
+      "ErrorResponse": {
+        "summary": "错误响应示例",
+        "value": {
+          "detail": "用户名或密码错误",
+          "error_code": "AUTHENTICATION_ERROR",
+          "timestamp": "2023-12-07T10:30:00Z"
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "认证",
+      "description": "用户认证和授权相关接口"
+    },
+    {
+      "name": "搜索",
+      "description": "文件搜索和查询相关接口"
+    },
+    {
+      "name": "文件管理",
+      "description": "文件管理和操作相关接口"
+    },
+    {
+      "name": "目录管理",
+      "description": "目录扫描和管理相关接口"
+    },
+    {
+      "name": "用户管理",
+      "description": "用户信息管理相关接口"
+    },
+    {
+      "name": "系统管理",
+      "description": "系统配置和状态管理接口"
+    },
+    {
+      "name": "健康检查",
+      "description": "系统健康检查和监控接口"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}

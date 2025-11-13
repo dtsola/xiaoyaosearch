@@ -11,7 +11,7 @@ from alembic import context
 
 from core.config import settings
 from db.base import Base
-from models import *  # Import all models
+from model import *  # Import all models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 # 创建API路由器
 api_router = APIRouter(
-    prefix="/v1",
     tags=["API v1"],
     responses={
         400: {"description": "请求参数错误"},

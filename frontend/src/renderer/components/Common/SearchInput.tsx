@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Input, Button, AutoComplete, Space, Tag, Spin } from 'antd'
 import {
   SearchOutlined,
-  MicrophoneOutlined,
+  AudioOutlined,
   CameraOutlined,
   SettingOutlined,
   HistoryOutlined,
@@ -232,7 +232,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
             <Button
               type="text"
               size={size}
-              icon={<MicrophoneOutlined />}
+              icon={<AudioOutlined />}
               onClick={handleVoiceInput}
               title="语音搜索"
               disabled={disabled}

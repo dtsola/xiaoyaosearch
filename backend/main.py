@@ -56,3 +56,19 @@ async def health_check():
 # Include API routers
 from api.v1.api import api_router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+# Run the application when executed directly
+if __name__ == "__main__":
+    import uvicorn
+
+    print(f"启动 {settings.PROJECT_NAME} v{settings.VERSION}")
+    print(f"服务地址: http://{settings.HOST}:{settings.PORT}")
+    print(f"API 文档: http://{settings.HOST}:{settings.PORT}{settings.API_V1_STR}/docs")
+
+    uvicorn.run(
+        app,
+        host=settings.HOST,
+        port=settings.PORT,
+        log_level="info"
+    )

@@ -7,6 +7,10 @@
   - [x] 建立 `frontend/`、`backend/`、`tools/`、`resources/` 目录
   - [x] 设置项目级配置文件（.gitignore, README.md, LICENSE）
   - [x] 创建开发工具配置（ESLint, Prettier, Black等）
+- [x] 更新项目架构文档
+  - [x] 根据 code-arch.md 更新 openspec/project.md
+  - [x] 添加详细的项目结构和前端/后端架构设计
+  - [x] 完善开发工作流和构建部署流程
 
 ### 1.2 前端项目设置
 - [x] 初始化Vue3 + TypeScript项目

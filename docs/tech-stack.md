@@ -121,8 +121,7 @@ graph TB
 
 | 技术 | 版本 | 作用 | 选型理由 |
 |------|------|------|----------|
-| **Python venv** | 3.9+ | Python虚拟环境 | Python标准虚拟环境，轻量级依赖管理 |
-| **requirements.txt** | - | 依赖管理 | 标准Python依赖管理方式 |
+| **Poetry** | 1.7+ | Python依赖管理 | 现代Python包管理，锁文件支持 |
 | **pytest** | 7.4+ | 测试框架 | 功能丰富的测试框架，插件丰富 |
 | **pytest-asyncio** | 0.21+ | 异步测试 | pytest的异步测试支持 |
 | **black** | 23.11+ | 代码格式化 | Python代码格式化工具 |
@@ -252,16 +251,14 @@ npm run test
 
 ### 后端开发环境
 ```bash
-# 自动设置环境
-python setup_env.py  # 或使用 setup.bat (Windows) / setup.sh (Unix)
-# 或手动设置
-python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Unix/Linux/macOS
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # 开发依赖
+# 安装poetry (如果未安装)
+curl -sSL https://install.python-poetry.org | python3 -
+# 安装依赖
+poetry install
+# 激活虚拟环境
+poetry shell
 # 开发模式
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 # 测试
 pytest
 # 代码格式化

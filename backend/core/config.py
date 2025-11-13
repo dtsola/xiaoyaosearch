@@ -6,7 +6,7 @@ Uses Pydantic for type-safe configuration management with environment variable s
 
 from typing import List, Optional
 from pydantic import validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -71,9 +71,11 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",")]
         return v
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore"  # 允许额外的字段但忽略它们
+    )
 
 
 # Create settings instance

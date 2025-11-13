@@ -138,7 +138,7 @@ xiaoyaosearch-new/
 - **框架**: Vue 3.4+ (Composition API)
 - **语言**: TypeScript 5.3+
 - **构建工具**: electron-vite 2.0+ (基于 Vite)
-- **UI组件**: Ant Design Vue (待集成)
+- **UI组件**: Ant Design Vue
 - **状态管理**: Pinia (electron-vite 默认，可替换为 Zustand)
 - **路由**: Vue Router 4.2+
 - **HTTP客户端**: Axios

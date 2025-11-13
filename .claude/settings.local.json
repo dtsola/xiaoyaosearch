@@ -8,7 +8,16 @@
       "Bash(git commit:*)",
       "Bash(npm install)",
       "Bash(npm run dev:renderer:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(venvScriptsactivate:*)",
+      "Bash(\"venv\\Scripts\\activate.bat\")",
+      "Bash(..venvScriptspython.exe -m pip install --upgrade pip)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(timeout 15 npm run dev:frontend:*)",
+      "Bash(test:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

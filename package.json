@@ -11,10 +11,18 @@
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "echo 'Backend build completed (Python interpreted)'",
+    "build:desktop": "npm run build:desktop:all",
+    "build:desktop:all": "node frontend/build-scripts.js all",
+    "build:desktop:win": "node frontend/build-scripts.js windows",
+    "build:desktop:mac": "node frontend/build-scripts.js macos",
+    "build:desktop:linux": "node frontend/build-scripts.js linux",
+    "build:test": "node frontend/build-scripts.js windows --local --output-dir=release/test",
+    "build:test:win": "node frontend/build-scripts.js windows --local --output-dir=release/test",
     "start": "cd frontend && npm run start",
     "test": "npm run test:frontend && npm run test:backend",
     "test:frontend": "cd frontend && npm run test",
     "test:backend": "cd backend && python -m pytest",
+    "test:e2e": "npm run build:test && echo '请测试 frontend/release/ 目录下的安装包'",
     "lint": "npm run lint:frontend && npm run lint:backend",
     "lint:frontend": "cd frontend && npm run lint",
     "lint:backend": "cd backend && mypy . && black . --check",
@@ -23,7 +31,18 @@
     "format:backend": "cd backend && black .",
     "setup": "npm run setup:frontend && npm run setup:backend",
     "setup:frontend": "cd frontend && npm install",
-    "setup:backend": "cd backend && pip install -r requirements.txt"
+    "setup:backend": "cd backend && pip install -r requirements.txt",
+    "pack": "npm run build:desktop",
+    "release": "npm run build && npm run pack",
+    "env:dev": "scripts\\set-env.bat frontend development && scripts\\set-env.bat backend development",
+    "env:test": "scripts\\set-env.bat frontend test && scripts\\set-env.bat backend test",
+    "env:prod": "scripts\\set-env.bat frontend production && scripts\\set-env.bat backend production",
+    "env:dev:frontend": "scripts\\set-env.bat frontend development",
+    "env:test:frontend": "scripts\\set-env.bat frontend test",
+    "env:prod:frontend": "scripts\\set-env.bat frontend production",
+    "env:dev:backend": "scripts\\set-env.bat backend development",
+    "env:test:backend": "scripts\\set-env.bat backend test",
+    "env:prod:backend": "scripts\\set-env.bat backend production"
   },
   "keywords": [
     "search",
@@ -37,9 +56,5 @@
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
-  },
-  "workspaces": [
-    "frontend",
-    "backend"
-  ]
+  }
 }

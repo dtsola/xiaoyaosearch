@@ -6,7 +6,7 @@ python-multipart==0.0.6
 # 数据库
 sqlalchemy==2.0.23
 alembic==1.12.1
-sqlite3
+# sqlite3 是Python内置模块，无需安装
 
 # AI和机器学习
 torch==2.1.1

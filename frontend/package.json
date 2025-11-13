@@ -6,64 +6,80 @@
   "homepage": "./",
   "scripts": {
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
-    "dev:renderer": "vite",
+    "dev:renderer": "vite --mode development",
     "dev:main": "tsc -p tsconfig.main.json && electron dist/main.js --dev",
     "build": "npm run build:renderer && npm run build:main",
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
+    "build:test": "vite build --mode test",
+    "build:production": "vite build --mode production",
+    "build:win": "electron-builder --win",
+    "build:win:test": "npm run build:test && electron-builder --win",
+    "build:win:x64": "electron-builder --win --x64",
+    "build:win:ia32": "electron-builder --win --ia32",
+    "build:mac": "electron-builder --mac",
+    "build:mac:x64": "electron-builder --mac --x64",
+    "build:mac:arm64": "electron-builder --mac --arm64",
+    "build:linux": "electron-builder --linux",
+    "build:linux:x64": "electron-builder --linux --x64",
+    "build:all": "electron-builder --win --mac --linux",
     "start": "electron dist/main.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "test:e2e": "npm run build:test && npm run build:win:test && echo '测试构建完成，请检查 frontend/release/ 目录'",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint src --ext ts,tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\"",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "env:dev": "copy .env.development .env",
+    "env:test": "copy .env.test .env",
+    "env:prod": "copy .env.production .env"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.18.0",
-    "antd": "^5.11.0",
-    "zustand": "^4.4.6",
-    "@tanstack/react-query": "^5.8.4",
-    "axios": "^1.6.0",
+    "@ant-design/icons": "^5.6.1",
+    "@tanstack/react-query": "^5.90.8",
+    "antd": "^5.28.1",
+    "axios": "^1.13.2",
+    "classnames": "^2.5.1",
+    "dayjs": "^1.11.19",
+    "electron-log": "^5.0.1",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.1.4",
-    "electron-log": "^5.0.1",
-    "@ant-design/icons": "^5.2.6",
-    "dayjs": "^1.11.10",
-    "classnames": "^2.3.2",
     "lodash-es": "^4.17.21",
+    "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
+    "react-router-dom": "^6.30.1",
     "react-syntax-highlighter": "^15.5.0",
     "react-use": "^17.4.0",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "zustand": "^4.5.7"
   },
   "devDependencies": {
-    "@types/react": "^18.2.37",
-    "@types/react-dom": "^18.2.15",
-    "@types/node": "^20.9.0",
     "@types/lodash-es": "^4.17.12",
-    "@types/uuid": "^9.0.7",
+    "@types/node": "^20.19.25",
+    "@types/react": "^18.3.26",
     "@types/react-beautiful-dnd": "^13.1.6",
+    "@types/react-dom": "^18.3.7",
     "@types/react-syntax-highlighter": "^15.5.10",
+    "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
-    "@vitejs/plugin-react": "^4.1.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/ui": "^0.34.6",
+    "concurrently": "^8.2.2",
     "electron": "^27.1.0",
     "electron-builder": "^24.6.4",
-    "eslint": "^8.54.0",
+    "eslint": "^8.57.1",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.4",
-    "prettier": "^3.1.0",
-    "typescript": "^5.2.2",
-    "vite": "^4.5.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "vite": "^4.5.14",
     "vite-plugin-electron": "^0.15.4",
-    "vitest": "^0.34.6",
-    "@vitest/ui": "^0.34.6",
-    "concurrently": "^8.2.2"
+    "vitest": "^0.34.6"
   },
   "build": {
     "appId": "com.xiaoyaosearch.app",
@@ -73,37 +89,145 @@
     },
     "files": [
       "dist/**/*",
-      "node_modules/**/*"
+      "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!venv/**/*",
+          "!__pycache__/**/*",
+          "!*.pyc",
+          "!*.pyo",
+          ".env"
+        ]
+      }
+    ],
+    "extraMetadata": {
+      "main": "dist/main.js"
+    },
     "mac": {
       "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
-      ]
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
     },
     "win": {
+      "icon": "assets/icon.ico",
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
     "linux": {
+      "icon": "assets/icon.png",
+      "category": "Utility",
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "language": "2052"
-    }
+      "allowElevation": true,
+      "installerIcon": "assets/installer.ico",
+      "uninstallerIcon": "assets/uninstaller.ico",
+      "installerHeaderIcon": "assets/header.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "小遥搜索",
+      "language": "2052",
+      "displayLanguageSelector": false
+    },
+    "dmg": {
+      "title": "${productName} ${version}",
+      "icon": "assets/dmg-icon.icns",
+      "background": "assets/dmg-background.png",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libdrm2",
+        "libxcomposite1",
+        "libxdamage1",
+        "libxrandr2",
+        "libgbm1",
+        "libxkbcommon0",
+        "libasound2",
+        "python3",
+        "python3-venv"
+      ]
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "xiaoyaosearch",
+        "repo": "xiaoyao-search"
+      }
+    ]
   }
 }

@@ -9,14 +9,14 @@ alembic==1.12.1
 # sqlite3 是Python内置模块，无需安装
 
 # AI和机器学习
-torch==2.1.1
-torchvision==0.16.1
+torch==2.3.1
+torchvision==0.18.1
 transformers==4.35.2
 flagembedding==1.2.5
 sentence-transformers==2.2.2
 
 # 搜索和索引
-faiss-cpu==1.7.4
+faiss-cpu==1.8.0
 whoosh==2.7.4
 jieba==0.42.1
 
@@ -26,15 +26,16 @@ PyPDF2==3.0.1
 openpyxl==3.1.2
 python-pptx==0.6.23
 pillow==10.1.0
-opencv-python==4.8.1.78
+opencv-python==4.6.0.66
 
 # 音频处理
 openai-whisper==20231117
 pydub==0.25.1
 
 # OCR和图像处理
-paddleocr==2.7.0.10
-chinese-clip-vit-base-patch16==1.5.0
+paddleocr==2.7.2
+# chinese-clip-vit-base-patch16==1.5.0
+cn_clip==1.5.0
 
 # 语音识别
 speechrecognition==3.10.0
@@ -77,6 +78,9 @@ click==8.1.7
 typer==0.9.0
 tqdm==4.66.1
 aiofiles==23.2.1
+pydantic==2.5.0
+email-validator==2.1.0
+
 
 # 时间处理
 python-dateutil==2.8.2

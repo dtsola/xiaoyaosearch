@@ -97,6 +97,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # 忽略额外的字段
 
 
 @lru_cache()

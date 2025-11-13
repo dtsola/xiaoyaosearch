@@ -17,7 +17,7 @@
 
 ### 🔧 技术架构
 - **前端**: Electron + React + TypeScript + Vite (桌面应用界面)
-- **后端**: Python 3.12+ + FastAPI + SQLAlchemy + SQLite (本地嵌入式服务)
+- **后端**: Python 3.10+ + FastAPI + SQLAlchemy + SQLite (本地嵌入式服务)
 - **数据库**: SQLite (本地文件数据库)
 - **打包工具**: electron-builder (跨平台安装包生成)
 
@@ -42,7 +42,7 @@
 ### 开发环境
 - **操作系统**: Windows 10+, macOS 10.15+, Ubuntu 18.04+
 - **Node.js**: 18.0.0+ (推荐 LTS 版本)
-- **Python**: 3.12.0+
+- **Python**: 3.10.0+
 - **Git**: 2.30.0+
 
 ### 用户环境（运行时要求）
@@ -768,10 +768,10 @@ jobs:
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
 
-    - name: Set up Python 3.12
+    - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
-        python-version: "3.12"
+        python-version: "3.10"
 
     - name: Install backend dependencies
       run: |
@@ -842,10 +842,10 @@ jobs:
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
 
-    - name: Set up Python 3.12
+    - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
-        python-version: "3.12"
+        python-version: "3.10"
 
     - name: Install backend dependencies
       run: |

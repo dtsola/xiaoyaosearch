@@ -42,9 +42,9 @@ const buildConfig = {
 // 检查必要文件
 function checkRequiredFiles() {
   const requiredFiles = [
-    '../backend/main.py',
-    '../backend/requirements.txt',
-    '../backend/app'
+    path.resolve(__dirname, '../backend/main.py'),
+    path.resolve(__dirname, '../backend/requirements.txt'),
+    path.resolve(__dirname, '../backend/app')
   ];
 
   for (const file of requiredFiles) {

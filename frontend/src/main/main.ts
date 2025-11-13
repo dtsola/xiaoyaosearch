@@ -49,9 +49,9 @@ class Application {
 
     // 安全设置
     app.on('web-contents-created', (_, contents) => {
-      contents.on('new-window', (navigationEvent) => {
-        navigationEvent.preventDefault()
-        shell.openExternal(navigationEvent.url)
+      contents.on('new-window', (event, navigationUrl) => {
+        event.preventDefault()
+        shell.openExternal(navigationUrl)
       })
     })
   }
@@ -70,7 +70,6 @@ class Application {
         preload: join(__dirname, '../preload/index.js'),
         sandbox: false,
         contextIsolation: true,
-        enableRemoteModule: false,
         nodeIntegration: false
       }
     })

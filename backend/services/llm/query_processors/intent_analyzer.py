@@ -361,7 +361,7 @@ class IntentAnalyzer:
         elif chinese_ratio < 0.1:
             return "en"
         else:
-            return "mixed"
+            return "zh"  # 中英文混合时默认使用中文
 
     def get_intent_statistics(self) -> Dict[str, Any]:
         """

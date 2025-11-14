@@ -34,7 +34,7 @@ class OllamaProvider(BaseLLMProvider):
     def __init__(
         self,
         base_url: Optional[str] = None,
-        model: str = "llama2",
+        model: str = "qwen2.5:1.5b",
         temperature: float = 0.1,
         max_tokens: int = 500,
         timeout: int = 60,  # Longer timeout for local models
@@ -233,7 +233,7 @@ class OllamaProvider(BaseLLMProvider):
             error_type = "http_error"
             error_code = str(error.response.status_code)
             if error.response.status_code == 404:
-                error_type = "model_not_found"
+                # Keep error_type as "http_error" for consistency
                 is_recoverable = False
             elif error.response.status_code >= 500:
                 is_recoverable = True

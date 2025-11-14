@@ -15,6 +15,6 @@ sys.path.insert(0, str(backend_path))
 
 # Set environment variables for testing
 os.environ["TESTING"] = "1"
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
 pytest_plugins = []

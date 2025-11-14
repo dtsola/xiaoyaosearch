@@ -319,7 +319,7 @@ frontend/dist-electron/
 *.pt
 *.pth
 *.safetensors
-models/
+ai-models/
 cache/
 
 # Data files
@@ -355,7 +355,7 @@ temp/
 tmp/
 
 # Resource files
-resources/models/
+resources/ai-models/
 resources/cache/
 resources/data/
 

@@ -104,7 +104,7 @@ xiaoyaosearch/
 ├── resources/                   # 资源文件
 │   ├── icons/                   # 应用图标
 │   ├── images/                  # 图片资源
-│   ├── models/                  # AI模型文件 (可选)
+│   ├── ai-models/                  # AI模型文件 (可选)
 │   └── locales/                 # 国际化文件
 │       ├── zh-CN.json
 │       └── en-US.json

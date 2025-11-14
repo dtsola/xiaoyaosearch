@@ -93,7 +93,7 @@ xiaoyaosearch/
 │   ├── scripts/        # 辅助脚本
 │   └── dev/           # 开发工具
 ├── resources/          # 资源文件
-│   ├── models/         # AI模型文件
+│   ├── ai-models/         # AI模型文件
 │   ├── icons/          # 图标文件
 │   └── docs/           # 文档资源
 └── docs/              # 项目文档

@@ -30,7 +30,7 @@ graph TB
     subgraph "文件系统"
         K[原始文件<br/>用户文件]
         L[cache<br/>缓存文件]
-        M[models<br/>AI模型]
+        M[ai-models<br/>AI模型]
         N[logs<br/>日志文件]
     end
 

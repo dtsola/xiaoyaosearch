@@ -4,7 +4,7 @@ Main API router for version 1 endpoints.
 
 from fastapi import APIRouter
 
-from api.v1.endpoints import files, directories, search, user_settings, tags
+from api.v1.endpoints import files, directories, search, user_settings, tags, ai
 
 # Create main API router
 api_router = APIRouter()
@@ -34,4 +34,9 @@ api_router.include_router(
     tags.router,
     prefix="/tags",
     tags=["tags"]
+)
+api_router.include_router(
+    ai.router,
+    prefix="/ai",
+    tags=["ai"]
 )

@@ -228,7 +228,7 @@ DEBUG=False
 SECRET_KEY=your-secret-key-change-in-production
 
 # AI模型配置
-AI_MODEL_DIR=./models
+AI_MODEL_DIR=./ai-models
 OLLAMA_URL=http://localhost:11434
 OPENAI_API_KEY=your-openai-api-key-here
 

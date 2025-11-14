@@ -11,6 +11,8 @@ from .directory_dao import DirectoryDAO, directory_dao
 from .search_history_dao import SearchHistoryDAO, search_history_dao
 from .tag_dao import TagDAO, tag_dao
 from .user_settings_dao import UserSettingsDAO, user_settings_dao
+from .query_intent_dao import QueryIntentDAO
+from .llm_cache_dao import LLMCacheDAO
 
 __all__ = [
     "BaseDAO",
@@ -24,4 +26,6 @@ __all__ = [
     "tag_dao",
     "UserSettingsDAO",
     "user_settings_dao",
+    "QueryIntentDAO",
+    "LLMCacheDAO",
 ]

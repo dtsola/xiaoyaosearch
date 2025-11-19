@@ -8,6 +8,11 @@
 - **本地文件深度检索**：支持视频（mp4、avi）、音频（mp3、wav）、文档（txt、markdown、office、pdf）的内容和文件名搜索
 - **灵活的AI模型配置**：支持云端API（OpenAI、Claude、阿里云等）和本地模型（Ollama、FastWhisper、CN-CLIP）的自由切换
 
+## 💻 开发环境
+- **操作系统**：Windows 11
+- **Python版本**：3.10.11
+- **Node.js版本**：21.x
+
 ## 🏗️ 技术架构
 
 ### 技术栈
@@ -305,29 +310,149 @@ API_BASE_URL=http://127.0.0.1:8000
 LOG_LEVEL=info
 ```
 
-#### 打包配置
-```json
-{
-  "build": {
-    "appId": "com.xiaoyao.search",
-    "productName": "小遥搜索",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "dist-electron/**/*",
-      "dist/**/*"
-    ],
-    "win": {
-      "target": "nsis",
-      "icon": "build/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "build/icon.icns"
-    }
-  }
-}
+#### 🔧 后端部署（Python FastAPI）
+
+**Windows开发环境启动步骤：**
+
+1. **创建Python虚拟环境**
+```powershell
+cd backend
+python -m venv venv
+```
+
+2. **安装依赖包**
+```powershell
+# 升级pip
+.\venv\Scripts\python.exe -m pip install --upgrade pip
+
+# 安装基础依赖（当前使用）
+.\venv\Scripts\pip.exe install -r requirements.txt
+
+# 完整AI模型依赖（后续添加）
+# .\venv\Scripts\pip.exe install -r requirements-ai.txt
+```
+
+3. **创建数据目录**
+```powershell
+mkdir ..\data\database
+mkdir ..\data\indexes\faiss
+mkdir ..\data\indexes\whoosh
+mkdir ..\data\configs
+mkdir ..\data\logs
+mkdir ..\data\uploads
+```
+
+4. **创建环境配置文件**
+```powershell
+# 创建 .env 文件
+New-Item .env -type file -force
+```
+
+**`.env` 文件内容：**
+```env
+# AI模型配置
+CLIP_MODEL_NAME=OFA-Sys/chinese-clip-vit-base-patch16
+BGE_MODEL_NAME=BAAI/bge-m3
+WHISPER_MODEL_SIZE=base
+
+# 数据路径
+FAISS_INDEX_PATH=../data/indexes/faiss
+WHOOSH_INDEX_PATH=../data/indexes/whoosh
+DATABASE_PATH=../data/database/xiaoyao_search.db
+
+# API配置
+API_HOST=127.0.0.1
+API_PORT=8000
+API_RELOAD=true
+
+# 日志配置
+LOG_LEVEL=info
+LOG_FILE=../data/logs/app.log
+
+# 文件上传配置
+MAX_FILE_SIZE=50MB
+UPLOAD_FOLDER=../data/uploads
+
+# 云端API配置
+# ALIYUN_ACCESS_KEY_ID=your_access_key_id
+# ALIYUN_ACCESS_KEY_SECRET=your_access_key_secret
+# OPENAI_API_KEY=your_openai_api_key
+```
+
+5. **启动后端服务**
+```powershell
+# 方法一：直接启动main.py（内置uvicorn配置）
+.\venv\Scripts\python.exe main.py
+
+# 方法二：使用uvicorn命令启动
+.\venv\Scripts\uvicorn.exe main:app --host 127.0.0.1 --port 8000 --reload
+
+# 方法三：使用uvicorn命令（带详细日志）
+.\venv\Scripts\uvicorn.exe main:app --host 127.0.0.1 --port 8000 --reload --log-level info
+```
+
+**验证后端服务运行状态：**
+- API服务: http://127.0.0.1:8000
+- 健康检查: http://127.0.0.1:8000/api/system/health
+- Swagger文档: http://127.0.0.1:8000/docs
+- ReDoc文档: http://127.0.0.1:8000/redoc
+
+#### 🖥️ 前端部署（Electron + Vue3）
+
+**Windows开发环境启动步骤：**
+
+1. **安装Node.js依赖**
+```powershell
+cd frontend
+npm install
+```
+
+2. **开发环境启动**
+```powershell
+# 启动开发服务器
+npm run dev
+
+# 启动Electron应用
+npm run electron:dev
+```
+
+3. **构建生产版本**
+```powershell
+# 构建Vue应用
+npm run build
+
+# 打包Electron应用
+npm run electron:build
+```
+
+**验证前端服务：**
+- 开发服务器: http://localhost:3000 或 http://localhost:5173
+- Electron桌面应用: 自动启动
+
+#### 🚀 完整启动流程
+
+**方法一：分别启动（推荐开发调试）**
+```powershell
+# 终端1：启动后端
+cd backend
+.\venv\Scripts\python.exe main.py
+
+# 终端2：启动前端
+cd frontend
+npm run electron:dev
+```
+
+**后端启动方式说明：**
+- **方式1**：`.\venv\Scripts\python.exe main.py` - 使用main.py内置的uvicorn配置
+- **方式2**：`.\venv\Scripts\uvicorn.exe main:app --reload` - 直接使用uvicorn命令
+- **方式3**：`.\venv\Scripts\uvicorn.exe main:app --host 127.0.0.1 --port 8000 --reload --log-level info` - 带详细参数的uvicorn命令
+
+**推荐使用方式1**，因为main.py已配置好默认参数，使用最简单。
+
+**方法二：使用启动脚本（后续实现）**
+```powershell
+# 批量启动服务（待实现）
+npm run start:all
 ```
 
 ## 📊 项目进度

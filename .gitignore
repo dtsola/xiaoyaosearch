@@ -16,9 +16,7 @@ data/indexes/
 data/configs/
 
 # AI模型文件（体积大）
-models/bge-m3/
-models/cn-clip/
-models/faster-whisper/
+/models/
 
 # 日志文件
 *.log

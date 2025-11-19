@@ -126,7 +126,7 @@ dmypy.json
 data/database/
 data/indexes/
 data/configs/
-models/
+/models/
 logs/
 temp/
 *.pid

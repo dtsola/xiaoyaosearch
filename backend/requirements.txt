@@ -1,46 +1,31 @@
-# AI模型相关
-sentence-transformers==2.2.2     # BGE-M3模型支持
-faster-whisper==0.9.0            # 本地语音识别
-clip-by-openai==1.0              # CLIP模型支持
-transformers==4.35.0             # HuggingFace模型库
-torch==2.1.0                     # PyTorch深度学习框架
-torchvision==0.16.0              # 视觉模型支持
-Pillow==10.1.0                   # 图像处理
-
-# 搜索引擎
-faiss-cpu==1.7.4                 # Facebook向量搜索
-whoosh==2.7.4                    # Python全文搜索
-jieba==0.42.1                    # 中文分词
-
-# Web框架
+# Web框架 - 核心依赖
 fastapi==0.104.1                 # Python Web框架
 uvicorn[standard]==0.24.0        # ASGI服务器
 pydantic==2.5.0                  # 数据验证
 pydantic-settings==2.1.0         # 配置管理
+python-multipart==0.0.6          # 文件上传
 
 # 数据库
 sqlalchemy==2.0.23               # SQL工具包
 alembic==1.13.1                  # 数据库迁移
 
-# 文件处理
-PyPDF2==3.0.1                    # PDF文件处理
-python-docx==0.8.11              # Word文档处理
-openpyxl==3.1.2                  # Excel文件处理
-mutagen==1.47.0                  # 音频元数据
-
 # HTTP客户端
-oss2==2.18.0                     # 阿里云对象存储
 requests==2.31.0                 # HTTP请求库
 
 # 系统监控
-watchdog==3.0.0                  # 文件监控
-tqdm==4.66.1                     # 进度条
 psutil==5.9.6                    # 系统监控
-python-multipart==0.0.6          # 文件上传
+
+# 基础文件处理
+PyPDF2==3.0.1                    # PDF文件处理
+python-docx==0.8.11              # Word文档处理
+openpyxl==3.1.2                  # Excel文件处理
+Pillow==10.1.0                   # 图像处理
+
+# 搜索引擎基础 - 暂时安装基础版本
+faiss-cpu==1.7.4                 # Facebook向量搜索
+whoosh==2.7.4                    # Python全文搜索
+jieba==0.42.1                    # 中文分词
 
 # 测试工具
 pytest==7.4.3                   # 测试框架
 pytest-asyncio==0.21.1           # 异步测试
-black==23.11.0                   # 代码格式化
-isort==5.12.0                    # 导入排序
-mypy==1.7.1                      # 类型检查

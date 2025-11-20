@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>小遥搜索 XiaoyaoSearch v2.0 - 高保真原型</title>
+  <meta name="description" content="小遥搜索 - 支持多模态AI智能搜索的本地桌面应用高保真原型" />
+  <meta name="keywords" content="AI搜索,多模态搜索,本地搜索,文件检索,语音搜索,图片搜索" />
+
+  <!-- 预加载关键资源 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- 字体预加载 -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+  <!-- 主题色 -->
+  <meta name="theme-color" content="#0A0E27">
+  <meta name="msapplication-TileColor" content="#0A0E27">
+
+  <!-- PWA 支持 -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- 性能优化 -->
+  <style>
+    /* 关键 CSS 内联 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      font-size: 16px;
+      background-color: #0A0E27;
+      color: #FFFFFF;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #app {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0A0E27 0%, #151933 50%, #0A0E27 100%);
+    }
+
+    /* 加载动画 */
+    .loading-container {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0A0E27;
+      z-index: 9999;
+    }
+
+    .loading-content {
+      text-align: center;
+    }
+
+    .loading-logo {
+      font-size: 48px;
+      margin-bottom: 16px;
+      animation: pulse 2s infinite;
+    }
+
+    .loading-text {
+      font-size: 18px;
+      color: #E2E8F0;
+      margin-bottom: 8px;
+    }
+
+    .loading-subtitle {
+      font-size: 14px;
+      color: #94A3B8;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+
+    /* 主题切换支持 */
+    [data-theme="light"] {
+      --surface-primary: #FFFFFF;
+      --text-primary: #1F2937;
+      background: #FFFFFF;
+    }
+
+    /* 高对比度模式 */
+    @media (prefers-contrast: high) {
+      :root {
+        --border-width: 2px;
+      }
+    }
+
+    /* 减少动画模式 */
+    @media (prefers-reduced-motion: reduce) {
+      .loading-logo {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- 初始加载界面 -->
+    <div class="loading-container">
+      <div class="loading-content">
+        <div class="loading-logo">◤小遥搜索◢</div>
+        <div class="loading-text">正在启动高保真原型...</div>
+        <div class="loading-subtitle">v2.0 重构版</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+
+  <!-- Service Worker 注册 (可选) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        // 可以在这里注册 Service Worker
+      })
+    }
+  </script>
+</body>
+</html>

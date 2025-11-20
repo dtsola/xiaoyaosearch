@@ -1,0 +1,229 @@
+// 小遥搜索 v2.0 全局样式
+// 重置样式和基础样式
+
+@import './variables.scss';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  line-height: var(--leading-normal);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background-color: var(--surface-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--surface-primary);
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(var(--primary-rgb), 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(var(--accent-cyan-rgb), 0.05) 0%, transparent 50%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-secondary);
+  border-radius: var(--radius-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--accent-cyan-rgb), 0.5);
+  border-radius: var(--radius-base);
+  transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--accent-cyan-rgb), 0.7);
+}
+
+// 选择文本样式
+::selection {
+  background: rgba(var(--accent-cyan-rgb), 0.3);
+  color: var(--text-primary);
+}
+
+// 焦点样式
+:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+// 链接样式
+a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
+// 按钮基础样式
+button {
+  font-family: var(--font-display);
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all var(--transition-fast);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+// 输入框基础样式
+input, textarea {
+  font-family: var(--font-display);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-base);
+  background: var(--surface-tertiary);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px rgba(var(--accent-cyan-rgb), 0.1);
+  }
+}
+
+// 标题样式
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+}
+
+h1 { font-size: var(--text-5xl); }
+h2 { font-size: var(--text-4xl); }
+h3 { font-size: var(--text-3xl); }
+h4 { font-size: var(--text-2xl); }
+h5 { font-size: var(--text-xl); }
+h6 { font-size: var(--text-lg); }
+
+// 段落样式
+p {
+  margin-bottom: var(--space-4);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+// 工具类
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+
+.grid { display: grid; }
+.grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.gap-6 { gap: var(--space-6); }
+.gap-8 { gap: var(--space-8); }
+
+.p-2 { padding: var(--space-2); }
+.p-3 { padding: var(--space-3); }
+.p-4 { padding: var(--space-4); }
+.p-6 { padding: var(--space-6); }
+.p-8 { padding: var(--space-8); }
+
+.m-2 { margin: var(--space-2); }
+.m-3 { margin: var(--space-3); }
+.m-4 { margin: var(--space-4); }
+.m-6 { margin: var(--space-6); }
+.m-8 { margin: var(--space-8); }
+
+.mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-6 { margin-bottom: var(--space-6); }
+.mb-8 { margin-bottom: var(--space-8); }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded { border-radius: var(--radius-base); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-2xl { border-radius: var(--radius-2xl); }
+.rounded-full { border-radius: var(--radius-full); }
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow { box-shadow: var(--shadow-base); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+// 动画类
+.fade-enter-active, .fade-leave-active {
+  transition: opacity var(--transition-normal);
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active, .slide-up-leave-active {
+  transition: all var(--transition-normal);
+}
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.scale-enter-active, .scale-leave-active {
+  transition: all var(--transition-normal);
+}
+.scale-enter-from, .scale-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}

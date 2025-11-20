@@ -1,0 +1,113 @@
+// 小遥搜索 v2.0 设计系统变量
+// 深邃科技蓝紫渐变色彩系统
+
+:root {
+  // 主品牌色 - 深邃科技蓝紫渐变
+  --primary-gradient: linear-gradient(135deg, #1A1F4B 0%, #4A148C 50%, #00BCD4 100%);
+  --primary-core: #2D3561;
+  --primary-light: #3F4E8A;
+  --primary-dark: #0D1117;
+  --primary-rgb: 26, 31, 75;
+
+  // 强对比色 - 增强视觉冲击力
+  --accent-cyan: #00E5FF;
+  --accent-cyan-rgb: 0, 229, 255;
+  --accent-magenta: #FF006E;
+  --accent-magenta-rgb: 255, 0, 110;
+  --accent-yellow: #FFD700;
+  --accent-yellow-rgb: 255, 215, 0;
+
+  // 深色主题背景 - 营造沉浸式体验
+  --surface-primary: #0A0E27;
+  --surface-secondary: #151933;
+  --surface-tertiary: #1E2341;
+  --surface-quaternary: #252B4D;
+
+  // 语义化颜色
+  --success: #4ADE80;
+  --success-rgb: 74, 222, 128;
+  --warning: #F59E0B;
+  --warning-rgb: 245, 158, 11;
+  --error: #EF4444;
+  --error-rgb: 239, 68, 68;
+  --info: #3B82F6;
+  --info-rgb: 59, 130, 246;
+
+  // 文字颜色
+  --text-primary: #FFFFFF;
+  --text-secondary: #E2E8F0;
+  --text-tertiary: #94A3B8;
+  --text-quaternary: #64748B;
+  --text-disabled: #475569;
+
+  // 边框和分割线
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.05);
+  --border-accent: var(--accent-cyan);
+
+  // 间距系统 (基于8px网格)
+  --space-1: 4px;    // 极微调
+  --space-2: 8px;    // 最小间距
+  --space-3: 12px;   // 小间距
+  --space-4: 16px;   // 标准间距
+  --space-5: 20px;   // 中等间距
+  --space-6: 24px;   // 大间距
+  --space-8: 32px;   // 超大间距
+  --space-10: 40px;  // 段落间距
+  --space-12: 48px;  // 区块间距
+  --space-16: 64px;  // 页面间距
+  --space-20: 80px;  // 最大间距
+
+  // 圆角系统
+  --radius-sm: 2px;     // 微细元素
+  --radius-base: 6px;   // 按钮、标签
+  --radius-lg: 12px;    // 卡片、面板
+  --radius-xl: 20px;    // 搜索框
+  --radius-2xl: 32px;   // 大型容器
+  --radius-full: 9999px; // 圆形元素
+
+  // 阴影和光效
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-base: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --shadow-glow-primary: 0 0 24px rgba(var(--accent-cyan-rgb), 0.6);
+  --shadow-glow-secondary: 0 0 16px rgba(76, 20, 140, 0.4);
+  --shadow-inset: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+
+  // 字体系统
+  --font-display: 'Noto Sans SC', 'Inter', 'SF Pro Display', sans-serif;
+  --font-body: 'Source Han Serif SC', 'Georgia', serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  --font-artistic: 'Noto Serif SC', 'Playfair Display', serif;
+
+  // 字阶系统
+  --text-5xl: 48px;     // 主标题
+  --text-4xl: 36px;     // 章节标题
+  --text-3xl: 30px;     // 区块标题
+  --text-2xl: 24px;     // 卡片标题
+  --text-xl: 20px;      // 子标题
+  --text-lg: 18px;      // 重要正文
+  --text-base: 16px;    // 标准正文
+  --text-sm: 14px;      // 辅助文字
+  --text-xs: 12px;      // 标签文字
+
+  // 行高
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  // 过渡动画
+  --transition-fast: 150ms cubic-bezier(0.23, 1, 0.32, 1);
+  --transition-normal: 250ms cubic-bezier(0.23, 1, 0.32, 1);
+  --transition-slow: 400ms cubic-bezier(0.23, 1, 0.32, 1);
+
+  // Z-index 层级
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}

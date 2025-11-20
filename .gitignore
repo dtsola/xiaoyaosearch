@@ -63,3 +63,6 @@ dmypy.json
 # Electron
 out/
 app/dist/
+
+# palywright
+.palywright-mcp/

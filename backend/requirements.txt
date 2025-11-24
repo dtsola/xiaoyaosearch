@@ -15,11 +15,14 @@ requests==2.31.0                 # HTTP请求库
 # 系统监控
 psutil==5.9.6                    # 系统监控
 
-# 基础文件处理
+# 文件处理和解析
 PyPDF2==3.0.1                    # PDF文件处理
 python-docx==0.8.11              # Word文档处理
 openpyxl==3.1.2                  # Excel文件处理
+python-pptx==0.6.21              # PowerPoint文档处理
 Pillow==10.1.0                   # 图像处理
+chardet==5.0.0                   # 编码检测
+mutagen==1.46.0                  # 音频元数据提取
 
 # 搜索引擎基础 - 暂时安装基础版本
 faiss-cpu==1.7.4                 # Facebook向量搜索

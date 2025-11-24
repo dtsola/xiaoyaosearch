@@ -9,8 +9,8 @@
             <!-- 搜索图标区域 -->
             <div class="search-icon-area">
               <div class="search-icon">
-                <SearchOutlined v-if="!isLoading" />
-                <LoadingOutlined spin v-else />
+                <SimpleIcon type="search" v-if="!isLoading" />
+                <SimpleIcon type="loading" v-else />
               </div>
             </div>
 
@@ -55,7 +55,7 @@
                   @click="handleSuggestionSelect(suggestion)"
                   @mouseenter="selectedIndex = index"
                 >
-                  <HistoryOutlined class="suggestion-icon" />
+                  <SimpleIcon type="history" class="suggestion-icon" />
                   <span class="suggestion-text">{{ suggestion }}</span>
                 </div>
               </div>
@@ -71,8 +71,8 @@
                 @click="$emit('voiceToggle')"
                 :disabled="isLoading"
               >
-                <AudioOutlined v-if="!isRecording" />
-                <PauseCircleOutlined v-else />
+                <SimpleIcon type="audio" v-if="!isRecording" />
+                <SimpleIcon type="pause" v-else />
               </button>
 
               <!-- 文件上传按钮 -->
@@ -82,7 +82,7 @@
                 @click="handleFileUpload"
                 :disabled="isLoading"
               >
-                <CameraOutlined />
+                <SimpleIcon type="camera" />
               </button>
 
               <!-- 搜索按钮 -->
@@ -91,7 +91,7 @@
                 :disabled="!searchValue.trim() || isLoading"
                 @click="handleSearch"
               >
-                <SearchOutlined />
+                <SimpleIcon type="search" />
               </button>
             </div>
           </div>
@@ -103,28 +103,28 @@
             <a-button
               type="text"
               size="small"
-              :icon="h(SearchOutlined)"
               @click="handleAIEnhance"
               :disabled="isLoading"
             >
+              <SimpleIcon type="bulb" />
               AI增强
             </a-button>
             <a-button
               type="text"
               size="small"
-              :icon="h(BoltOutlined)"
               @click="handlePreciseMatch"
               :disabled="isLoading"
             >
+              <SimpleIcon type="search" />
               精准匹配
             </a-button>
             <a-button
               type="text"
               size="small"
-              :icon="h(FolderOutlined)"
               @click="handleSelectDirectory"
               :disabled="isLoading"
             >
+              <SimpleIcon type="open" />
               选择目录
             </a-button>
           </div>
@@ -163,17 +163,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, h } from 'vue'
-import {
-  SearchOutlined,
-  LoadingOutlined,
-  AudioOutlined,
-  PauseCircleOutlined,
-  CameraOutlined,
-  HistoryOutlined,
-  BoltOutlined,
-  FolderOutlined
-} from '@ant-design/icons-vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import SimpleIcon from '@/components/SimpleIcon.vue'
 import type { InputType } from '@/types/api'
 
 interface Props {

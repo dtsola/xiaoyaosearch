@@ -12,8 +12,8 @@
       >
         <div class="indicator-circle">
           <div class="indicator-icon">
-            <AudioOutlined v-if="!isRecording" />
-            <PauseCircleOutlined v-else />
+            <SimpleIcon type="audio" v-if="!isRecording" />
+            <SimpleIcon type="pause" v-else />
           </div>
           <div class="recording-wave" v-if="isRecording">
             <div class="wave-bar bar-1"></div>
@@ -35,7 +35,7 @@
       >
         <div class="indicator-circle">
           <div class="indicator-icon">
-            <FontSizeOutlined />
+            <SimpleIcon type="file" />
           </div>
           <div class="active-dot" v-if="activeMode === 'text'">•</div>
         </div>
@@ -50,8 +50,8 @@
       >
         <div class="indicator-circle">
           <div class="indicator-icon">
-            <CameraOutlined v-if="activeMode !== 'image'" />
-            <CheckCircleOutlined v-else />
+            <SimpleIcon type="camera" v-if="activeMode !== 'image'" />
+            <SimpleIcon type="check" v-else />
           </div>
           <div class="active-cross" v-if="activeMode === 'image'">✗</div>
         </div>
@@ -68,13 +68,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import {
-  AudioOutlined,
-  PauseCircleOutlined,
-  FontSizeOutlined,
-  CameraOutlined,
-  CheckCircleOutlined
-} from '@ant-design/icons-vue'
+import SimpleIcon from '@/components/SimpleIcon.vue'
 import type { InputType } from '@/types/api'
 
 interface Props {

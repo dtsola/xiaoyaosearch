@@ -18,7 +18,7 @@
           class="nav-item"
           :class="{ 'active': isActiveRoute(item.path) }"
         >
-          <component :is="item.icon" class="nav-icon" />
+          <SimpleIcon :type="item.icon" class="nav-icon" />
           <span class="nav-text">{{ item.name }}</span>
         </router-link>
       </div>
@@ -29,47 +29,46 @@
       <!-- 通知图标 -->
       <div class="action-item notification" @click="handleNotificationClick">
         <Badge :count="notificationCount" :offset="[0, 4]">
-          <BellOutlined class="action-icon" />
+          <SimpleIcon type="bell" class="action-icon" />
         </Badge>
       </div>
 
       <!-- 主题切换 -->
       <div class="action-item theme-toggle" @click="handleThemeToggle">
-        <MoonOutlined v-if="!isDarkTheme" class="action-icon" />
-        <SunOutlined v-else class="action-icon" />
+        <SimpleIcon :type="isDarkTheme ? 'sun' : 'moon'" class="action-icon" />
       </div>
 
       <!-- 用户菜单 -->
       <a-dropdown placement="bottomRight" :trigger="['click']">
         <div class="action-item user-menu">
           <Avatar class="user-avatar" :size="32">
-            <UserOutlined />
+            <SimpleIcon type="user" />
           </Avatar>
           <span class="user-name">admin</span>
-          <DownOutlined class="dropdown-icon" />
+          <SimpleIcon type="down" class="dropdown-icon" />
         </div>
         <template #overlay>
           <a-menu class="user-dropdown-menu">
             <a-menu-item key="profile" @click="handleProfile">
-              <UserOutlined />
+              <SimpleIcon type="user" />
               个人资料
             </a-menu-item>
             <a-menu-item key="settings" @click="handleSettings">
-              <SettingOutlined />
+              <SimpleIcon type="settings" />
               设置
             </a-menu-item>
             <a-menu-divider />
             <a-menu-item key="help" @click="handleHelp">
-              <QuestionCircleOutlined />
+              <SimpleIcon type="question" />
               帮助
             </a-menu-item>
             <a-menu-item key="about" @click="handleAbout">
-              <InfoCircleOutlined />
+              <SimpleIcon type="info-circle" />
               关于
             </a-menu-item>
             <a-menu-divider />
             <a-menu-item key="logout" @click="handleLogout">
-              <LogoutOutlined />
+              <SimpleIcon type="logout" />
               退出
             </a-menu-item>
           </a-menu>
@@ -92,20 +91,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/useAppStore'
 import { Badge, Avatar, message } from 'ant-design-vue'
-import {
-  BellOutlined,
-  MoonOutlined,
-  SunOutlined,
-  UserOutlined,
-  DownOutlined,
-  SettingOutlined,
-  QuestionCircleOutlined,
-  InfoCircleOutlined,
-  LogoutOutlined,
-  SearchOutlined,
-  DatabaseOutlined,
-  FileTextOutlined
-} from '@ant-design/icons-vue'
+import SimpleIcon from '@/components/SimpleIcon.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -120,22 +106,22 @@ const navItems = [
   {
     name: '首页',
     path: '/',
-    icon: SearchOutlined
+    icon: 'search'
   },
   {
     name: '设置',
     path: '/settings',
-    icon: SettingOutlined
+    icon: 'settings'
   },
   {
     name: '索引',
     path: '/index',
-    icon: DatabaseOutlined
+    icon: 'database'
   },
   {
     name: '帮助',
     path: '/help',
-    icon: FileTextOutlined
+    icon: 'help'
   }
 ]
 

@@ -33,7 +33,7 @@
           </div>
           <div class="status-right">
             <span v-if="isSearching" class="loading-indicator">
-              <LoadingOutlined spin />
+              <SimpleIcon type="loading" />
               正在搜索...
             </span>
             <span v-else-if="searchStats.total > 0" class="result-count">
@@ -141,7 +141,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
-import { LoadingOutlined } from '@ant-design/icons-vue'
+import SimpleIcon from '@/components/SimpleIcon.vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useSearchStore } from '@/stores/useSearchStore'
 import MultiModalIndicator from '@/components/search/MultiModalIndicator.vue'

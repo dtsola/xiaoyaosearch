@@ -12,18 +12,18 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "vue": "^3.4.0",
-    "vue-router": "^4.2.5",
-    "pinia": "^2.1.7",
-    "ant-design-vue": "^4.1.0",
     "@ant-design/icons-vue": "^7.0.1",
+    "ant-design-vue": "^4.1.0",
     "axios": "^1.6.2",
     "dayjs": "^1.11.10",
-    "file-saver": "^2.0.5"
+    "file-saver": "^2.0.5",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
-    "@types/node": "^20.10.5",
     "@types/file-saver": "^2.0.7",
+    "@types/node": "^20.10.5",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "@vitejs/plugin-vue": "^4.5.2",

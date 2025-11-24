@@ -13,7 +13,7 @@
             <div class="help-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  <RocketOutlined />
+                  <SimpleIcon type="bulb" />
                   快速入门
                 </h2>
                 <p class="section-description">3分钟上手小遥搜索</p>
@@ -31,7 +31,7 @@
             <div class="help-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  <BookOutlined />
+                  <SimpleIcon type="file" />
                   功能教程
                 </h2>
                 <p class="section-description">深入学习各项功能的使用方法</p>
@@ -87,7 +87,7 @@
             <div class="help-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  <KeyboardOutlined />
+                  <SimpleIcon type="edit" />
                   快捷键
                 </h2>
                 <p class="section-description">提高搜索效率的快捷操作</p>
@@ -122,7 +122,7 @@
             <div class="help-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  <QuestionCircleOutlined />
+                  <SimpleIcon type="question" />
                   常见问题
                 </h2>
                 <p class="section-description">解答用户常见疑问</p>
@@ -132,7 +132,7 @@
                   <div class="faq-item" v-for="faq in faqs" :key="faq.id">
                     <div class="faq-question" @click="toggleFaq(faq.id)">
                       {{ faq.question }}
-                      <DownOutlined :class="{ 'expanded': faq.expanded }" />
+                      <SimpleIcon type="down" :class="{ 'expanded': faq.expanded }" />
                     </div>
                     <div class="faq-answer" v-show="faq.expanded">
                       {{ faq.answer }}
@@ -146,7 +146,7 @@
             <div class="help-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  <CustomerServiceOutlined />
+                  <SimpleIcon type="help" />
                   技术支持
                 </h2>
                 <p class="section-description">获取帮助和反馈问题</p>
@@ -154,7 +154,7 @@
               <div class="section-content">
                 <div class="support-options">
                   <div class="support-option">
-                    <GithubOutlined class="support-icon" />
+                    <SimpleIcon type="copy" class="support-icon" />
                     <div class="support-info">
                       <h4>GitHub Issues</h4>
                       <p>提交问题和功能请求</p>
@@ -162,7 +162,7 @@
                     </div>
                   </div>
                   <div class="support-option">
-                    <MailOutlined class="support-icon" />
+                    <SimpleIcon type="copy" class="support-icon" />
                     <div class="support-info">
                       <h4>邮件支持</h4>
                       <p>发送邮件获取技术支持</p>
@@ -170,7 +170,7 @@
                     </div>
                   </div>
                   <div class="support-option">
-                    <WechatOutlined class="support-icon" />
+                    <SimpleIcon type="copy" class="support-icon" />
                     <div class="support-info">
                       <h4>微信交流群</h4>
                       <p>加入用户交流群</p>
@@ -188,7 +188,7 @@
       <div class="about-section">
         <div class="section-header">
           <h2 class="section-title">
-            <InfoCircleOutlined />
+            <SimpleIcon type="info-circle" />
             关于小遥搜索
           </h2>
         </div>
@@ -231,18 +231,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import {
-  RocketOutlined,
-  BookOutlined,
-  KeyboardOutlined,
-  QuestionCircleOutlined,
-  CustomerServiceOutlined,
-  InfoCircleOutlined,
-  DownOutlined,
-  GithubOutlined,
-  MailOutlined,
-  WechatOutlined
-} from '@ant-design/icons-vue'
+import SimpleIcon from '@/components/SimpleIcon.vue'
 
 const activeKey = ref(['1'])
 

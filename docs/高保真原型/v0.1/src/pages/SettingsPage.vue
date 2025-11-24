@@ -13,7 +13,7 @@
             <div class="settings-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  <RobotOutlined />
+                  <SimpleIcon type="bulb" />
                   AI模型配置
                 </h2>
                 <p class="section-description">选择和配置用于搜索的AI模型</p>
@@ -71,7 +71,7 @@
             <div class="settings-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  <SearchOutlined />
+                  <SimpleIcon type="search" />
                   搜索配置
                 </h2>
                 <p class="section-description">调整搜索行为和结果展示</p>
@@ -144,7 +144,7 @@
             <div class="settings-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  <BgColorsOutlined />
+                  <SimpleIcon type="theme" />
                   界面设置
                 </h2>
                 <p class="section-description">自定义界面外观和体验</p>
@@ -155,10 +155,10 @@
                     <a-form-item label="主题模式">
                       <a-radio-group v-model:value="settings.theme" button-style="solid">
                         <a-radio-button value="dark">
-                          <MoonOutlined /> 深色
+                          <SimpleIcon type="moon" /> 深色
                         </a-radio-button>
                         <a-radio-button value="light">
-                          <SunOutlined /> 浅色
+                          <SimpleIcon type="sun" /> 浅色
                         </a-radio-button>
                       </a-radio-group>
                     </a-form-item>
@@ -192,7 +192,7 @@
             <div class="settings-section">
               <div class="section-header">
                 <h2 class="section-title">
-                  <SettingOutlined />
+                  <SimpleIcon type="settings" />
                   高级设置
                 </h2>
                 <p class="section-description">开发者选项和实验性功能</p>
@@ -230,19 +230,19 @@
       <div class="settings-actions">
         <a-space>
           <a-button type="primary" size="large" @click="handleSave">
-            <SaveOutlined />
+            <SimpleIcon type="save" />
             保存设置
           </a-button>
           <a-button size="large" @click="handleReset">
-            <ReloadOutlined />
+            <SimpleIcon type="refresh" />
             重置默认
           </a-button>
           <a-button size="large" @click="handleExport">
-            <ExportOutlined />
+            <SimpleIcon type="download" />
             导出配置
           </a-button>
           <a-button size="large" @click="handleImport">
-            <ImportOutlined />
+            <SimpleIcon type="upload" />
             导入配置
           </a-button>
         </a-space>
@@ -254,18 +254,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { message } from 'ant-design-vue'
-import {
-  RobotOutlined,
-  SearchOutlined,
-  BgColorsOutlined,
-  SettingOutlined,
-  MoonOutlined,
-  SunOutlined,
-  SaveOutlined,
-  ReloadOutlined,
-  ExportOutlined,
-  ImportOutlined
-} from '@ant-design/icons-vue'
+import SimpleIcon from '@/components/SimpleIcon.vue'
 
 // 设置数据
 const settings = reactive({

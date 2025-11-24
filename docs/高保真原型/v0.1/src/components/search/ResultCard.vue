@@ -3,7 +3,7 @@
     <div class="card-header">
       <div class="file-info">
         <div class="file-icon">
-          <component :is="getFileIcon(result.file_type)" />
+          <SimpleIcon :type="getFileTypeIcon(result.file_type)" />
         </div>
         <div class="file-details">
           <h3 class="file-name" :title="result.file_name">
@@ -50,52 +50,53 @@
         <a-button
           type="text"
           size="small"
-          :icon="h(EyeOutlined)"
           @click.stop="handlePreview"
           title="预览"
         >
+          <SimpleIcon type="preview" />
           预览
         </a-button>
         <a-button
           type="text"
           size="small"
-          :icon="h(FolderOpenOutlined)"
           @click.stop="handleOpen"
           title="打开"
         >
+          <SimpleIcon type="open" />
           打开
         </a-button>
         <a-button
           type="text"
           size="small"
-          :icon="h(result.is_favorite ? StarFilled : StarOutlined)"
           :class="{ 'favorited': result.is_favorite }"
           @click.stop="handleFavorite"
           title="收藏"
         >
+          <SimpleIcon type="favorite" />
           {{ result.is_favorite ? '已收藏' : '收藏' }}
         </a-button>
         <a-dropdown placement="bottomRight" :trigger="['click']">
           <a-button
             type="text"
             size="small"
-            :icon="h(MoreOutlined)"
             @click.stop
             title="更多"
-          />
+          >
+            <SimpleIcon type="more" />
+          </a-button>
           <template #overlay>
             <a-menu>
               <a-menu-item key="copy" @click="handleCopyPath">
-                <CopyOutlined />
+                <SimpleIcon type="copy" />
                 复制路径
               </a-menu-item>
               <a-menu-item key="properties" @click="handleProperties">
-                <InfoCircleOutlined />
+                <SimpleIcon type="info-circle" />
                 属性
               </a-menu-item>
               <a-menu-divider />
               <a-menu-item key="delete" class="danger-item" @click="handleDelete">
-                <DeleteOutlined />
+                <SimpleIcon type="delete" />
                 删除
               </a-menu-item>
             </a-menu>
@@ -107,7 +108,7 @@
     <!-- 加载动画 -->
     <div class="loading-overlay" v-if="loading">
       <div class="loading-spinner">
-        <LoadingOutlined spin />
+        <SimpleIcon type="loading" />
         <span>处理中...</span>
       </div>
     </div>
@@ -115,28 +116,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h } from 'vue'
+import { computed } from 'vue'
 import { message } from 'ant-design-vue'
+import SimpleIcon from '@/components/SimpleIcon.vue'
 import type { SearchResult, FileType } from '@/types/api'
-import {
-  FileTextOutlined,
-  FilePdfOutlined,
-  FileWordOutlined,
-  FileExcelOutlined,
-  FileImageOutlined,
-  FileOutlined,
-  VideoCameraOutlined,
-  AudioOutlined,
-  EyeOutlined,
-  FolderOpenOutlined,
-  StarOutlined,
-  StarFilled,
-  MoreOutlined,
-  CopyOutlined,
-  InfoCircleOutlined,
-  DeleteOutlined,
-  LoadingOutlined
-} from '@ant-design/icons-vue'
 
 interface Props {
   result: SearchResult
@@ -154,19 +137,19 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-// 获取文件图标
-const getFileIcon = (fileType: FileType) => {
-  const iconMap: Record<FileType, any> = {
-    document: FileTextOutlined,
-    pdf: FilePdfOutlined,
-    spreadsheet: FileExcelOutlined,
-    text: FileTextOutlined,
-    image: FileImageOutlined,
-    video: VideoCameraOutlined,
-    audio: AudioOutlined,
-    other: FileOutlined
+// 获取文件图标类型
+const getFileTypeIcon = (fileType: FileType): string => {
+  const iconMap: Record<FileType, string> = {
+    document: 'file',
+    pdf: 'file',
+    spreadsheet: 'file',
+    text: 'file',
+    image: 'image',
+    video: 'audio',
+    audio: 'audio',
+    other: 'file'
   }
-  return iconMap[fileType] || FileOutlined
+  return iconMap[fileType] || 'file'
 }
 
 // 格式化文件路径

@@ -5,7 +5,7 @@
       <div class="error-icon">
         <span class="icon-404">404</span>
         <div class="search-icon">
-          <SearchOutlined />
+          <SimpleIcon type="search" />
         </div>
       </div>
 
@@ -23,15 +23,15 @@
       <!-- 操作按钮 -->
       <div class="error-actions">
         <a-button type="primary" size="large" @click="goHome">
-          <HomeOutlined />
+          <SimpleIcon type="home" />
           返回首页
         </a-button>
         <a-button size="large" @click="goBack">
-          <ArrowLeftOutlined />
+          <SimpleIcon type="left" />
           返回上页
         </a-button>
         <a-button type="link" size="large" @click="goToHelp">
-          <QuestionCircleOutlined />
+          <SimpleIcon type="question" />
           获取帮助
         </a-button>
       </div>
@@ -65,12 +65,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import {
-  SearchOutlined,
-  HomeOutlined,
-  ArrowLeftOutlined,
-  QuestionCircleOutlined
-} from '@ant-design/icons-vue'
+import SimpleIcon from '@/components/SimpleIcon.vue'
 
 const router = useRouter()
 

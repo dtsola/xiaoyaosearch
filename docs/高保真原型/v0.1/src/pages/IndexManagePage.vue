@@ -9,15 +9,15 @@
       <div class="index-content">
         <div class="index-actions">
           <a-button type="primary" size="large" @click="showCreateModal = true">
-            <PlusOutlined />
+            <SimpleIcon type="plus" />
             添加索引文件夹
           </a-button>
           <a-button size="large" @click="handleBatchOperation">
-            <AppstoreOutlined />
+            <SimpleIcon type="menu" />
             批量操作
           </a-button>
           <a-button size="large" @click="handleExportConfig">
-            <ExportOutlined />
+            <SimpleIcon type="download" />
             导出配置
           </a-button>
         </div>
@@ -31,7 +31,7 @@
           >
             <template #title>
               <div class="card-title">
-                <FolderOutlined class="title-icon" />
+                <SimpleIcon type="database" class="title-icon" />
                 <span class="title-text">{{ index.folderPath }}</span>
                 <a-tag :color="getStatusColor(index.status)" size="small">
                   {{ getStatusLabel(index.status) }}
@@ -77,7 +77,7 @@
                   size="small"
                   @click="handleReindex(index)"
                 >
-                  <RedoOutlined />
+                  <SimpleIcon type="refresh" />
                   重新索引
                 </a-button>
                 <a-button
@@ -86,7 +86,7 @@
                   size="small"
                   @click="handlePause(index)"
                 >
-                  <PauseCircleOutlined />
+                  <SimpleIcon type="pause" />
                   暂停
                 </a-button>
                 <a-button
@@ -94,7 +94,7 @@
                   size="small"
                   @click="handleViewDetails(index)"
                 >
-                  <EyeOutlined />
+                  <SimpleIcon type="preview" />
                   查看详情
                 </a-button>
                 <a-button
@@ -103,7 +103,7 @@
                   @click="handleDelete(index)"
                   danger
                 >
-                  <DeleteOutlined />
+                  <SimpleIcon type="delete" />
                   删除
                 </a-button>
               </div>
@@ -124,7 +124,7 @@
         <a-form-item label="文件夹路径" required>
           <a-input v-model:value="newIndex.folderPath" placeholder="选择或输入文件夹路径" />
           <a-button type="link" @click="handleSelectFolder">
-            <FolderOpenOutlined />
+            <SimpleIcon type="open" />
             浏览文件夹
           </a-button>
         </a-form-item>
@@ -153,17 +153,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { message } from 'ant-design-vue'
-import {
-  PlusOutlined,
-  AppstoreOutlined,
-  ExportOutlined,
-  FolderOutlined,
-  FolderOpenOutlined,
-  RedoOutlined,
-  PauseCircleOutlined,
-  EyeOutlined,
-  DeleteOutlined
-} from '@ant-design/icons-vue'
+import SimpleIcon from '@/components/SimpleIcon.vue'
 
 // 模态框状态
 const showCreateModal = ref(false)

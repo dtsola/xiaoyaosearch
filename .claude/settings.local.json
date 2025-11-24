@@ -9,7 +9,8 @@
       "Bash(xargs:*)",
       "Bash(tree:*)",
       "Skill(frontend-design)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

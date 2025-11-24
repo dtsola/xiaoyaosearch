@@ -3,13 +3,15 @@
 提供文件索引管理相关的API接口
 """
 import os
-from typing import List, Optional
+import asyncio
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.logging_config import get_logger
 from app.core.exceptions import ResourceNotFoundException, ValidationException
+from app.core.config import get_settings
 from app.schemas.requests import IndexCreateRequest, IndexUpdateRequest
 from app.schemas.responses import (
     IndexJobInfo, IndexCreateResponse, IndexListResponse, SuccessResponse
@@ -17,9 +19,36 @@ from app.schemas.responses import (
 from app.schemas.enums import JobType, JobStatus
 from app.models.index_job import IndexJobModel
 from app.models.file import FileModel
+from app.services.file_index_service import FileIndexService
 
 router = APIRouter(prefix="/api/index", tags=["索引管理"])
 logger = get_logger(__name__)
+settings = get_settings()
+
+# 全局文件索引服务实例（单例）
+_file_index_service: Optional[FileIndexService] = None
+
+
+def get_file_index_service() -> FileIndexService:
+    """获取文件索引服务实例（单例模式）"""
+    global _file_index_service
+    if _file_index_service is None:
+        faiss_path, whoosh_path = settings.get_index_paths()
+        _file_index_service = FileIndexService(
+            data_root=settings.index.data_root,
+            faiss_index_path=faiss_path,
+            whoosh_index_path=whoosh_path,
+            use_chinese_analyzer=settings.index.use_chinese_analyzer,
+            scanner_config={
+                'max_workers': settings.index.scanner_max_workers,
+                'max_file_size': settings.index.max_file_size,
+                'supported_extensions': set(settings.index.supported_extensions)
+            },
+            parser_config={
+                'max_content_length': settings.index.max_content_length
+            }
+        )
+    return _file_index_service
 
 
 @router.post("/create", response_model=IndexCreateResponse, summary="创建索引")
@@ -34,7 +63,7 @@ async def create_index(
     对指定文件夹进行文件扫描和索引创建
 
     - **folder_path**: 索引文件夹路径
-    - **file_types**: 支持文件类型
+    - **file_types**: 支持文件类型（可选，使用配置的默认值）
     - **recursive**: 是否递归搜索子文件夹
     """
     logger.info(f"创建索引请求: folder='{request.folder_path}', recursive={request.recursive}")
@@ -72,10 +101,9 @@ async def create_index(
 
         # 添加后台任务
         background_tasks.add_task(
-            run_index_task,
+            run_full_index_task,
             index_job.id,
             request.folder_path,
-            request.file_types,
             request.recursive
         )
 
@@ -91,6 +119,134 @@ async def create_index(
     except Exception as e:
         logger.error(f"创建索引失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"创建索引失败: {str(e)}")
+
+
+@router.post("/update", response_model=IndexCreateResponse, summary="更新索引")
+async def update_index(
+    request: IndexUpdateRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    增量更新文件索引
+
+    对已索引的文件夹进行增量更新，只处理新增或修改的文件
+
+    - **folder_path**: 索引文件夹路径
+    - **recursive**: 是否递归搜索子文件夹
+    """
+    logger.info(f"更新索引请求: folder='{request.folder_path}'")
+
+    try:
+        # 验证文件夹路径
+        if not os.path.exists(request.folder_path):
+            raise ValidationException(f"文件夹不存在: {request.folder_path}")
+
+        # 检查是否有正在运行的索引任务
+        existing_job = db.query(IndexJobModel).filter(
+            IndexJobModel.folder_path == request.folder_path,
+            IndexJobModel.status.in_([JobStatus.PENDING, JobStatus.PROCESSING])
+        ).first()
+
+        if existing_job:
+            logger.info(f"文件夹正在索引中: {request.folder_path}")
+            return IndexCreateResponse(
+                data=IndexJobInfo(**existing_job.to_dict()),
+                message="文件夹正在索引中"
+            )
+
+        # 创建更新任务
+        index_job = IndexJobModel(
+            folder_path=request.folder_path,
+            job_type=JobType.UPDATE,
+            status=JobStatus.PENDING
+        )
+        db.add(index_job)
+        db.commit()
+        db.refresh(index_job)
+
+        # 添加后台任务
+        background_tasks.add_task(
+            run_incremental_index_task,
+            index_job.id,
+            request.folder_path,
+            request.recursive
+        )
+
+        logger.info(f"增量索引任务已创建: id={index_job.id}")
+
+        return IndexCreateResponse(
+            data=IndexJobInfo(**index_job.to_dict()),
+            message="增量索引任务已创建并开始执行"
+        )
+
+    except ValidationException:
+        raise
+    except Exception as e:
+        logger.error(f"创建增量索引失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"创建增量索引失败: {str(e)}")
+
+
+@router.get("/status", summary="获取索引系统状态")
+async def get_system_status(
+    db: Session = Depends(get_db)
+):
+    """
+    获取索引系统的整体状态
+
+    包括统计信息、支持的格式、服务状态等
+    """
+    logger.info("获取索引系统状态")
+
+    try:
+        # 获取文件索引服务
+        index_service = get_file_index_service()
+
+        # 获取索引统计
+        index_stats = index_service.get_index_status()
+
+        # 获取支持的格式
+        supported_formats = index_service.get_supported_formats()
+
+        # 获取数据库统计
+        total_files = db.query(FileModel).count()
+        indexed_files = db.query(FileModel).filter(FileModel.is_indexed == True).count()
+        pending_files = db.query(FileModel).filter(FileModel.index_status == JobStatus.PENDING).count()
+        failed_files = db.query(FileModel).filter(FileModel.index_status == JobStatus.FAILED).count()
+
+        # 获取最近的任务统计
+        recent_jobs = db.query(IndexJobModel).order_by(IndexJobModel.created_at.desc()).limit(10).all()
+        job_stats = {
+            'total_jobs': len(recent_jobs),
+            'completed_jobs': len([j for j in recent_jobs if j.status == JobStatus.COMPLETED]),
+            'failed_jobs': len([j for j in recent_jobs if j.status == JobStatus.FAILED]),
+            'processing_jobs': len([j for j in recent_jobs if j.status == JobStatus.PROCESSING])
+        }
+
+        return {
+            "success": True,
+            "data": {
+                "index_stats": index_stats,
+                "supported_formats": supported_formats,
+                "database_stats": {
+                    "total_files": total_files,
+                    "indexed_files": indexed_files,
+                    "pending_files": pending_files,
+                    "failed_files": failed_files
+                },
+                "job_stats": job_stats,
+                "config": {
+                    "max_file_size": settings.index.max_file_size,
+                    "use_chinese_analyzer": settings.index.use_chinese_analyzer,
+                    "scanner_workers": settings.index.scanner_max_workers
+                }
+            },
+            "message": "获取索引系统状态成功"
+        }
+
+    except Exception as e:
+        logger.error(f"获取索引系统状态失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"获取索引系统状态失败: {str(e)}")
 
 
 @router.get("/status/{index_id}", response_model=IndexCreateResponse, summary="查询索引状态")
@@ -287,10 +443,43 @@ async def stop_index(
         raise HTTPException(status_code=500, detail=f"停止索引任务失败: {str(e)}")
 
 
+@router.post("/backup", response_model=SuccessResponse, summary="备份索引")
+async def backup_index(
+    backup_name: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    备份当前索引
+
+    - **backup_name**: 备份名称（可选，默认使用时间戳）
+    """
+    logger.info(f"备份索引: name={backup_name}")
+
+    try:
+        # 获取文件索引服务
+        index_service = get_file_index_service()
+
+        # 执行备份
+        backup_result = index_service.backup_indexes(backup_name)
+
+        if backup_result['success']:
+            return SuccessResponse(
+                data=backup_result,
+                message="索引备份成功"
+            )
+        else:
+            raise HTTPException(status_code=500, detail="索引备份失败")
+
+    except Exception as e:
+        logger.error(f"备份索引失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"备份索引失败: {str(e)}")
+
+
 @router.get("/files", summary="已索引文件列表")
 async def get_indexed_files(
     folder_path: Optional[str] = None,
     file_type: Optional[str] = None,
+    index_status: Optional[str] = None,
     limit: int = 20,
     offset: int = 0,
     db: Session = Depends(get_db)
@@ -300,10 +489,11 @@ async def get_indexed_files(
 
     - **folder_path**: 文件夹路径过滤
     - **file_type**: 文件类型过滤
+    - **index_status**: 索引状态过滤
     - **limit**: 返回结果数量
     - **offset**: 偏移量
     """
-    logger.info(f"获取已索引文件: folder={folder_path}, type={file_type}")
+    logger.info(f"获取已索引文件: folder={folder_path}, type={file_type}, status={index_status}")
 
     try:
         # 构建查询
@@ -314,6 +504,8 @@ async def get_indexed_files(
             query = query.filter(FileModel.file_path.like(f"{folder_path}%"))
         if file_type:
             query = query.filter(FileModel.file_type == file_type)
+        if index_status:
+            query = query.filter(FileModel.index_status == index_status)
 
         # 获取总数
         total = query.count()
@@ -344,49 +536,183 @@ async def get_indexed_files(
         raise HTTPException(status_code=500, detail=f"获取已索引文件失败: {str(e)}")
 
 
-async def run_index_task(
-    index_id: int,
-    folder_path: str,
-    file_types: List[str],
-    recursive: bool
+@router.delete("/files/{file_id}", response_model=SuccessResponse, summary="删除文件索引")
+async def delete_file_index(
+    file_id: int,
+    db: Session = Depends(get_db)
 ):
     """
-    执行索引任务（后台任务）
+    从索引中删除单个文件
+
+    - **file_id**: 文件ID
+    """
+    logger.info(f"删除文件索引: file_id={file_id}")
+
+    try:
+        # 查询文件
+        file_model = db.query(FileModel).filter(
+            FileModel.id == file_id
+        ).first()
+
+        if not file_model:
+            raise ResourceNotFoundException("文件", str(file_id))
+
+        # 从索引服务中删除
+        index_service = get_file_index_service()
+        delete_result = index_service.delete_file_from_index(file_model.file_path)
+
+        if delete_result['success']:
+            # 从数据库中删除记录
+            db.delete(file_model)
+            db.commit()
+
+            return SuccessResponse(
+                data={
+                    "deleted_file_id": file_id,
+                    "file_path": file_model.file_path
+                },
+                message="文件索引删除成功"
+            )
+        else:
+            raise HTTPException(status_code=500, detail="从索引中删除文件失败")
+
+    except ResourceNotFoundException:
+        raise
+    except Exception as e:
+        logger.error(f"删除文件索引失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"删除文件索引失败: {str(e)}")
+
+
+async def run_full_index_task(
+    index_id: int,
+    folder_path: str,
+    recursive: bool = True
+):
+    """
+    执行完整索引任务（后台任务）
 
     Args:
         index_id: 索引任务ID
         folder_path: 文件夹路径
-        file_types: 支持的文件类型
         recursive: 是否递归搜索
     """
-    logger.info(f"开始执行索引任务: id={index_id}, folder={folder_path}")
+    logger.info(f"开始执行完整索引任务: id={index_id}, folder={folder_path}")
 
-    # TODO: 实现实际的索引逻辑
-    # 这里暂时只是模拟任务执行
-    import asyncio
     from app.core.database import SessionLocal
 
-    await asyncio.sleep(5)  # 模拟处理时间
-
-    # 更新任务状态
+    # 获取数据库会话
     db = SessionLocal()
     try:
+        # 获取索引任务
         index_job = db.query(IndexJobModel).filter(
             IndexJobModel.id == index_id
         ).first()
 
-        if index_job and index_job.status == JobStatus.PENDING:
-            index_job.start_job()
-            index_job.total_files = 100
-            index_job.processed_files = 95
-            index_job.error_count = 2
-            index_job.complete_job()
-            db.commit()
+        if not index_job or index_job.status != JobStatus.PENDING:
+            logger.warning(f"索引任务不存在或状态不正确: id={index_id}")
+            return
 
-        logger.info(f"索引任务完成: id={index_id}")
+        # 开始任务
+        index_job.start_job()
+        db.commit()
+
+        # 获取文件索引服务
+        index_service = get_file_index_service()
+
+        # 定义进度回调
+        def progress_callback(message: str, progress: float):
+            logger.info(f"索引进度[{index_id}]: {message} - {progress:.1f}%")
+            # 更新任务进度（简化处理）
+            if index_job.total_files > 0:
+                processed = int((progress / 100) * index_job.total_files)
+                index_job.update_progress(processed)
+                db.commit()
+
+        # 执行完整索引构建
+        result = index_service.build_full_index(
+            scan_paths=[folder_path],
+            recursive=recursive,
+            progress_callback=progress_callback
+        )
+
+        # 更新任务结果
+        if result['success']:
+            index_job.total_files = result.get('total_files_found', 0)
+            index_job.processed_files = result.get('documents_indexed', 0)
+            index_job.error_count = result.get('failed_files', 0)
+            index_job.complete_job()
+            logger.info(f"完整索引任务完成: id={index_id}, 成功索引 {index_job.processed_files} 个文件")
+        else:
+            index_job.fail_job(result.get('error', '未知错误'))
+            logger.error(f"完整索引任务失败: id={index_id}, 错误: {result.get('error')}")
+
+        db.commit()
 
     except Exception as e:
-        logger.error(f"索引任务执行失败: {str(e)}")
+        logger.error(f"完整索引任务执行异常: {str(e)}")
+        if index_job:
+            index_job.fail_job(str(e))
+            db.commit()
+    finally:
+        db.close()
+
+
+async def run_incremental_index_task(
+    index_id: int,
+    folder_path: str,
+    recursive: bool = True
+):
+    """
+    执行增量索引任务（后台任务）
+
+    Args:
+        index_id: 索引任务ID
+        folder_path: 文件夹路径
+        recursive: 是否递归搜索
+    """
+    logger.info(f"开始执行增量索引任务: id={index_id}, folder={folder_path}")
+
+    from app.core.database import SessionLocal
+
+    # 获取数据库会话
+    db = SessionLocal()
+    try:
+        # 获取索引任务
+        index_job = db.query(IndexJobModel).filter(
+            IndexJobModel.id == index_id
+        ).first()
+
+        if not index_job or index_job.status != JobStatus.PENDING:
+            logger.warning(f"增量索引任务不存在或状态不正确: id={index_id}")
+            return
+
+        # 开始任务
+        index_job.start_job()
+        db.commit()
+
+        # 获取文件索引服务
+        index_service = get_file_index_service()
+
+        # 执行增量索引更新
+        result = index_service.update_incremental_index(
+            scan_paths=[folder_path]
+        )
+
+        # 更新任务结果
+        if result['success']:
+            index_job.total_files = result.get('changed_files', 0) + result.get('deleted_files', 0)
+            index_job.processed_files = result.get('changed_files', 0)
+            index_job.error_count = 0  # 增量更新通常不会有错误
+            index_job.complete_job()
+            logger.info(f"增量索引任务完成: id={index_id}, 处理 {index_job.processed_files} 个变更文件")
+        else:
+            index_job.fail_job(result.get('error', '未知错误'))
+            logger.error(f"增量索引任务失败: id={index_id}, 错误: {result.get('error')}")
+
+        db.commit()
+
+    except Exception as e:
+        logger.error(f"增量索引任务执行异常: {str(e)}")
         if index_job:
             index_job.fail_job(str(e))
             db.commit()

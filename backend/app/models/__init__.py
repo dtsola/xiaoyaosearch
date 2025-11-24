@@ -7,10 +7,12 @@ from app.models.file import FileModel
 from app.models.search_history import SearchHistoryModel
 from app.models.ai_model import AIModelModel
 from app.models.index_job import IndexJobModel
+from app.models.file_content import FileContentModel
 
 __all__ = [
     "FileModel",
     "SearchHistoryModel",
     "AIModelModel",
-    "IndexJobModel"
+    "IndexJobModel",
+    "FileContentModel"
 ]

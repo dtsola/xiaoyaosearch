@@ -41,7 +41,7 @@ class IndexJobModel(Base):
             progress = int((self.processed_files / self.total_files) * 100)
 
         return {
-            "id": self.id,
+            "index_id": self.id,
             "folder_path": self.folder_path,
             "job_type": self.job_type,
             "status": self.status,

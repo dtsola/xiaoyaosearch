@@ -64,6 +64,7 @@ def init_database() -> None:
     try:
         # 导入所有模型，确保它们被注册到Base.metadata
         from app.models.file import FileModel
+        from app.models.file_content import FileContentModel
         from app.models.search_history import SearchHistoryModel
         from app.models.ai_model import AIModelModel
         from app.models.index_job import IndexJobModel

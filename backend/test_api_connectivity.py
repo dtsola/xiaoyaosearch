@@ -18,7 +18,7 @@ from typing import Dict, Any
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.services.file_scanner import FileScanner
-from app.core.database import SessionLocal, create_tables
+from app.core.database import SessionLocal, init_database
 from app.models.file import FileModel
 
 # 配置日志
@@ -182,7 +182,7 @@ def setup_database():
     """初始化数据库表结构"""
     logger.info("初始化数据库表结构")
     try:
-        create_tables()
+        init_database()
         logger.info("✅ 数据库表结构创建成功")
         return True
     except Exception as e:

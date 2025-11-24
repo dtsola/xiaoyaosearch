@@ -289,6 +289,9 @@ class FileModel(Base):
             '.rs': 'text/x-rust',
         }
 
+    # 关联关系
+    content = relationship("FileContentModel", back_populates="file", uselist=False)
+
     def __repr__(self) -> str:
         """模型字符串表示"""
         return f"<FileModel(id={self.id}, file_name={self.file_name}, file_type={self.file_type}, status={self.index_status})>"

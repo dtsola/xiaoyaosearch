@@ -14,7 +14,8 @@ from app.api import (
     search_router,
     index_router,
     config_router,
-    system_router
+    system_router,
+    ai_models_router
 )
 
 # 配置日志系统
@@ -40,10 +41,15 @@ async def lifespan(app: FastAPI):
         init_database()
         logger.info("数据库初始化完成")
 
-        # TODO: 初始化AI模型
-        # logger.info("加载AI模型...")
-        # await init_ai_models()
-        # logger.info("AI模型加载完成")
+              # 初始化AI模型服务
+        logger.info("加载AI模型...")
+        try:
+            from app.services.ai_model_manager import ai_model_service
+            await ai_model_service.initialize()
+            logger.info("AI模型服务加载完成")
+        except Exception as e:
+            logger.warning(f"AI模型服务初始化失败: {str(e)}")
+            logger.info("继续运行，但AI功能可能不可用")
 
         logger.info("✅ 小遥搜索服务启动完成")
         logger.info(f"📖 API文档: http://127.0.0.1:8000/docs")
@@ -99,6 +105,7 @@ app.include_router(search_router)
 app.include_router(index_router)
 app.include_router(config_router)
 app.include_router(system_router)
+app.include_router(ai_models_router)
 
 # 根路径
 @app.get("/")

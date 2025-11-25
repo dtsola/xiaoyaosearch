@@ -116,6 +116,10 @@ xiaoyaosearch/
 │   ├── database/             # SQLite数据库
 │   ├── indexes/              # 搜索索引
 │   └── configs/              # 配置文件
+│   └── models/               # AI模型文件
+│       ├── bge-m3/               # BGE-M3模型
+│       ├── faster-whisper/       # FasterWhisper模型
+│       └── cn-clip/              # CN-CLIP模型
 ├── scripts/                  # 部署脚本
 └── docs/                     # 文档
 ```

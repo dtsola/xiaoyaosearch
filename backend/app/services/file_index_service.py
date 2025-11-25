@@ -66,7 +66,8 @@ class FileIndexService:
         self.index_builder = IndexBuilder(
             faiss_index_path=faiss_index_path,
             whoosh_index_path=whoosh_index_path,
-            use_chinese_analyzer=use_chinese_analyzer
+            use_chinese_analyzer=use_chinese_analyzer,
+            use_ai_embeddings=True  # 默认启用AI嵌入
         )
 
         # 索引状态

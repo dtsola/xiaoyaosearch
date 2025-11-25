@@ -56,9 +56,9 @@ LOG_LEVEL=INFO
 DATABASE_URL=sqlite:///../data/database/xiaoyaosearch.db
 
 # AI模型配置
-BGE_M3_MODEL_PATH=../models/bge-m3
+BGE_M3_MODEL_PATH=../data/models/bge-m3
 FASTER_WHISPER_MODEL_SIZE=base
-CN_CLIP_MODEL_PATH=../models/cn-clip
+CN_CLIP_MODEL_PATH=../data/models/cn-clip
 
 # 索引配置
 FAISS_INDEX_PATH=../data/indexes/faiss

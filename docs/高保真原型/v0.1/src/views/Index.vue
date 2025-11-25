@@ -157,11 +157,10 @@
 
         <a-form-item label="文件类型">
           <a-checkbox-group v-model:value="newFolder.fileTypes">
-            <a-checkbox value="document">文档 (txt, md, pdf, docx...)</a-checkbox>
-            <a-checkbox value="audio">音频 (mp3, wav, m4a...)</a-checkbox>
-            <a-checkbox value="video">视频 (mp4, avi, mov...)</a-checkbox>
-            <a-checkbox value="image">图片 (jpg, png, gif...)</a-checkbox>
-            <a-checkbox value="code">代码 (js, py, java...)</a-checkbox>
+            <a-checkbox value="document">文档 (txt, markdown, office, pdf)</a-checkbox>
+            <a-checkbox value="audio">音频 (mp3, wav)</a-checkbox>
+            <a-checkbox value="video">视频 (mp4, avi)</a-checkbox>
+            <a-checkbox value="image">图片 (png, jpg)</a-checkbox>
           </a-checkbox-group>
         </a-form-item>
       </a-form>

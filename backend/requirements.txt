@@ -29,6 +29,36 @@ faiss-cpu==1.7.4                 # Facebook向量搜索
 whoosh==2.7.4                    # Python全文搜索
 jieba==0.42.1                    # 中文分词
 
+# AI模型集成 - 核心依赖
+torch==2.1.0                     # PyTorch深度学习框架
+transformers==4.36.0             # HuggingFace transformers库
+sentence-transformers==2.2.2     # 句子向量嵌入库
+flagai==1.6.4                    # FlagAI模型库
+openai==1.3.5                    # OpenAI API客户端
+
+# 语音识别
+faster-whisper==0.9.0            # 加速版Whisper语音识别
+whisper==1.1.10                  # OpenAI Whisper语音识别
+librosa==0.11.0                   # 音频处理库（Whisper依赖）
+
+# 图像处理和CLIP模型
+pillow==10.1.0                   # 图像处理库（已有）
+clip-by-openai==1.0              # CLIP模型
+
+# 大语言模型集成
+ollama-python==0.1.7             # Ollama Python客户端
+langchain==0.0.340               # LangChain框架
+langchain-community==0.0.6       # LangChain社区组件
+
+# 模型优化和推理加速
+accelerate==0.25.0               # PyTorch模型加速
+optimum==1.15.0                  # 模型优化库
+bitsandbytes==0.41.2             # 量化训练和推理
+
+# 云端API SDK
+dashscope==1.14.1                # 阿里云大模型SDK
+oss2==2.18.4                     # 阿里云对象存储
+
 # 测试工具
 pytest==7.4.3                   # 测试框架
 pytest-asyncio==0.21.1           # 异步测试

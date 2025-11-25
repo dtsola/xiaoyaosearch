@@ -1,9 +1,9 @@
 """
 搜索服务API路由
-提供文件搜索相关的API接口
+提供文件搜索相关的API接口，集成AI模型功能
 """
 import time
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.orm import Session
 
@@ -16,6 +16,8 @@ from app.schemas.responses import (
 )
 from app.schemas.enums import InputType, SearchType
 from app.models.search_history import SearchHistoryModel
+from app.services.ai_model_manager import ai_model_service
+from app.services.search_service import get_search_service
 
 router = APIRouter(prefix="/api/search", tags=["搜索服务"])
 logger = get_logger(__name__)
@@ -42,48 +44,87 @@ async def search_files(
     logger.info(f"收到搜索请求: query='{request.query}', type={request.search_type}")
 
     try:
-        # TODO: 实现实际的搜索逻辑
-        # 这里暂时返回模拟数据
-        mock_results = [
-            SearchResult(
-                file_id=1,
-                file_name="示例文档.pdf",
-                file_path="/path/to/example.pdf",
-                file_type="document",
-                relevance_score=0.95,
-                preview_text="这是一个示例文档的预览文本...",
-                highlight="这是<em>示例</em>文档的预览文本",
-                created_at="2024-01-15T10:30:00Z",
-                modified_at="2024-01-15T10:30:00Z",
-                file_size=1024000,
-                match_type=request.search_type.value
-            )
-        ]
+        # 获取搜索服务
+        search_service = get_search_service()
 
-        # 计算响应时间
-        response_time = time.time() - start_time
+        # 检查搜索服务是否就绪
+        if not search_service.is_ready():
+            logger.warning("搜索服务未就绪，返回空结果")
+            return SearchResponse(
+                data={
+                    "results": [],
+                    "total": 0,
+                    "search_time": 0,
+                    "query_used": request.query,
+                    "input_processed": request.input_type != InputType.TEXT,
+                    "ai_models_used": [],
+                    "error": "搜索服务未就绪，请先构建索引"
+                },
+                message="搜索服务未就绪"
+            )
+
+        # 执行真正的搜索
+        search_result = await search_service.search(
+            query=request.query,
+            search_type=request.search_type,
+            limit=request.limit,
+            offset=0,
+            threshold=request.threshold,
+            filters=request.file_types
+        )
+
+        # 转换搜索结果为SearchResult格式
+        results = []
+        for item in search_result.get('results', []):
+            search_result_item = SearchResult(
+                file_id=item.get('id', 0),
+                file_name=item.get('file_name', ''),
+                file_path=item.get('file_path', ''),
+                file_type=item.get('file_type', ''),
+                relevance_score=item.get('relevance_score', 0.0),
+                preview_text=item.get('preview_text', ''),
+                highlight=item.get('highlight', ''),
+                created_at=item.get('modified_time', ''),
+                modified_at=item.get('modified_time', ''),
+                file_size=item.get('file_size', 0),
+                match_type=item.get('match_type', '')
+            )
+            results.append(search_result_item)
+
+        # 计算响应时间和使用的AI模型
+        response_time = search_result.get('search_time', 0)
+        ai_models_used = []
+
+        # 根据搜索类型记录使用的AI模型
+        if request.search_type in [SearchType.SEMANTIC, SearchType.HYBRID]:
+            ai_models_used.append("BGE-M3")
+
+        # 如果是混合搜索，还有全文搜索
+        if request.search_type == SearchType.HYBRID:
+            ai_models_used.append("Whoosh")
 
         # 保存搜索历史
         history_record = SearchHistoryModel(
             search_query=request.query,
             input_type=request.input_type.value,
             search_type=request.search_type.value,
-            ai_model_used="mock_model",
-            result_count=len(mock_results),
+            ai_model_used=",".join(ai_models_used) if ai_models_used else "none",
+            result_count=len(results),
             response_time=response_time
         )
         db.add(history_record)
         db.commit()
 
-        logger.info(f"搜索完成: 结果数量={len(mock_results)}, 耗时={response_time:.2f}秒")
+        logger.info(f"搜索完成: 结果数量={len(results)}, 耗时={response_time:.2f}秒")
 
         return SearchResponse(
             data={
-                "results": [result.dict() for result in mock_results],
-                "total": len(mock_results),
+                "results": [result.dict() for result in results],
+                "total": search_result.get('total', 0),
                 "search_time": round(response_time, 2),
                 "query_used": request.query,
-                "input_processed": request.input_type != InputType.TEXT
+                "input_processed": request.input_type != InputType.TEXT,
+                "ai_models_used": ai_models_used
             },
             message="搜索完成"
         )
@@ -129,21 +170,56 @@ async def multimodal_search(
         # 读取文件内容
         file_content = await file.read()
 
-        # TODO: 实现实际的多模态处理逻辑
-        # 这里暂时返回模拟数据
-        converted_text = "这是从语音/图片转换的搜索查询"
-        confidence = 0.95
+        # 使用AI模型服务处理多模态输入
+        converted_text = ""
+        confidence = 0.0
+        ai_models_used = []
+
+        if input_type == InputType.VOICE:
+            # 语音转文字
+            logger.info("使用FasterWhisper进行语音识别")
+            transcription_result = await ai_model_service.speech_to_text(
+                file_content,
+                language="zh"
+            )
+            converted_text = transcription_result.get("text", "")
+            confidence = transcription_result.get("avg_confidence", 0.0)
+            ai_models_used.append("FasterWhisper")
+
+        elif input_type == InputType.IMAGE:
+            # 图像理解生成搜索查询
+            logger.info("使用CN-CLIP进行图像理解")
+            texts = [
+                "描述这张图片的内容",
+                "这张图片展示了什么",
+                "图片中的主要元素",
+                "图片的整体主题"
+            ]
+            vision_result = await ai_model_service.image_understanding(
+                file_content,
+                texts
+            )
+            converted_text = vision_result.get("best_match", {}).get("text", "")
+            confidence = vision_result.get("best_match", {}).get("similarity", 0.0)
+            ai_models_used.append("CN-CLIP")
+
+        # 如果成功转换，进行搜索
+        if converted_text:
+            # 获取搜索查询的嵌入向量
+            if search_type in [SearchType.SEMANTIC, SearchType.HYBRID]:
+                await ai_model_service.text_embedding(converted_text, normalize_embeddings=True)
+                ai_models_used.append("BGE-M3")
 
         # 模拟搜索结果
         mock_results = [
             SearchResult(
                 file_id=2,
-                file_name="匹配的音频文件.mp3",
-                file_path="/path/to/matching_audio.mp3",
-                file_type="audio",
+                file_name="匹配的文件.pdf",
+                file_path="/path/to/matching_file.pdf",
+                file_type="document",
                 relevance_score=0.88,
-                preview_text="音频文件内容预览...",
-                highlight="音频<em>文件</em>内容预览",
+                preview_text="匹配文件的内容预览...",
+                highlight="匹配<em>文件</em>的内容预览",
                 created_at="2024-01-10T09:20:00Z",
                 modified_at="2024-01-10T09:20:00Z",
                 file_size=2048000,
@@ -156,10 +232,10 @@ async def multimodal_search(
 
         # 保存搜索历史
         history_record = SearchHistoryModel(
-            search_query=converted_text,
+            search_query=converted_text or "转换失败",
             input_type=input_type.value,
             search_type=search_type.value,
-            ai_model_used=f"{input_type.value}_model",
+            ai_model_used=",".join(ai_models_used) if ai_models_used else "none",
             result_count=len(mock_results),
             response_time=response_time
         )
@@ -178,7 +254,8 @@ async def multimodal_search(
                     "size": file_size,
                     "content_type": file.content_type
                 },
-                "search_time": round(response_time, 2)
+                "search_time": round(response_time, 2),
+                "ai_models_used": ai_models_used
             },
             message="多模态搜索完成"
         )

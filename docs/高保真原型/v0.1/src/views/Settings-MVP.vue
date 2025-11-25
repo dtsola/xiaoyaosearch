@@ -11,64 +11,142 @@
         <div class="settings-section">
           <h3>语音识别设置</h3>
           <a-form layout="vertical">
-            <a-form-item label="识别引擎">
-              <a-radio-group v-model:value="speechSettings.provider">
-                <a-radio value="local">本地FastWhisper</a-radio>
-              </a-radio-group>
+            <a-form-item label="语音识别">
+              <a-alert
+                message="本地FastWhisper服务"
+                description="使用本地部署的FastWhisper模型进行语音识别"
+                type="info"
+                show-icon
+              />
             </a-form-item>
 
-            <div class="local-config">
-              <a-form-item label="模型大小">
-                <a-select v-model:value="speechSettings.modelSize" style="width: 100%">
-                  <a-select value="base">Base (快速)</a-select>
-                  <a-select value="small">Small (平衡)</a-select>
-                </a-select>
-              </a-form-item>
-              <a-form-item label="设备">
-                <a-select v-model:value="speechSettings.device" style="width: 100%">
-                  <a-select value="cpu">CPU</a-select>
-                  <a-select value="cuda">CUDA (GPU)</a-select>
-                </a-select>
-              </a-form-item>
-              <a-form-item>
-                <a-space>
-                  <a-button type="primary" ghost>一键安装</a-button>
-                  <a-button>检测可用性</a-button>
-                </a-space>
-              </a-form-item>
-            </div>
+            <a-form-item label="模型版本">
+              <a-select v-model:value="speechSettings.modelSize" style="width: 100%">
+                <a-select value="tiny">Tiny (最快)</a-select>
+                <a-select value="base">Base (快速)</a-select>
+                <a-select value="small">Small (平衡)</a-select>
+                <a-select value="medium">Medium (精确)</a-select>
+                <a-select value="large">Large (高精度)</a-select>
+              </a-select>
+            </a-form-item>
+            <a-form-item label="运行设备">
+              <a-select v-model:value="speechSettings.device" style="width: 200px">
+                <a-select value="cpu">CPU</a-select>
+                <a-select value="cuda">CUDA (GPU)</a-select>
+              </a-select>
+            </a-form-item>
+          </a-form>
+        </div>
+        <div class="settings-section">
+          <a-space>
+            <a-button type="primary" @click="saveSpeechSettings">保存设置</a-button>
+            <a-button @click="testSpeechAvailability">检查可用性</a-button>
+          </a-space>
+        </div>
+      </a-tab-pane>
 
-            <a-form-item label="录音设置">
-              <a-row :gutter="16">
-                <a-col :span="12">
-                  <a-form-item label="最长录音">
-                    <a-input-number
-                      v-model:value="speechSettings.maxDuration"
-                      :min="5"
-                      :max="120"
-                      addon-after="秒"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="12">
-                  <a-form-item label="音质">
-                    <a-select v-model:value="speechSettings.quality" style="width: 100%">
-                      <a-select value="high">高质量</a-select>
-                      <a-select value="standard">标准</a-select>
-                    </a-select>
-                  </a-form-item>
-                </a-col>
-              </a-row>
+      <!-- 大语言模型设置 -->
+      <a-tab-pane key="llm" tab="大语言模型">
+        <div class="settings-section">
+          <h3>大语言模型配置</h3>
+          <a-form layout="vertical">
+            <a-form-item label="LLM服务">
+              <a-alert
+                message="本地Ollama服务"
+                description="使用本地部署的Ollama服务运行大语言模型"
+                type="info"
+                show-icon
+              />
             </a-form-item>
 
+            <a-form-item label="模型名称">
+              <a-input
+                v-model:value="llmSettings.localModel"
+                placeholder="例如: qwen2.5:1.5b"
+                style="width: 100%"
+              />
+              <div class="form-help">输入已安装的Ollama模型名称，支持任何格式</div>
+            </a-form-item>
+            <a-form-item label="服务地址">
+              <a-input v-model:value="llmSettings.ollamaUrl" placeholder="http://localhost:11434" />
+            </a-form-item>
+          </a-form>
+        </div>
+        <div class="settings-section">
+          <a-space>
+            <a-button type="primary" @click="testLLM">测试连接</a-button>
+            <a-button @click="saveLLMSettings">保存设置</a-button>
+          </a-space>
+        </div>
+      </a-tab-pane>
+
+      <!-- 视觉模型设置 -->
+      <a-tab-pane key="vision" tab="视觉模型">
+        <div class="settings-section">
+          <h3>视觉理解模型配置</h3>
+          <a-form layout="vertical">
+            <a-form-item label="视觉模型">
+              <a-alert
+                message="本地CN-CLIP模型"
+                description="使用本地部署的中文CLIP模型进行图像理解"
+                type="info"
+                show-icon
+              />
+            </a-form-item>
+
+            <a-form-item label="模型版本">
+              <a-select v-model:value="visionSettings.clipModel" style="width: 100%">
+                <a-select value="OFA-Sys/chinese-clip-vit-base">ViT-Base (快速)</a-select>
+                <a-select value="OFA-Sys/chinese-clip-vit-large">ViT-Large (高精度)</a-select>
+              </a-select>
+            </a-form-item>
+            <a-form-item label="运行设备">
+              <a-select v-model:value="visionSettings.device" style="width: 200px">
+                <a-select value="cpu">CPU</a-select>
+                <a-select value="cuda">CUDA (GPU)</a-select>
+              </a-select>
+            </a-form-item>
+          </a-form>
+        </div>
+        <div class="settings-section">
+          <a-space>
+            <a-button type="primary" @click="testVision">检测可用性</a-button>
+            <a-button @click="saveVisionSettings">保存设置</a-button>
+          </a-space>
+        </div>
+      </a-tab-pane>
+
+      <!-- 内嵌模型设置 -->
+      <a-tab-pane key="embedding" tab="内嵌模型">
+        <div class="settings-section">
+          <h3>文本内嵌模型配置</h3>
+          <a-form layout="vertical">
+            <a-form-item label="文本内嵌模型">
+              <a-alert
+                message="本地BGE-M3模型"
+                description="使用本地部署的BGE-M3模型生成文本向量嵌入"
+                type="info"
+                show-icon
+              />
+            </a-form-item>
+
+            <a-form-item label="模型版本">
+              <a-select v-model:value="embeddingSettings.modelName" style="width: 100%">
+                <a-select value="BAAI/bge-m3">BGE-M3 (多语言)</a-select>
+                <a-select value="BAAI/bge-large-zh-v1.5">BGE-Large-zh</a-select>
+                <a-select value="BAAI/bge-small-zh-v1.5">BGE-Small-zh</a-select>
+              </a-select>
+            </a-form-item>
+            <a-form-item label="运行设备">
+              <a-select v-model:value="embeddingSettings.device" style="width: 200px">
+                <a-select value="cpu">CPU</a-select>
+                <a-select value="cuda">CUDA (GPU)</a-select>
+              </a-select>
+            </a-form-item>
             <a-form-item>
               <a-space>
-                <a-button type="primary" @click="testRecording">
-                  <AudioOutlined />
-                  测试录音
-                </a-button>
-                <a-button @click="saveSpeechSettings">保存设置</a-button>
+                <a-button type="primary" @click="testEmbedding">检测可用性</a-button>
+                <a-button @click="saveEmbeddingSettings">保存设置</a-button>
               </a-space>
             </a-form-item>
           </a-form>
@@ -111,40 +189,6 @@
         </div>
 
         <div class="settings-section">
-          <h3>界面设置</h3>
-          <a-form layout="vertical">
-            <a-form-item label="主题">
-              <a-radio-group v-model:value="generalSettings.theme">
-                <a-radio value="light">浅色主题</a-radio>
-                <a-radio value="dark">深色主题</a-radio>
-              </a-radio-group>
-            </a-form-item>
-            <a-form-item label="语言">
-              <a-select v-model:value="generalSettings.language" style="width: 200px">
-                <a-select value="zh-CN">简体中文</a-select>
-                <a-select value="en-US">English</a-select>
-              </a-select>
-            </a-form-item>
-          </a-form>
-        </div>
-
-        <div class="settings-section">
-          <h3>数据设置</h3>
-          <a-form layout="vertical">
-            <a-form-item label="搜索历史">
-              <a-switch v-model:checked="generalSettings.saveHistory" />
-              <span class="form-help">保存搜索历史记录</span>
-            </a-form-item>
-            <a-form-item label="数据目录">
-              <a-input
-                v-model:value="generalSettings.dataPath"
-                placeholder="选择数据存储目录"
-                readonly
-              />
-              <a-button type="link" @click="selectDataPath">选择目录</a-button>
-            </a-form-item>
-          </a-form>
-
           <a-space>
             <a-button type="primary" @click="saveGeneralSettings">保存设置</a-button>
             <a-button @click="resetSettings">重置默认</a-button>
@@ -158,40 +202,48 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import {
-  AudioOutlined
-} from '@ant-design/icons-vue'
 
 // 响应式数据
 const activeTab = ref('speech')
 
 // 语音设置
 const speechSettings = reactive({
-  provider: 'local',
-  modelSize: 'base',
-  device: 'cpu',
-  maxDuration: 30,
-  quality: 'standard'
+  modelSize: 'small',
+  device: 'cpu'
+})
+
+// 大语言模型设置
+const llmSettings = reactive({
+  localModel: 'qwen2.5:1.5b',
+  ollamaUrl: 'http://localhost:11434'
+})
+
+// 视觉模型设置
+const visionSettings = reactive({
+  clipModel: 'OFA-Sys/chinese-clip-vit-base',
+  device: 'cpu'
+})
+
+// 内嵌模型设置
+const embeddingSettings = reactive({
+  modelName: 'BAAI/bge-m3',
+  device: 'cpu'
 })
 
 // 通用设置
 const generalSettings = reactive({
   defaultResults: 20,
   threshold: 0.7,
-  maxFileSize: 50,
-  theme: 'light',
-  language: 'zh-CN',
-  saveHistory: true,
-  dataPath: 'D:\\XiaoyaoSearch\\Data'
+  maxFileSize: 50
 })
 
 // 方法
-const testRecording = () => {
-  message.info('录音测试功能开发中...')
-}
-
 const saveSpeechSettings = () => {
   message.success('语音设置已保存')
+}
+
+const testSpeechAvailability = () => {
+  message.info('语音服务可用性检查功能开发中...')
 }
 
 const saveGeneralSettings = () => {
@@ -208,9 +260,33 @@ const resetSettings = () => {
   })
 }
 
-const selectDataPath = () => {
-  message.info('目录选择功能开发中...')
+// 大语言模型方法
+const testLLM = () => {
+  message.info('LLM连接测试功能开发中...')
 }
+
+const saveLLMSettings = () => {
+  message.success('大语言模型设置已保存')
+}
+
+// 视觉模型方法
+const testVision = () => {
+  message.info('视觉服务可用性检查功能开发中...')
+}
+
+const saveVisionSettings = () => {
+  message.success('视觉模型设置已保存')
+}
+
+// 内嵌模型方法
+const testEmbedding = () => {
+  message.info('BGE模型可用性检查功能开发中...')
+}
+
+const saveEmbeddingSettings = () => {
+  message.success('内嵌模型设置已保存')
+}
+
 </script>
 
 <style scoped>
@@ -257,12 +333,7 @@ const selectDataPath = () => {
   font-weight: 600;
 }
 
-.local-config {
-  background: var(--surface-02);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  margin: var(--space-3) 0;
-}
+
 
 .form-help {
   margin-left: var(--space-2);

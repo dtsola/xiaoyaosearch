@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 import logging
+import asyncio
 
 # 索引库导入
 try:
@@ -54,7 +55,8 @@ class IndexBuilder:
         self,
         faiss_index_path: str,
         whoosh_index_path: str,
-        use_chinese_analyzer: bool = True
+        use_chinese_analyzer: bool = True,
+        use_ai_embeddings: bool = True
     ):
         """初始化索引构建器
 
@@ -62,10 +64,12 @@ class IndexBuilder:
             faiss_index_path: Faiss索引文件路径
             whoosh_index_path: Whoosh索引目录路径
             use_chinese_analyzer: 是否使用中文分析器
+            use_ai_embeddings: 是否使用AI模型生成嵌入向量
         """
         self.faiss_index_path = faiss_index_path
         self.whoosh_index_path = whoosh_index_path
         self.use_chinese_analyzer = use_chinese_analyzer
+        self.use_ai_embeddings = use_ai_embeddings
 
         # 确保索引目录存在
         os.makedirs(os.path.dirname(faiss_index_path), exist_ok=True)
@@ -87,6 +91,9 @@ class IndexBuilder:
             'whoosh_index_size': 0,
             'last_updated': None
         }
+
+        # AI模型服务缓存
+        self._ai_model_service = None
 
     def build_indexes(self, documents: List[Dict[str, Any]]) -> bool:
         """构建索引
@@ -172,16 +179,18 @@ class IndexBuilder:
             return False
 
         try:
-            # 为文档生成简单的向量（这里使用TF-IDF的简化版本）
-            # 在实际应用中，这里应该使用真正的文本嵌入模型
-            vectors = []
-            doc_ids = []
+            logger.info("开始构建Faiss向量索引")
 
-            for doc in documents:
-                # 简单的文本特征提取（实际应用中应使用预训练模型）
-                vector = self._extract_simple_vector(doc.get('content', ''))
-                vectors.append(vector)
-                doc_ids.append(doc.get('id'))
+            # 提取文档ID
+            doc_ids = [doc.get('id') for doc in documents]
+
+            # 提取文档向量
+            if self.use_ai_embeddings:
+                logger.info("使用AI模型生成嵌入向量")
+                vectors = self._extract_ai_embeddings(documents)
+            else:
+                logger.info("使用简单字符统计特征")
+                vectors = self._extract_simple_vectors(documents)
 
             if not vectors:
                 logger.warning("没有有效的向量数据，跳过Faiss索引构建")
@@ -209,7 +218,8 @@ class IndexBuilder:
                 'dimension': dimension,
                 'doc_count': len(documents),
                 'doc_ids': doc_ids,
-                'created_time': datetime.now().isoformat()
+                'created_time': datetime.now().isoformat(),
+                'embedding_type': 'ai_model' if self.use_ai_embeddings else 'simple_features'
             }
             metadata_path = self.faiss_index_path.replace('.faiss', '_metadata.pkl')
             with open(metadata_path, 'wb') as f:
@@ -221,6 +231,60 @@ class IndexBuilder:
         except Exception as e:
             logger.error(f"构建Faiss索引失败: {e}")
             return False
+
+    def _extract_ai_embeddings(self, documents: List[Dict[str, Any]]) -> List[List[float]]:
+        """使用AI模型提取文档嵌入向量"""
+        try:
+            vectors = []
+            batch_size = 32  # 批处理大小
+
+            for i in range(0, len(documents), batch_size):
+                batch_docs = documents[i:i + batch_size]
+                texts = [doc.get('content', '') + ' ' + doc.get('title', '') for doc in batch_docs]
+
+                # 过滤空文本
+                valid_texts = [text for text in texts if text.strip()]
+                if not valid_texts:
+                    continue
+
+                # 使用AI模型生成嵌入向量
+                logger.info(f"生成嵌入向量，批次 {i//batch_size + 1}/{(len(documents) + batch_size - 1)//batch_size}")
+                embeddings = asyncio.run(self._generate_batch_embeddings(valid_texts))
+
+                vectors.extend(embeddings)
+
+            return vectors
+
+        except Exception as e:
+            logger.error(f"AI模型向量提取失败，回退到简单特征: {e}")
+            return self._extract_simple_vectors(documents)
+
+    async def _generate_batch_embeddings(self, texts: List[str]) -> List[List[float]]:
+        """生成批量嵌入向量"""
+        try:
+            from app.services.ai_model_manager import ai_model_service
+            embeddings = await ai_model_service.text_embedding(texts, normalize_embeddings=True)
+
+            # 转换为列表格式
+            if hasattr(embeddings, 'numpy'):
+                return embeddings.numpy().tolist()
+            elif hasattr(embeddings, 'tolist'):
+                return embeddings.tolist()
+            else:
+                return [list(embed) for emb in embeddings]
+
+        except Exception as e:
+            logger.error(f"批量嵌入生成失败: {e}")
+            # 返回零向量作为fallback
+            return [[0.0] * 768 for _ in texts]
+
+    def _extract_simple_vectors(self, documents: List[Dict[str, Any]]) -> List[List[float]]:
+        """提取简单特征向量（fallback方法）"""
+        vectors = []
+        for doc in documents:
+            vector = self._extract_simple_vector(doc.get('content', ''))
+            vectors.append(vector)
+        return vectors
 
     def _build_whoosh_index(self, documents: List[Dict[str, Any]]) -> bool:
         """构建Whoosh全文索引"""
@@ -299,17 +363,31 @@ class IndexBuilder:
                 existing_doc_ids = []
 
             # 为新文档生成向量
-            new_vectors = []
-            new_doc_ids = []
+            if self.use_ai_embeddings and self.bge_model:
+                # 使用AI模型生成嵌入向量
+                new_vectors = self._extract_ai_embeddings(new_documents)
+                logger.info(f"使用AI模型生成{len(new_vectors)}个嵌入向量")
+            else:
+                # 使用简单特征向量（fallback方法）
+                new_vectors = []
+                for doc in new_documents:
+                    vector = self._extract_simple_vector(doc.get('content', ''))
+                    new_vectors.append(vector)
+                logger.info(f"使用简单特征生成{len(new_vectors)}个向量")
 
-            for doc in new_documents:
-                vector = self._extract_simple_vector(doc.get('content', ''))
-                new_vectors.append(vector)
-                new_doc_ids.append(doc.get('id'))
+            new_doc_ids = [doc.get('id') for doc in new_documents]
 
             if new_vectors:
                 import numpy as np
                 new_vectors = np.array(new_vectors, dtype=np.float32)
+
+                # 检查维度兼容性
+                existing_dimension = faiss_index.d
+                new_dimension = new_vectors.shape[1]
+                if existing_dimension != new_dimension:
+                    logger.error(f"向量维度不匹配: 现有索引维度={existing_dimension}, 新向量维度={new_dimension}")
+                    return False
+
                 faiss.normalize_L2(new_vectors)
 
                 # 添加新向量到索引

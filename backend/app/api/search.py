@@ -378,6 +378,48 @@ async def get_search_history(
         raise HTTPException(status_code=500, detail=f"获取搜索历史失败: {str(e)}")
 
 
+@router.delete("/history/{history_id}", summary="删除单条搜索历史")
+async def delete_search_history(
+    history_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    删除指定的搜索历史记录
+
+    - **history_id**: 搜索历史记录ID
+    """
+    logger.info(f"删除搜索历史记录: ID={history_id}")
+
+    try:
+        # 查找指定的历史记录
+        history_record = db.query(SearchHistoryModel).filter(
+            SearchHistoryModel.id == history_id
+        ).first()
+
+        if not history_record:
+            raise HTTPException(status_code=404, detail="搜索历史记录不存在")
+
+        # 删除记录
+        db.delete(history_record)
+        db.commit()
+
+        logger.info(f"搜索历史记录删除成功: ID={history_id}")
+
+        return {
+            "success": True,
+            "data": {
+                "deleted_id": history_id
+            },
+            "message": "搜索历史记录删除成功"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除搜索历史记录失败: ID={history_id}, 错误={str(e)}")
+        raise HTTPException(status_code=500, detail=f"删除搜索历史记录失败: {str(e)}")
+
+
 @router.delete("/history", summary="清除搜索历史")
 async def clear_search_history(
     db: Session = Depends(get_db)
@@ -417,7 +459,7 @@ async def get_search_suggestions(
     """
     获取搜索建议
 
-    基于历史搜索记录提供搜索建议
+    基于历史搜索记录和文件索引提供智能搜索建议
 
     - **query**: 部分搜索词
     - **limit**: 建议数量
@@ -425,19 +467,136 @@ async def get_search_suggestions(
     logger.info(f"获取搜索建议: query='{query}', limit={limit}")
 
     try:
-        # TODO: 实现智能搜索建议逻辑
-        # 这里暂时返回模拟数据
-        suggestions = [
-            f"{query}完整建议1",
-            f"{query}完整建议2",
-            f"{query}相关建议3"
-        ]
+        from app.services.search_service import get_search_service
+        import re
+        from collections import defaultdict
+
+        if not query or len(query.strip()) < 1:
+            return {
+                "success": True,
+                "data": {
+                    "suggestions": [],
+                    "query": query
+                },
+                "message": "搜索建议为空"
+            }
+
+        query = query.strip()
+        suggestions = []
+        suggestion_sources = {}
+
+        # 1. 基于历史搜索记录的建议
+        history_suggestions = db.query(SearchHistoryModel).filter(
+            SearchHistoryModel.search_query.ilike(f"%{query}%"),
+            SearchHistoryModel.result_count > 0  # 只返回有结果的历史搜索
+        ).order_by(
+            SearchHistoryModel.created_at.desc()
+        ).limit(limit * 2).all()
+
+        # 统计频率和权重
+        query_freq = defaultdict(int)
+        for history in history_suggestions:
+            query_freq[history.search_query] += 1
+
+        # 按频率排序并添加到建议中
+        for search_query, freq in sorted(query_freq.items(), key=lambda x: x[1], reverse=True):
+            if len(suggestions) >= limit:
+                break
+            if search_query not in suggestions:
+                suggestions.append(search_query)
+                suggestion_sources[search_query] = "历史搜索"
+
+        # 2. 基于文件标题和关键词的建议
+        try:
+            search_service = get_search_service()
+            if search_service.is_ready():
+                # 执行快速的前缀搜索，只返回标题匹配
+                prefix_results = await search_service.search(
+                    query=query,
+                    search_type="fulltext",
+                    limit=limit,
+                    offset=0,
+                    threshold=0.3,  # 降低阈值获取更多建议
+                    filters=["document"]  # 主要从文档类型获取建议
+                )
+
+                # 从搜索结果中提取可能的建议
+                for result in prefix_results.get('results', []):
+                    if len(suggestions) >= limit:
+                        break
+
+                    # 提取文件标题作为建议
+                    title = result.get('title', '')
+                    if title and query.lower() in title.lower():
+                        # 清理标题，移除文件扩展名
+                        clean_title = re.sub(r'\.[^.]+$', '', title)
+                        if clean_title not in suggestions and len(clean_title) > len(query):
+                            suggestions.append(clean_title)
+                            suggestion_sources[clean_title] = "文件标题"
+
+                    # 提取关键词作为建议
+                    keywords = result.get('keywords', '')
+                    if keywords:
+                        keyword_list = [kw.strip() for kw in keywords.split(',') if kw.strip()]
+                        for keyword in keyword_list:
+                            if len(suggestions) >= limit:
+                                break
+                            if (query.lower() in keyword.lower() and
+                                keyword not in suggestions and
+                                len(keyword) > len(query)):
+                                suggestions.append(keyword)
+                                suggestion_sources[keyword] = "文件关键词"
+
+        except Exception as e:
+            logger.warning(f"搜索服务获取建议失败: {str(e)}")
+
+        # 3. 基于常见搜索模式补全
+        if len(suggestions) < limit:
+            common_patterns = [
+                f"{query}教程",
+                f"{query}使用方法",
+                f"{query}下载",
+                f"{query}安装",
+                f"如何{query}",
+                f"{query}是什么",
+                f"{query}在哪里",
+                f"{query}价格",
+                f"{query}评价"
+            ]
+
+            for pattern in common_patterns:
+                if len(suggestions) >= limit:
+                    break
+                if pattern not in suggestions:
+                    suggestions.append(pattern)
+                    suggestion_sources[pattern] = "智能补全"
+
+        # 4. 如果还是没有足够建议，提供热门搜索关键词
+        if len(suggestions) < limit:
+            hot_keywords = db.query(SearchHistoryModel.search_query).filter(
+                SearchHistoryModel.result_count > 0
+            ).group_by(
+                SearchHistoryModel.search_query
+            ).order_by(
+                db.func.count(SearchHistoryModel.id).desc()
+            ).limit(limit - len(suggestions)).all()
+
+            for (keyword,) in hot_keywords:
+                if keyword not in suggestions:
+                    suggestions.append(keyword)
+                    suggestion_sources[keyword] = "热门搜索"
+
+        # 限制返回数量
+        suggestions = suggestions[:limit]
+
+        logger.info(f"搜索建议完成: query='{query}', 建议数量={len(suggestions)}")
 
         return {
             "success": True,
             "data": {
-                "suggestions": suggestions[:limit],
-                "query": query
+                "suggestions": suggestions,
+                "query": query,
+                "sources": {suggestion_sources.get(s, "未知") for s in suggestions[:3]}  # 显示前3个建议的来源
             },
             "message": "获取搜索建议成功"
         }

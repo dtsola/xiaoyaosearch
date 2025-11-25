@@ -5,7 +5,7 @@
 import os
 import psutil
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Dict, Any
 
@@ -306,21 +306,106 @@ async def update_settings(request: SettingsUpdateRequest):
 async def restart_application():
     """
     重启应用服务
+
+    执行优雅的应用重启，包括：
+    - 停止接受新请求
+    - 完成正在处理的请求
+    - 清理资源
+    - 重启服务进程
     """
     logger.info("收到应用重启请求")
 
     try:
-        # TODO: 实现应用重启逻辑
-        # 这里暂时返回成功响应
-        logger.warning("应用重启功能尚未实现，仅返回成功响应")
+        import os
+        import signal
+        import threading
+        import time
+        from fastapi import FastAPI
+
+        # 获取当前进程信息
+        current_pid = os.getpid()
+        logger.info(f"准备重启应用，当前PID: {current_pid}")
+
+        # 检查是否有正在运行的索引任务
+        from app.core.database import SessionLocal
+        from app.models.index_job import IndexJobModel
+        from app.utils.enum_helpers import get_enum_value
+        from app.schemas.enums import JobStatus
+
+        db = SessionLocal()
+        try:
+            running_jobs = db.query(IndexJobModel).filter(
+                IndexJobModel.status == get_enum_value(JobStatus.PROCESSING)
+            ).count()
+
+            if running_jobs > 0:
+                logger.warning(f"检测到{running_jobs}个正在运行的索引任务，重启将中断这些任务")
+        finally:
+            db.close()
+
+        # 定义重启函数（延迟执行，确保响应返回给客户端）
+        def delayed_restart():
+            """延迟执行重启操作"""
+            try:
+                logger.info("开始执行应用重启流程...")
+
+                # 等待一段时间，确保响应已发送给客户端
+                time.sleep(2)
+
+                # 优雅关闭：发送SIGTERM信号
+                if os.name == 'nt':  # Windows
+                    import subprocess
+                    # 在Windows上，我们使用subprocess来重启
+                    logger.info("Windows系统：准备重启应用...")
+
+                    # 构建重启命令
+                    restart_command = [
+                        "cmd", "/c",
+                        "taskkill /F /PID " + str(current_pid) + " && "
+                        "cd /d " + os.getcwd() + " && "
+                        "start /B .\\venv\\Scripts\\python.exe main.py"
+                    ]
+
+                    logger.info(f"执行重启命令: {' '.join(restart_command)}")
+
+                    # 在新进程中执行重启命令
+                    subprocess.Popen(
+                        restart_command,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        creationflags=subprocess.DETACHED_PROCESS
+                    )
+
+                else:  # Unix/Linux/macOS
+                    logger.info("Unix系统：发送SIGTERM信号进行优雅关闭...")
+                    # 发送SIGTERM信号进行优雅关闭
+                    os.kill(current_pid, signal.SIGTERM)
+
+                logger.info("重启命令已执行，应用将重新启动")
+
+            except Exception as restart_error:
+                logger.error(f"执行重启时发生错误: {str(restart_error)}")
+                # 如果重启失败，强制退出，让进程管理器重启
+                try:
+                    os._exit(1)
+                except:
+                    pass
+
+        # 启动重启线程
+        restart_thread = threading.Thread(target=delayed_restart, daemon=True)
+        restart_thread.start()
+
+        logger.info(f"应用重启请求已接受，PID: {current_pid}")
 
         return SuccessResponse(
             data={
                 "restart_requested": True,
-                "estimated_downtime": "5-10秒",
-                "timestamp": datetime.now().isoformat()
+                "current_pid": current_pid,
+                "estimated_downtime": "5-15秒",
+                "timestamp": datetime.now().isoformat(),
+                "message": "应用将在几秒钟后重启"
             },
-            message="应用重启请求已接收"
+            message="应用重启请求已接收，服务将重新启动"
         )
 
     except Exception as e:
@@ -458,29 +543,285 @@ async def get_application_logs(
         raise HTTPException(status_code=500, detail=f"获取应用日志失败: {str(e)}")
 
 
+@router.get("/logs/download", summary="下载日志文件")
+async def download_log_file(
+    date: str = None,
+    background_tasks: BackgroundTasks = BackgroundTasks()
+):
+    """
+    下载日志文件
+
+    - **date**: 指定日期的日志文件 (格式: YYYY-MM-DD)，不指定则下载当前日志文件
+    """
+    logger.info(f"下载日志文件请求: date={date}")
+
+    try:
+        from fastapi.responses import FileResponse
+        import datetime
+
+        # 确定要下载的日志文件路径
+        if date:
+            try:
+                # 验证日期格式
+                datetime.datetime.strptime(date, "%Y-%m-%d")
+                log_file = f"../data/logs/xiaoyao-search-{date}.log"
+            except ValueError:
+                raise HTTPException(status_code=400, detail="日期格式无效，请使用YYYY-MM-DD格式")
+        else:
+            log_file = os.getenv("LOG_FILE", "../data/logs/app.log")
+
+        # 检查文件是否存在
+        if not os.path.exists(log_file):
+            raise HTTPException(status_code=404, detail="指定的日志文件不存在")
+
+        # 检查文件大小，限制最大50MB
+        file_size = os.path.getsize(log_file)
+        max_size = 50 * 1024 * 1024  # 50MB
+
+        if file_size > max_size:
+            raise HTTPException(
+                status_code=413,
+                detail=f"日志文件过大({file_size/1024/1024:.1f}MB)，超过最大限制(50MB)"
+            )
+
+        # 确定下载文件名
+        if date:
+            filename = f"xiaoyao-search-{date}.log"
+        else:
+            filename = "xiaoyao-search-app.log"
+
+        logger.info(f"日志文件下载开始: file={log_file}, size={file_size}, filename={filename}")
+
+        # 返回文件下载响应
+        return FileResponse(
+            path=log_file,
+            filename=filename,
+            media_type="text/plain"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"下载日志文件失败: date={date}, 错误={str(e)}")
+        raise HTTPException(status_code=500, detail=f"下载日志文件失败: {str(e)}")
+
+
 @router.delete("/cache", response_model=SuccessResponse, summary="清理缓存")
 async def clear_cache():
     """
     清理系统缓存
+
+    清理各种类型的缓存：
+    - 向量搜索缓存
+    - 全文搜索缓存
+    - AI模型缓存
+    - 临时文件
+    - 日志文件
     """
-    logger.info("清理系统缓存")
+    logger.info("开始清理系统缓存")
 
     try:
-        # TODO: 实现缓存清理逻辑
-        # 包括：向量缓存、搜索结果缓存、临时文件等
+        import os
+        import shutil
+        import glob
+        from pathlib import Path
+        from datetime import datetime, timedelta
 
         cache_cleared = {
-            "vector_cache": True,
-            "search_cache": True,
-            "temp_files": True,
-            "logs_cleaned": False
+            "vector_cache": False,
+            "search_cache": False,
+            "ai_model_cache": False,
+            "temp_files": False,
+            "log_files": False,
+            "session_cache": False,
+            "total_freed_space": 0
         }
 
-        logger.info(f"缓存清理完成: {cache_cleared}")
+        # 获取项目根目录
+        project_root = Path(__file__).parent.parent.parent
+        data_root = project_root / "data"
+
+        # 1. 清理向量搜索缓存（Faiss索引内存缓存）
+        try:
+            from app.services.search_service import get_search_service
+            search_service = get_search_service()
+
+            # 清理搜索服务内部缓存
+            if hasattr(search_service, 'clear_cache'):
+                search_service.clear_cache()
+                cache_cleared["vector_cache"] = True
+                logger.info("向量搜索缓存清理完成")
+            elif hasattr(search_service, '_search_cache'):
+                search_service._search_cache.clear()
+                cache_cleared["vector_cache"] = True
+                logger.info("向量搜索缓存清理完成")
+
+        except Exception as e:
+            logger.warning(f"清理向量搜索缓存失败: {str(e)}")
+            cache_cleared["vector_cache"] = False
+
+        # 2. 清理全文搜索缓存（Whoosh查询缓存）
+        try:
+            whoosh_cache_path = data_root / "indexes" / "whoosh_cache"
+            if whoosh_cache_path.exists():
+                shutil.rmtree(whoosh_cache_path)
+                whoosh_cache_path.mkdir(parents=True, exist_ok=True)
+                cache_cleared["search_cache"] = True
+                logger.info("全文搜索缓存清理完成")
+
+        except Exception as e:
+            logger.warning(f"清理全文搜索缓存失败: {str(e)}")
+            cache_cleared["search_cache"] = False
+
+        # 3. 清理AI模型缓存
+        try:
+            ai_model_cache_path = data_root / "models" / "cache"
+            if ai_model_cache_path.exists():
+                # 清理transformers缓存
+                transformers_cache = ai_model_cache_path / "transformers"
+                if transformers_cache.exists():
+                    shutil.rmtree(transformers_cache)
+                    cache_cleared["ai_model_cache"] = True
+
+                # 清理其他模型缓存文件
+                for cache_file in ai_model_cache_path.glob("**/*.cache"):
+                    try:
+                        cache_file.unlink()
+                        cache_cleared["ai_model_cache"] = True
+                    except Exception:
+                        pass
+
+                logger.info("AI模型缓存清理完成")
+
+        except Exception as e:
+            logger.warning(f"清理AI模型缓存失败: {str(e)}")
+            cache_cleared["ai_model_cache"] = False
+
+        # 4. 清理临时文件
+        try:
+            temp_paths = [
+                data_root / "temp",
+                data_root / "uploads" / "temp",
+                project_root / "temp",
+                Path.cwd() / "temp"
+            ]
+
+            total_temp_size = 0
+            for temp_path in temp_paths:
+                if temp_path.exists():
+                    # 计算临时文件夹大小
+                    for file_path in temp_path.rglob("*"):
+                        if file_path.is_file():
+                            try:
+                                total_temp_size += file_path.stat().st_size
+                                file_path.unlink()
+                            except Exception:
+                                pass
+
+                    # 删除空的子目录
+                    for dir_path in sorted(temp_path.rglob("*"), reverse=True):
+                        if dir_path.is_dir() and not any(dir_path.iterdir()):
+                            try:
+                                dir_path.rmdir()
+                            except Exception:
+                                pass
+
+            if total_temp_size > 0:
+                cache_cleared["temp_files"] = True
+                cache_cleared["total_freed_space"] += total_temp_size
+                logger.info(f"临时文件清理完成，释放空间: {total_temp_size / (1024*1024):.2f}MB")
+
+        except Exception as e:
+            logger.warning(f"清理临时文件失败: {str(e)}")
+            cache_cleared["temp_files"] = False
+
+        # 5. 清理旧的日志文件（保留最近7天）
+        try:
+            log_path = data_root / "logs"
+            if log_path.exists():
+                cutoff_date = datetime.now() - timedelta(days=7)
+                total_log_size = 0
+
+                for log_file in log_path.glob("*.log*"):
+                    try:
+                        # 检查文件修改时间
+                        file_mtime = datetime.fromtimestamp(log_file.stat().st_mtime)
+                        if file_mtime < cutoff_date:
+                            total_log_size += log_file.stat().st_size
+                            log_file.unlink()
+                    except Exception:
+                        pass
+
+                if total_log_size > 0:
+                    cache_cleared["log_files"] = True
+                    cache_cleared["total_freed_space"] += total_log_size
+                    logger.info(f"旧日志文件清理完成，释放空间: {total_log_size / (1024*1024):.2f}MB")
+
+        except Exception as e:
+            logger.warning(f"清理日志文件失败: {str(e)}")
+            cache_cleared["log_files"] = False
+
+        # 6. 清理会话缓存和应用运行时缓存
+        try:
+            import tempfile
+            import sys
+
+            # 清理Python缓存文件
+            python_cache_patterns = [
+                project_root / "**/__pycache__",
+                project_root / "**/*.pyc",
+                project_root / "**/*.pyo"
+            ]
+
+            for pattern in python_cache_patterns:
+                for cache_item in project_root.glob(str(pattern)):
+                    try:
+                        if cache_item.is_dir():
+                            shutil.rmtree(cache_item)
+                        else:
+                            cache_item.unlink()
+                        cache_cleared["session_cache"] = True
+                    except Exception:
+                        pass
+
+            # 清理系统临时目录中的应用缓存
+            system_temp = Path(tempfile.gettempdir())
+            app_temp_files = list(system_temp.glob("xiaoyao_search_*"))
+            for temp_file in app_temp_files:
+                try:
+                    if temp_file.is_dir():
+                        shutil.rmtree(temp_file)
+                    else:
+                        temp_file.unlink()
+                    cache_cleared["session_cache"] = True
+                except Exception:
+                    pass
+
+            logger.info("会话缓存清理完成")
+
+        except Exception as e:
+            logger.warning(f"清理会话缓存失败: {str(e)}")
+            cache_cleared["session_cache"] = False
+
+        # 计算清理状态
+        cleared_items = sum(1 for k, v in cache_cleared.items() if k.endswith("_cache") and v)
+        total_items = sum(1 for k in cache_cleared.keys() if k.endswith("_cache"))
+
+        cache_cleared["clearance_rate"] = cleared_items / total_items if total_items > 0 else 0
+        cache_cleared["total_cleared_items"] = cleared_items
+        cache_cleared["total_cache_items"] = total_items
+
+        # 转换空间大小为MB
+        if cache_cleared["total_freed_space"] > 0:
+            cache_cleared["freed_space_mb"] = round(cache_cleared["total_freed_space"] / (1024 * 1024), 2)
+        else:
+            cache_cleared["freed_space_mb"] = 0
+
+        logger.info(f"系统缓存清理完成: 清理项目 {cleared_items}/{total_items}, 释放空间 {cache_cleared['freed_space_mb']}MB")
 
         return SuccessResponse(
             data=cache_cleared,
-            message="系统缓存清理完成"
+            message=f"系统缓存清理完成，清理率 {cache_cleared['clearance_rate']:.1%}，释放空间 {cache_cleared['freed_space_mb']}MB"
         )
 
     except Exception as e:

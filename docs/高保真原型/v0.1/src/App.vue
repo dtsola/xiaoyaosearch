@@ -33,10 +33,10 @@
         </a-menu>
 
         <div class="header-actions">
-          <!-- 官方站点 -->
-          <a-button type="text" class="header-btn" @click="openOfficialSite">
-            <GlobalOutlined />
-            <span class="btn-text">官方站点</span>
+          <!-- 关于作者 -->
+          <a-button type="text" class="header-btn" @click="goToAbout">
+            <InfoCircleOutlined />
+            <span class="btn-text">关于作者</span>
           </a-button>
 
           <!-- 用户信息 -->
@@ -99,7 +99,7 @@ import {
   SettingOutlined,
   DatabaseOutlined,
   QuestionCircleOutlined,
-  GlobalOutlined,
+  InfoCircleOutlined,
   UserOutlined,
   CheckCircleOutlined,
   HddOutlined,
@@ -122,6 +122,7 @@ const currentRoute = computed(() => {
   if (path === '/settings') return ['settings']
   if (path === '/index') return ['index']
   if (path === '/help') return ['help']
+  if (path === '/about') return ['about']
   return []
 })
 
@@ -139,10 +140,9 @@ const handleMenuClick = ({ key }: { key: string }) => {
   }
 }
 
-// 打开官方站点
-const openOfficialSite = () => {
-  window.open('https://xiaoyaosearch.com', '_blank')
-  message.info('正在打开官方站点...')
+// 跳转到关于作者页面
+const goToAbout = () => {
+  router.push('/about')
 }
 
 // 格式化文件大小

@@ -89,40 +89,42 @@
 
         <!-- 操作列 -->
         <template #action="{ record }">
-          <a-space>
-            <a-button
-              type="link"
-              size="small"
-              @click="viewIndexDetails(record)"
-            >
-              详情
+          <a-dropdown :trigger="['click']" placement="bottomRight">
+            <a-button type="link" size="small">
+              操作 <DownOutlined />
             </a-button>
-            <a-button
-              v-if="record.status === 'completed'"
-              type="link"
-              size="small"
-              @click="rebuildIndex(record)"
-            >
-              重建
-            </a-button>
-            <a-button
-              v-if="record.status === 'processing'"
-              type="link"
-              size="small"
-              danger
-              @click="stopIndex(record)"
-            >
-              停止
-            </a-button>
-            <a-popconfirm
-              title="确定要删除这个索引吗？"
-              @confirm="deleteIndex(record)"
-            >
-              <a-button type="link" size="small" danger>
-                删除
-              </a-button>
-            </a-popconfirm>
-          </a-space>
+            <template #overlay>
+              <a-menu>
+                <a-menu-item @click="viewIndexDetails(record)">
+                  <EyeOutlined />
+                  详情
+                </a-menu-item>
+                <a-menu-item
+                  v-if="record.status === 'completed'"
+                  @click="smartUpdate(record)"
+                >
+                  <SyncOutlined />
+                  智能更新
+                </a-menu-item>
+                <a-menu-item
+                  v-if="record.status === 'processing'"
+                  @click="stopIndex(record)"
+                  danger
+                >
+                  <StopOutlined />
+                  停止
+                </a-menu-item>
+                <a-menu-divider />
+                <a-menu-item
+                  @click="confirmDelete(record)"
+                  danger
+                >
+                  <DeleteOutlined />
+                  删除
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
         </template>
       </a-table>
     </a-card>
@@ -134,6 +136,13 @@
       width="600px"
       @ok="handleAddFolder"
     >
+      <a-alert
+        message="提示"
+        description="当前仅支持一级目录索引，不会递归索引子文件夹"
+        type="info"
+        show-icon
+        style="margin-bottom: 16px"
+      />
       <a-form layout="vertical">
         <a-form-item label="选择文件夹">
           <a-input
@@ -147,17 +156,9 @@
           </a-input>
         </a-form-item>
 
-        <a-form-item label="索引选项">
-          <a-checkbox-group v-model:value="newFolder.options">
-            <a-checkbox value="recursive">包含子文件夹</a-checkbox>
-            <a-checkbox value="hidden">包含隐藏文件</a-checkbox>
-            <a-checkbox value="system">包含系统文件夹</a-checkbox>
-          </a-checkbox-group>
-        </a-form-item>
-
         <a-form-item label="文件类型">
           <a-checkbox-group v-model:value="newFolder.fileTypes">
-            <a-checkbox value="document">文档 (txt, markdown, office, pdf)</a-checkbox>
+            <a-checkbox value="document">文档 (txt, markdown, pdf, xls/xlsx, ppt/pptx, doc/docx)</a-checkbox>
             <a-checkbox value="audio">音频 (mp3, wav)</a-checkbox>
             <a-checkbox value="video">视频 (mp4, avi)</a-checkbox>
             <a-checkbox value="image">图片 (png, jpg)</a-checkbox>
@@ -235,10 +236,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   PlusOutlined,
-  SyncOutlined
+  SyncOutlined,
+  DownOutlined,
+  EyeOutlined,
+  StopOutlined,
+  DeleteOutlined
 } from '@ant-design/icons-vue'
 
 // 响应式数据
@@ -257,7 +262,6 @@ const stats = reactive({
 // 新建文件夹配置
 const newFolder = reactive({
   path: '',
-  options: ['recursive'],
   fileTypes: ['document', 'audio', 'video', 'image']
 })
 
@@ -421,7 +425,6 @@ const handleAddFolder = () => {
 
   // 重置表单
   newFolder.path = ''
-  newFolder.options = ['recursive']
   newFolder.fileTypes = ['document', 'audio', 'video', 'image']
 }
 
@@ -430,20 +433,65 @@ const viewIndexDetails = (record: any) => {
   showDetailsModal.value = true
 }
 
-const rebuildIndex = (record: any) => {
+const smartUpdate = (record: any) => {
+  // 模拟智能判断逻辑
+  const needsFullRebuild = Math.random() > 0.7 // 30%概率需要重建
+
+  if (needsFullRebuild) {
+    // 显示重建确认对话框
+    Modal.confirm({
+      title: '索引需要重建',
+      content: '检测到索引配置发生变化，需要重建索引。这可能需要较长时间，是否继续？',
+      onOk() {
+        performFullRebuild(record)
+      },
+      onCancel() {
+        message.info('已取消更新操作')
+      }
+    })
+  } else {
+    // 直接执行增量更新
+    performIncrementalUpdate(record)
+  }
+}
+
+const performFullRebuild = (record: any) => {
   record.status = 'processing'
   record.progress = 0
   record.processedFiles = 0
   record.errorCount = 0
   record.createdAt = new Date().toISOString()
   record.completedAt = null
-  message.success('索引重建已开始')
+  message.success('索引重建已开始，正在重新处理所有文件')
+}
+
+const performIncrementalUpdate = (record: any) => {
+  record.status = 'processing'
+  record.progress = 0
+  record.processedFiles = record.processedFiles // 保留已处理的文件数
+  record.errorCount = 0
+  record.createdAt = new Date().toISOString()
+  record.completedAt = null
+  message.success('智能更新已开始，将索引新增和修改的文件')
 }
 
 const stopIndex = (record: any) => {
   record.status = 'failed'
   record.errorMessage = '用户手动停止'
   message.info('索引任务已停止')
+}
+
+const confirmDelete = (record: any) => {
+  Modal.confirm({
+    title: '确定要删除这个索引吗？',
+    content: `删除索引"${record.folderPath}"后，需要重新创建才能搜索该文件夹的内容。`,
+    okText: '删除',
+    okType: 'danger',
+    cancelText: '取消',
+    onOk() {
+      deleteIndex(record)
+    }
+  })
 }
 
 const deleteIndex = (record: any) => {

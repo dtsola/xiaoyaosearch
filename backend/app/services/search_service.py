@@ -10,6 +10,7 @@ import pickle
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 import logging
+from app.utils.enum_helpers import get_enum_value, is_semantic_search, is_fulltext_search, is_hybrid_search
 
 try:
     import faiss
@@ -29,10 +30,17 @@ except ImportError:
     logging.warning("whoosh未安装，全文搜索功能不可用")
 
 from app.core.logging_config import get_logger
-from app.services.ai_model_manager import ai_model_service
 from app.schemas.enums import SearchType
 
 logger = get_logger(__name__)
+
+try:
+    from app.services.ai_model_manager import ai_model_service
+    AI_MODEL_SERVICE_AVAILABLE = True
+except ImportError as e:
+    AI_MODEL_SERVICE_AVAILABLE = False
+    ai_model_service = None
+    logger.warning(f"AI模型服务不可用: {e}")
 
 
 class SearchService:
@@ -97,9 +105,20 @@ class SearchService:
 
             # 加载Whoosh索引
             if WHOOSH_AVAILABLE and os.path.exists(self.whoosh_index_path):
-                storage = FileStorage(self.whoosh_index_path)
-                self.whoosh_index = index.open_dir(storage)
-                logger.info("Whoosh全文索引加载成功")
+                try:
+                    # 直接使用路径字符串打开索引
+                    self.whoosh_index = index.open_dir(self.whoosh_index_path)
+                    logger.info("Whoosh全文索引加载成功")
+                except Exception as whoosh_error:
+                    logger.warning(f"Whoosh索引打开失败，尝试创建存储: {whoosh_error}")
+                    try:
+                        # 如果直接打开失败，尝试使用FileStorage
+                        storage = FileStorage(self.whoosh_index_path)
+                        self.whoosh_index = index.open_dir(storage)
+                        logger.info("Whoosh全文索引加载成功（使用FileStorage）")
+                    except Exception as storage_error:
+                        logger.error(f"Whoosh索引加载完全失败: {storage_error}")
+                        self.whoosh_index = None
             else:
                 self.whoosh_index = None
                 logger.warning("Whoosh索引不存在")
@@ -134,13 +153,16 @@ class SearchService:
         start_time = datetime.now()
 
         try:
-            logger.info(f"开始搜索: query='{query}', type={search_type}")
+            # 使用枚举辅助函数确保类型安全
+            logger.info(f"DEBUG: search_type={search_type}, type={type(search_type)}")
+            search_type_str = get_enum_value(search_type)
+            logger.info(f"开始搜索: query='{query}', type={search_type_str}")
 
             # 根据搜索类型执行搜索
-            if search_type == SearchType.SEMANTIC or search_type == "semantic":
+            if is_semantic_search(search_type):
                 results = await self._semantic_search(query, limit, offset, threshold, filters)
                 self.search_stats['vector_searches'] += 1
-            elif search_type == SearchType.FULLTEXT or search_type == "fulltext":
+            elif is_fulltext_search(search_type):
                 results = await self._fulltext_search(query, limit, offset, filters)
                 self.search_stats['fulltext_searches'] += 1
             else:  # HYBRID
@@ -158,7 +180,7 @@ class SearchService:
             # 添加搜索元数据
             results['search_time'] = round(response_time, 3)
             results['query_used'] = query
-            results['search_type'] = search_type.value if hasattr(search_type, 'value') else search_type
+            results['search_type'] = get_enum_value(search_type)
             results['total_found'] = results.get('total', 0)
 
             logger.info(f"搜索完成: 结果数={results.get('total', 0)}, 耗时={response_time:.3f}秒")
@@ -173,7 +195,7 @@ class SearchService:
                 'total': 0,
                 'search_time': 0,
                 'query_used': query,
-                'search_type': search_type
+                'search_type': get_enum_value(search_type)
             }
 
     async def _semantic_search(
@@ -190,6 +212,9 @@ class SearchService:
 
         try:
             # 使用AI模型生成查询向量
+            if not AI_MODEL_SERVICE_AVAILABLE:
+                return {'success': False, 'results': [], 'total': 0, 'message': 'AI模型服务不可用'}
+
             query_embedding = await ai_model_service.text_embedding(
                 query,
                 normalize_embeddings=True

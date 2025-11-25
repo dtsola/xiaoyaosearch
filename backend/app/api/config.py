@@ -16,6 +16,7 @@ from app.schemas.responses import (
 )
 from app.schemas.enums import ModelType, ProviderType
 from app.models.ai_model import AIModelModel
+from app.utils.enum_helpers import get_enum_value, is_embedding_model, is_speech_model, is_vision_model, is_llm_model
 
 router = APIRouter(prefix="/api/config", tags=["AI模型配置"])
 logger = get_logger(__name__)
@@ -42,8 +43,8 @@ async def update_ai_model_config(
 
         # 检查是否已存在相同模型配置
         existing_model = db.query(AIModelModel).filter(
-            AIModelModel.model_type == request.model_type.value,
-            AIModelModel.provider == request.provider.value,
+            AIModelModel.model_type == get_enum_value(request.model_type),
+            AIModelModel.provider == get_enum_value(request.provider),
             AIModelModel.model_name == request.model_name,
             AIModelModel.is_active == True
         ).first()
@@ -58,8 +59,8 @@ async def update_ai_model_config(
         else:
             # 创建新配置
             new_model = AIModelModel(
-                model_type=request.model_type.value,
-                provider=request.provider.value,
+                model_type=get_enum_value(request.model_type),
+                provider=get_enum_value(request.provider),
                 model_name=request.model_name,
                 config_json=json.dumps(request.config, ensure_ascii=False)
             )
@@ -72,8 +73,8 @@ async def update_ai_model_config(
         return SuccessResponse(
             data={
                 "model_id": model_id,
-                "model_type": request.model_type.value,
-                "provider": request.provider.value,
+                "model_type": get_enum_value(request.model_type),
+                "provider": get_enum_value(request.provider),
                 "model_name": request.model_name
             },
             message="AI模型配置更新成功"
@@ -106,9 +107,9 @@ async def get_ai_models(
 
         # 应用过滤条件
         if model_type:
-            query = query.filter(AIModelModel.model_type == model_type.value)
+            query = query.filter(AIModelModel.model_type == get_enum_value(model_type))
         if provider:
-            query = query.filter(AIModelModel.provider == provider.value)
+            query = query.filter(AIModelModel.provider == get_enum_value(provider))
 
         # 查询所有配置
         models = query.order_by(AIModelModel.created_at.desc()).all()
@@ -182,13 +183,13 @@ async def test_ai_model(
         test_message = f"{model_config.model_name}模型测试成功"
 
         # 根据模型类型调整测试结果
-        if model_config.model_type == ModelType.EMBEDDING.value:
+        if is_embedding_model(model_config.model_type):
             test_message += "，向量维度768，响应正常"
-        elif model_config.model_type == ModelType.SPEECH.value:
+        elif is_speech_model(model_config.model_type):
             test_message += "，语音识别准确率95%"
-        elif model_config.model_type == ModelType.VISION.value:
+        elif is_vision_model(model_config.model_type):
             test_message += "，图像理解功能正常"
-        elif model_config.model_type == ModelType.LLM.value:
+        elif is_llm_model(model_config.model_type):
             test_message += "，文本生成质量良好"
 
         logger.info(f"AI模型测试完成: id={model_id}, 通过={test_passed}, 耗时={response_time:.2f}秒")

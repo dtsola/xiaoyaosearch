@@ -16,11 +16,24 @@ from app.schemas.responses import (
 )
 from app.schemas.enums import InputType, SearchType
 from app.models.search_history import SearchHistoryModel
-from app.services.ai_model_manager import ai_model_service
+from app.utils.enum_helpers import get_enum_value, is_semantic_search, is_hybrid_search, is_text_input, is_voice_input, is_image_input
+# AI模型服务导入状态
+AI_MODEL_SERVICE_AVAILABLE = False
+ai_model_service = None
 from app.services.search_service import get_search_service
 
 router = APIRouter(prefix="/api/search", tags=["搜索服务"])
 logger = get_logger(__name__)
+
+# 在logger定义后导入AI模型服务
+try:
+    from app.services.ai_model_manager import ai_model_service
+    AI_MODEL_SERVICE_AVAILABLE = True
+    logger.info("AI模型服务导入成功")
+except ImportError as e:
+    AI_MODEL_SERVICE_AVAILABLE = False
+    ai_model_service = None
+    logger.warning(f"AI模型服务不可用: {e}")
 
 
 @router.post("/", response_model=SearchResponse, summary="文本搜索")
@@ -41,7 +54,9 @@ async def search_files(
     - **file_types**: 文件类型过滤
     """
     start_time = time.time()
-    logger.info(f"收到搜索请求: query='{request.query}', type={request.search_type}")
+    # 使用枚举辅助函数确保类型安全
+    search_type_str = get_enum_value(request.search_type)
+    logger.info(f"收到搜索请求: query='{request.query}', type={search_type_str}")
 
     try:
         # 获取搜索服务
@@ -56,7 +71,7 @@ async def search_files(
                     "total": 0,
                     "search_time": 0,
                     "query_used": request.query,
-                    "input_processed": request.input_type != InputType.TEXT,
+                    "input_processed": not is_text_input(request.input_type),
                     "ai_models_used": [],
                     "error": "搜索服务未就绪，请先构建索引"
                 },
@@ -66,7 +81,7 @@ async def search_files(
         # 执行真正的搜索
         search_result = await search_service.search(
             query=request.query,
-            search_type=request.search_type,
+            search_type=search_type_str,  # 使用转换后的字符串
             limit=request.limit,
             offset=0,
             threshold=request.threshold,
@@ -96,18 +111,19 @@ async def search_files(
         ai_models_used = []
 
         # 根据搜索类型记录使用的AI模型
-        if request.search_type in [SearchType.SEMANTIC, SearchType.HYBRID]:
+        if is_semantic_search(request.search_type) or is_hybrid_search(request.search_type):
             ai_models_used.append("BGE-M3")
 
         # 如果是混合搜索，还有全文搜索
-        if request.search_type == SearchType.HYBRID:
+        if is_hybrid_search(search_type_str):  # 使用转换后的字符串
             ai_models_used.append("Whoosh")
 
         # 保存搜索历史
+        input_type_str = get_enum_value(request.input_type)
         history_record = SearchHistoryModel(
             search_query=request.query,
-            input_type=request.input_type.value,
-            search_type=request.search_type.value,
+            input_type=input_type_str,
+            search_type=search_type_str,
             ai_model_used=",".join(ai_models_used) if ai_models_used else "none",
             result_count=len(results),
             response_time=response_time
@@ -123,7 +139,7 @@ async def search_files(
                 "total": search_result.get('total', 0),
                 "search_time": round(response_time, 2),
                 "query_used": request.query,
-                "input_processed": request.input_type != InputType.TEXT,
+                "input_processed": not is_text_input(request.input_type),
                 "ai_models_used": ai_models_used
             },
             message="搜索完成"
@@ -155,7 +171,10 @@ async def multimodal_search(
     - **threshold**: 相似度阈值
     """
     start_time = time.time()
-    logger.info(f"收到多模态搜索请求: type={input_type}, file={file.filename}")
+    # 使用枚举辅助函数确保类型安全
+    input_type_str = get_enum_value(input_type)
+    search_type_str = get_enum_value(search_type)
+    logger.info(f"收到多模态搜索请求: type={input_type_str}, file={file.filename}")
 
     try:
         # 验证文件大小
@@ -175,8 +194,11 @@ async def multimodal_search(
         confidence = 0.0
         ai_models_used = []
 
-        if input_type == InputType.VOICE:
+        if is_voice_input(input_type):
             # 语音转文字
+            if not AI_MODEL_SERVICE_AVAILABLE:
+                raise HTTPException(status_code=503, detail="AI模型服务不可用，无法处理语音输入")
+
             logger.info("使用FasterWhisper进行语音识别")
             transcription_result = await ai_model_service.speech_to_text(
                 file_content,
@@ -186,8 +208,11 @@ async def multimodal_search(
             confidence = transcription_result.get("avg_confidence", 0.0)
             ai_models_used.append("FasterWhisper")
 
-        elif input_type == InputType.IMAGE:
+        elif is_image_input(input_type):
             # 图像理解生成搜索查询
+            if not AI_MODEL_SERVICE_AVAILABLE:
+                raise HTTPException(status_code=503, detail="AI模型服务不可用，无法处理图像输入")
+
             logger.info("使用CN-CLIP进行图像理解")
             texts = [
                 "描述这张图片的内容",
@@ -206,7 +231,7 @@ async def multimodal_search(
         # 如果成功转换，进行搜索
         if converted_text:
             # 获取搜索查询的嵌入向量
-            if search_type in [SearchType.SEMANTIC, SearchType.HYBRID]:
+            if (is_semantic_search(search_type) or is_hybrid_search(search_type)) and AI_MODEL_SERVICE_AVAILABLE:
                 await ai_model_service.text_embedding(converted_text, normalize_embeddings=True)
                 ai_models_used.append("BGE-M3")
 
@@ -233,8 +258,8 @@ async def multimodal_search(
         # 保存搜索历史
         history_record = SearchHistoryModel(
             search_query=converted_text or "转换失败",
-            input_type=input_type.value,
-            search_type=search_type.value,
+            input_type=input_type_str,
+            search_type=search_type_str,
             ai_model_used=",".join(ai_models_used) if ai_models_used else "none",
             result_count=len(mock_results),
             response_time=response_time
@@ -291,9 +316,11 @@ async def get_search_history(
 
         # 应用过滤条件
         if search_type:
-            query = query.filter(SearchHistoryModel.search_type == search_type.value)
+            search_type_str = get_enum_value(search_type)
+            query = query.filter(SearchHistoryModel.search_type == search_type_str)
         if input_type:
-            query = query.filter(SearchHistoryModel.input_type == input_type.value)
+            input_type_str = get_enum_value(input_type)
+            query = query.filter(SearchHistoryModel.input_type == input_type_str)
 
         # 获取总数
         total = query.count()

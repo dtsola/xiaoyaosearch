@@ -18,6 +18,7 @@ from app.schemas.responses import (
 )
 from app.schemas.enums import JobType, JobStatus
 from app.models.index_job import IndexJobModel
+from app.utils.enum_helpers import get_enum_value
 from app.models.file import FileModel
 from app.services.file_index_service import FileIndexService
 
@@ -79,7 +80,7 @@ async def create_index(
         # 检查是否有正在运行的索引任务
         existing_job = db.query(IndexJobModel).filter(
             IndexJobModel.folder_path == request.folder_path,
-            IndexJobModel.status.in_([JobStatus.PENDING, JobStatus.PROCESSING])
+            IndexJobModel.status.in_([get_enum_value(JobStatus.PENDING), get_enum_value(JobStatus.PROCESSING)])
         ).first()
 
         if existing_job:
@@ -93,7 +94,7 @@ async def create_index(
         index_job = IndexJobModel(
             folder_path=request.folder_path,
             job_type=JobType.CREATE,
-            status=JobStatus.PENDING
+            status=get_enum_value(JobStatus.PENDING)
         )
         db.add(index_job)
         db.commit()
@@ -145,7 +146,7 @@ async def update_index(
         # 检查是否有正在运行的索引任务
         existing_job = db.query(IndexJobModel).filter(
             IndexJobModel.folder_path == request.folder_path,
-            IndexJobModel.status.in_([JobStatus.PENDING, JobStatus.PROCESSING])
+            IndexJobModel.status.in_([get_enum_value(JobStatus.PENDING), get_enum_value(JobStatus.PROCESSING)])
         ).first()
 
         if existing_job:
@@ -159,7 +160,7 @@ async def update_index(
         index_job = IndexJobModel(
             folder_path=request.folder_path,
             job_type=JobType.UPDATE,
-            status=JobStatus.PENDING
+            status=get_enum_value(JobStatus.PENDING)
         )
         db.add(index_job)
         db.commit()
@@ -211,16 +212,16 @@ async def get_system_status(
         # 获取数据库统计
         total_files = db.query(FileModel).count()
         indexed_files = db.query(FileModel).filter(FileModel.is_indexed == True).count()
-        pending_files = db.query(FileModel).filter(FileModel.index_status == JobStatus.PENDING).count()
-        failed_files = db.query(FileModel).filter(FileModel.index_status == JobStatus.FAILED).count()
+        pending_files = db.query(FileModel).filter(FileModel.index_status == get_enum_value(JobStatus.PENDING)).count()
+        failed_files = db.query(FileModel).filter(FileModel.index_status == get_enum_value(JobStatus.FAILED)).count()
 
         # 获取最近的任务统计
         recent_jobs = db.query(IndexJobModel).order_by(IndexJobModel.created_at.desc()).limit(10).all()
         job_stats = {
             'total_jobs': len(recent_jobs),
-            'completed_jobs': len([j for j in recent_jobs if j.status == JobStatus.COMPLETED]),
-            'failed_jobs': len([j for j in recent_jobs if j.status == JobStatus.FAILED]),
-            'processing_jobs': len([j for j in recent_jobs if j.status == JobStatus.PROCESSING])
+            'completed_jobs': len([j for j in recent_jobs if j.status == get_enum_value(JobStatus.COMPLETED)]),
+            'failed_jobs': len([j for j in recent_jobs if j.status == get_enum_value(JobStatus.FAILED)]),
+            'processing_jobs': len([j for j in recent_jobs if j.status == get_enum_value(JobStatus.PROCESSING)])
         }
 
         return {
@@ -306,7 +307,7 @@ async def get_index_list(
 
         # 应用过滤条件
         if status:
-            query = query.filter(IndexJobModel.status == status.value)
+            query = query.filter(IndexJobModel.status == get_enum_value(status))
 
         # 获取总数
         total = query.count()
@@ -363,7 +364,7 @@ async def delete_index(
         folder_path = index_job.folder_path
 
         # 如果任务正在运行，标记为失败
-        if index_job.status == JobStatus.PROCESSING:
+        if index_job.status == get_enum_value(JobStatus.PROCESSING):
             index_job.fail_job("任务被手动删除")
             logger.info(f"停止正在运行的索引任务: id={index_id}")
 
@@ -418,7 +419,7 @@ async def stop_index(
         if not index_job:
             raise ResourceNotFoundException("索引任务", str(index_id))
 
-        if index_job.status != JobStatus.PROCESSING:
+        if index_job.status != get_enum_value(JobStatus.PROCESSING):
             raise ValidationException("只能停止正在运行的索引任务")
 
         # 标记任务为失败
@@ -608,7 +609,7 @@ async def run_full_index_task(
             IndexJobModel.id == index_id
         ).first()
 
-        if not index_job or index_job.status != JobStatus.PENDING:
+        if not index_job or index_job.status != get_enum_value(JobStatus.PENDING):
             logger.warning(f"索引任务不存在或状态不正确: id={index_id}")
             return
 
@@ -631,7 +632,6 @@ async def run_full_index_task(
         # 执行完整索引构建
         result = index_service.build_full_index(
             scan_paths=[folder_path],
-            recursive=recursive,
             progress_callback=progress_callback
         )
 
@@ -682,7 +682,7 @@ async def run_incremental_index_task(
             IndexJobModel.id == index_id
         ).first()
 
-        if not index_job or index_job.status != JobStatus.PENDING:
+        if not index_job or index_job.status != get_enum_value(JobStatus.PENDING):
             logger.warning(f"增量索引任务不存在或状态不正确: id={index_id}")
             return
 

@@ -1,10 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\".\\venv\\Scripts\\python.exe\" test_db_structure.py)",
-      "Bash(\".\\venv\\Scripts\\python.exe\" main.py)",
-      "Bash(mkdir:*)",
-      "Bash(git commit:*)"
+      "Bash(\"./backend/venv/Scripts/python.exe\":*)",
+      "Bash(.venvScriptspython.exe debug_enum_test.py)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(curl:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(python:*)",
+      "Bash(.venvScriptspython.exe:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell \"Stop-Process -Name python -Force\")",
+      "Bash(nvidia-smi:*)",
+      "Bash(./venv/Scripts/pip.exe uninstall:*)",
+      "Bash(./venv/Scripts/pip.exe:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

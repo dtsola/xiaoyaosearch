@@ -95,7 +95,7 @@ class IndexBuilder:
         # AI模型服务缓存
         self._ai_model_service = None
 
-    def build_indexes(self, documents: List[Dict[str, Any]]) -> bool:
+    async def build_indexes(self, documents: List[Dict[str, Any]]) -> bool:
         """构建索引
 
         Args:
@@ -113,7 +113,7 @@ class IndexBuilder:
 
         try:
             # 构建Faiss向量索引
-            faiss_success = self._build_faiss_index(documents)
+            faiss_success = await self._build_faiss_index(documents)
 
             # 构建Whoosh全文索引
             whoosh_success = self._build_whoosh_index(documents)
@@ -135,7 +135,7 @@ class IndexBuilder:
             logger.error(f"构建索引失败: {e}")
             return False
 
-    def update_indexes(self, new_documents: List[Dict[str, Any]]) -> bool:
+    async def update_indexes(self, new_documents: List[Dict[str, Any]]) -> bool:
         """增量更新索引
 
         Args:
@@ -152,7 +152,7 @@ class IndexBuilder:
 
         try:
             # 更新Faiss索引
-            faiss_success = self._update_faiss_index(new_documents)
+            faiss_success = await self._update_faiss_index(new_documents)
 
             # 更新Whoosh索引
             whoosh_success = self._update_whoosh_index(new_documents)
@@ -172,7 +172,7 @@ class IndexBuilder:
             logger.error(f"增量更新索引失败: {e}")
             return False
 
-    def _build_faiss_index(self, documents: List[Dict[str, Any]]) -> bool:
+    async def _build_faiss_index(self, documents: List[Dict[str, Any]]) -> bool:
         """构建Faiss向量索引"""
         if not FAISS_AVAILABLE:
             logger.warning("Faiss不可用，跳过向量索引构建")
@@ -187,7 +187,7 @@ class IndexBuilder:
             # 提取文档向量
             if self.use_ai_embeddings:
                 logger.info("使用AI模型生成嵌入向量")
-                vectors = self._extract_ai_embeddings(documents)
+                vectors = await self._extract_ai_embeddings(documents)
             else:
                 logger.info("使用简单字符统计特征")
                 vectors = self._extract_simple_vectors(documents)
@@ -232,7 +232,7 @@ class IndexBuilder:
             logger.error(f"构建Faiss索引失败: {e}")
             return False
 
-    def _extract_ai_embeddings(self, documents: List[Dict[str, Any]]) -> List[List[float]]:
+    async def _extract_ai_embeddings(self, documents: List[Dict[str, Any]]) -> List[List[float]]:
         """使用AI模型提取文档嵌入向量"""
         try:
             vectors = []
@@ -249,7 +249,7 @@ class IndexBuilder:
 
                 # 使用AI模型生成嵌入向量
                 logger.info(f"生成嵌入向量，批次 {i//batch_size + 1}/{(len(documents) + batch_size - 1)//batch_size}")
-                embeddings = asyncio.run(self._generate_batch_embeddings(valid_texts))
+                embeddings = await self._generate_batch_embeddings(valid_texts)
 
                 vectors.extend(embeddings)
 
@@ -340,7 +340,7 @@ class IndexBuilder:
             logger.error(f"构建Whoosh索引失败: {e}")
             return False
 
-    def _update_faiss_index(self, new_documents: List[Dict[str, Any]]) -> bool:
+    async def _update_faiss_index(self, new_documents: List[Dict[str, Any]]) -> bool:
         """增量更新Faiss索引"""
         if not FAISS_AVAILABLE:
             return False
@@ -351,7 +351,7 @@ class IndexBuilder:
                 faiss_index = faiss.read_index(self.faiss_index_path)
             else:
                 # 如果索引不存在，创建新索引
-                return self._build_faiss_index(new_documents)
+                return await self._build_faiss_index(new_documents)
 
             # 读取现有元数据
             metadata_path = self.faiss_index_path.replace('.faiss', '_metadata.pkl')
@@ -365,7 +365,7 @@ class IndexBuilder:
             # 为新文档生成向量
             if self.use_ai_embeddings and self.bge_model:
                 # 使用AI模型生成嵌入向量
-                new_vectors = self._extract_ai_embeddings(new_documents)
+                new_vectors = await self._extract_ai_embeddings(new_documents)
                 logger.info(f"使用AI模型生成{len(new_vectors)}个嵌入向量")
             else:
                 # 使用简单特征向量（fallback方法）

@@ -111,6 +111,15 @@ class AIConfig(BaseSettings):
     # 模型路径配置
     models_cache_dir: str = Field(default="../data/models", description="模型缓存目录")
 
+    # GPU/CUDA配置
+    device: str = Field(default="cuda", description="AI模型运行设备 (cuda/cpu)")
+    use_gpu: bool = Field(default=True, description="是否使用GPU加速")
+    gpu_memory_fraction: float = Field(default=0.8, description="GPU内存使用比例")
+
+    # 模型加载配置
+    enable_mixed_precision: bool = Field(default=True, description="启用混合精度训练")
+    enable_compile: bool = Field(default=True, description="启用PyTorch 2.0编译优化")
+
     # 云端API配置（环境变量）
     openai_api_key: Optional[str] = Field(default=None, description="OpenAI API密钥")
     aliyun_access_key_id: Optional[str] = Field(default=None, description="阿里云AccessKey ID")
@@ -118,6 +127,17 @@ class AIConfig(BaseSettings):
 
     class Config:
         env_prefix = "AI_"
+
+    def get_optimal_device(self) -> str:
+        """获取最优设备配置"""
+        try:
+            import torch
+            if self.use_gpu and torch.cuda.is_available():
+                return "cuda"
+            else:
+                return "cpu"
+        except ImportError:
+            return "cpu"
 
 
 class SecurityConfig(BaseSettings):

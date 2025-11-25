@@ -290,12 +290,29 @@
       title="选择搜索目录"
       @ok="handleFolderSelect"
     >
-      <a-tree
-        v-model:selectedKeys="selectedFolders"
-        :tree-data="folderTree"
-        :field-names="{ title: 'name', key: 'path', children: 'children' }"
-        checkable
-      />
+      <a-list
+        :data-source="recentFolders"
+        item-layout="horizontal"
+        size="small"
+      >
+        <template #renderItem="{ item }">
+          <a-list-item>
+            <a-list-item-meta>
+              <template #title>
+                <a-checkbox
+                  :checked="selectedFolders.includes(item.path)"
+                  @change="handleFolderCheck(item.path)"
+                >
+                  {{ item.name }}
+                </a-checkbox>
+              </template>
+              <template #description>
+                {{ item.path }}
+              </template>
+            </a-list-item-meta>
+          </a-list-item>
+        </template>
+      </a-list>
     </a-modal>
   </div>
 </template>
@@ -359,24 +376,12 @@ const searchStats = reactive({
 const aiEngine = ref('Ollama')
 const searchScope = ref('所有文件夹')
 
-// 文件夹树
-const folderTree = ref([
-  {
-    name: '文档文件夹',
-    path: '/documents',
-    children: [
-      { name: '工作报告', path: '/documents/reports' },
-      { name: '技术文档', path: '/documents/tech' }
-    ]
-  },
-  {
-    name: '多媒体文件夹',
-    path: '/media',
-    children: [
-      { name: '音频文件', path: '/media/audio' },
-      { name: '视频文件', path: '/media/video' }
-    ]
-  }
+// 最近使用的文件夹列表
+const recentFolders = ref([
+  { name: '文档', path: 'D:\\Documents' },
+  { name: '下载', path: 'D:\\Downloads' },
+  { name: '工作项目', path: 'D:\\Work\\Projects' },
+  { name: '桌面', path: 'D:\\Desktop' }
 ])
 
 // 计算属性
@@ -540,6 +545,15 @@ const showAdvancedSearch = () => {
 }
 
 // 文件夹选择
+const handleFolderCheck = (folderPath: string) => {
+  const index = selectedFolders.value.indexOf(folderPath)
+  if (index > -1) {
+    selectedFolders.value.splice(index, 1)
+  } else {
+    selectedFolders.value.push(folderPath)
+  }
+}
+
 const handleFolderSelect = () => {
   if (selectedFolders.value.length > 0) {
     searchScope.value = `${selectedFolders.value.length} 个文件夹`

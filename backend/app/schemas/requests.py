@@ -17,8 +17,8 @@ class SearchRequest(BaseModel):
     用于执行文件搜索的请求参数
     """
     query: str = Field(..., description="搜索查询词", min_length=1, max_length=500)
-    input_type: InputType = Field(InputType.TEXT, description="输入类型")
-    search_type: SearchType = Field(SearchType.HYBRID, description="搜索类型")
+    input_type: InputType = Field("text", description="输入类型")
+    search_type: SearchType = Field("hybrid", description="搜索类型")
     limit: int = Field(20, ge=1, le=100, description="返回结果数量")
     threshold: float = Field(0.7, ge=0.0, le=1.0, description="相似度阈值")
     file_types: Optional[List[FileType]] = Field(None, description="文件类型过滤")

@@ -35,6 +35,14 @@ const router = createRouter({
       meta: {
         title: '帮助 - 小遥搜索'
       }
+    },
+    {
+      path: '/about',
+      name: 'About',
+      component: () => import('@/views/About.vue'),
+      meta: {
+        title: '关于作者 - 小遥搜索'
+      }
     }
   ]
 })

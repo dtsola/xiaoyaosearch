@@ -24,13 +24,15 @@ Pillow==10.1.0                   # 图像处理
 chardet==5.0.0                   # 编码检测
 mutagen==1.46.0                  # 音频元数据提取
 
-# 搜索引擎基础 - 暂时安装基础版本
-faiss-cpu==1.7.4                 # Facebook向量搜索
+# 搜索引擎基础 - 使用CUDA版本
+faiss-cpu==1.7.4                 # Facebook向量搜索 (CUDA版本)
 whoosh==2.7.4                    # Python全文搜索
 jieba==0.42.1                    # 中文分词
 
-# AI模型集成 - 核心依赖
-torch==2.1.0                     # PyTorch深度学习框架
+# AI模型集成 - 核心依赖 (CUDA版本)
+torch==2.1.0+cu121               # PyTorch深度学习框架 (CUDA 12.1)
+torch-audio==2.1.0+cu121         # PyTorch音频处理 (CUDA版本)
+torchvision==0.16.0+cu121        # PyTorch视觉处理 (CUDA版本)
 transformers==4.36.0             # HuggingFace transformers库
 sentence-transformers==2.2.2     # 句子向量嵌入库
 flagai==1.6.4                    # FlagAI模型库

@@ -10,6 +10,8 @@ import logging
 from datetime import datetime
 import traceback
 
+from app.utils.enum_helpers import get_enum_value
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,7 +74,7 @@ class BaseAIModel(ABC):
         self.error_message = None
         self.usage_count = 0
 
-        logger.info(f"初始化{model_type.value}模型: {model_name} ({provider.value})")
+        logger.info(f"初始化{get_enum_value(model_type)}模型: {model_name} ({get_enum_value(provider)})")
 
     @abstractmethod
     async def load_model(self) -> bool:
@@ -185,9 +187,9 @@ class BaseAIModel(ABC):
         """
         return {
             "model_name": self.model_name,
-            "model_type": self.model_type.value,
-            "provider": self.provider.value,
-            "status": self.status.value,
+            "model_type": get_enum_value(self.model_type),
+            "provider": get_enum_value(self.provider),
+            "status": get_enum_value(self.status),
             "load_time": self.load_time.isoformat() if self.load_time else None,
             "last_used_time": self.last_used_time.isoformat() if self.last_used_time else None,
             "usage_count": self.usage_count,
@@ -206,7 +208,7 @@ class BaseAIModel(ABC):
 
     def __repr__(self) -> str:
         """模型字符串表示"""
-        return f"<{self.__class__.__name__}(name={self.model_name}, type={self.model_type.value}, status={self.status.value})>"
+        return f"<{self.__class__.__name__}(name={self.model_name}, type={get_enum_value(self.model_type)}, status={get_enum_value(self.status)})>"
 
 
 class ModelManager:

@@ -7,11 +7,43 @@ import logging
 from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
 
+logger = logging.getLogger(__name__)
+
 from app.services.ai_model_base import BaseAIModel, ModelType, ProviderType, ModelStatus, ModelManager, AIModelException
-from app.services.bge_embedding_service import create_bge_service
-from app.services.whisper_service import create_whisper_service
-from app.services.clip_service import create_clip_service
-from app.services.ollama_service import create_ollama_service
+from app.utils.enum_helpers import get_enum_value
+
+# 尝试导入AI模型服务，如果模块不存在则跳过
+try:
+    from app.services.bge_embedding_service import create_bge_service
+    BGE_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"BGE嵌入服务不可用: {e}")
+    create_bge_service = None
+    BGE_AVAILABLE = False
+
+try:
+    from app.services.whisper_service import create_whisper_service
+    WHISPER_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Whisper语音服务不可用: {e}")
+    create_whisper_service = None
+    WHISPER_AVAILABLE = False
+
+try:
+    from app.services.clip_service import create_clip_service
+    CLIP_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"CLIP图像服务不可用: {e}")
+    create_clip_service = None
+    CLIP_AVAILABLE = False
+
+try:
+    from app.services.ollama_service import create_ollama_service
+    OLLAMA_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Ollama服务不可用: {e}")
+    create_ollama_service = None
+    OLLAMA_AVAILABLE = False
 from app.models.ai_model import AIModelModel
 from app.core.database import get_db as get_db_session
 
@@ -202,7 +234,7 @@ class AIModelService:
         if isinstance(model_type, str):
             model_type = ModelType(model_type)
 
-        model_id = self.default_models.get(model_type.value)
+        model_id = self.default_models.get(get_enum_value(model_type))
         if model_id:
             return self.model_manager.get_model(model_id)
         return None
@@ -480,19 +512,19 @@ class AIModelService:
         """
         models_by_type = {}
         for model_type in ModelType:
-            models_by_type[model_type.value] = []
+            models_by_type[get_enum_value(model_type)] = []
 
         for model_id, model in self.model_manager.models.items():
             model_info = {
                 "model_id": model_id,
                 "model_name": model.model_name,
-                "model_type": model.model_type.value,
-                "provider": model.provider.value,
-                "status": model.status.value,
-                "is_default": self.default_models.get(model.model_type.value) == model_id,
+                "model_type": get_enum_value(model.model_type),
+                "provider": get_enum_value(model.provider),
+                "status": get_enum_value(model.status),
+                "is_default": self.default_models.get(get_enum_value(model.model_type)) == model_id,
                 "config": model.get_model_info()
             }
-            models_by_type[model.model_type.value].append(model_info)
+            models_by_type[get_enum_value(model.model_type)].append(model_info)
 
         return models_by_type
 
@@ -509,7 +541,7 @@ class AIModelService:
         results = {}
 
         for model_id, model in self.model_manager.models.items():
-            if model_types and model.model_type.value not in model_types:
+            if model_types and get_enum_value(model.model_type) not in model_types:
                 continue
 
             try:

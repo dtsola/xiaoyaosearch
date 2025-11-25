@@ -18,6 +18,7 @@ except ImportError:
 import faiss
 
 from app.services.ai_model_base import BaseAIModel, ModelType, ProviderType, ModelStatus, AIModelException
+from app.utils.enum_helpers import get_enum_value
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -207,7 +208,7 @@ class BGEEmbeddingService(BaseAIModel):
         """
         if self.status != ModelStatus.LOADED:
             raise AIModelException(
-                f"模型未加载，当前状态: {self.status.value}",
+                f"模型未加载，当前状态: {get_enum_value(self.status)}",
                 model_name=self.model_name
             )
 
@@ -401,8 +402,8 @@ class BGEEmbeddingService(BaseAIModel):
         """
         return {
             "model_name": self.model_name,
-            "model_type": self.model_type.value,
-            "provider": self.provider.value,
+            "model_type": get_enum_value(self.model_type),
+            "provider": get_enum_value(self.provider),
             "embedding_dim": self.config.get("embedding_dim", 768),
             "max_length": self.config.get("max_length", 8192),
             "device": str(self.device),

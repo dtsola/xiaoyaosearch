@@ -21,8 +21,14 @@
     "build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
     "@electron-toolkit/preload": "^3.0.0",
-    "@electron-toolkit/utils": "^3.0.0"
+    "@electron-toolkit/utils": "^3.0.0",
+    "ant-design-vue": "^4.2.6",
+    "axios": "^1.13.2",
+    "dayjs": "^1.11.19",
+    "pinia": "^3.0.4",
+    "vue-router": "^4.6.3"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^1.0.2",

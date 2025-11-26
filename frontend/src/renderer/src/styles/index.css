@@ -1,0 +1,248 @@
+/* 现代简约风格 - 小遥搜索 v2.0 */
+
+/* 基础变量定义 */
+:root {
+  /* 基础背景色彩 - 浅色优先设计 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+
+  /* 表面色系统 */
+  --surface-01: #ffffff;
+  --surface-02: #f8fafc;
+  --surface-03: #f1f5f9;
+  --surface-04: #e2e8f0;
+  --surface-05: #cbd5e1;
+
+  /* 文字色彩系统 */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-quaternary: #94a3b8;
+  --text-inverse: #ffffff;
+
+  /* 品牌主色 - 专业蓝色渐变 */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  --primary-800: #1e40af;
+
+  /* 强调色 - 活力青色 */
+  --accent: #06b6d4;
+  --accent-light: #67e8f9;
+  --accent-dark: #0891b2;
+
+  /* 语义化色彩 */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+
+  /* 边框色彩 */
+  --border-light: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-strong: #94a3b8;
+
+  /* 阴影系统 */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-base: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* 间距系统 */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* 圆角系统 */
+  --radius-sm: 0.125rem;
+  --radius-base: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  /* 过渡时间 */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 全局重置和基础样式 */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+#app {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 自定义组件样式 */
+.search-container {
+  background: var(--surface-01);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-base);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.search-container:hover {
+  border-color: var(--primary-200);
+  box-shadow: var(--shadow-xl);
+}
+
+.search-container.focused {
+  border-color: var(--primary-300);
+  box-shadow: var(--shadow-xl), 0 0 0 3px var(--primary-100);
+}
+
+.result-card {
+  background: var(--surface-01);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-base);
+  transition: all var(--transition-base);
+  margin-bottom: var(--space-4);
+}
+
+.result-card:hover {
+  border-color: var(--primary-200);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+ .multimodal-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: var(--surface-01);
+  border: 2px solid var(--border-light);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all var(--transition-base);
+  cursor: pointer;
+  margin: 0 var(--space-3);
+}
+
+.multimodal-indicator .anticon {
+  font-size: 1.5rem !important;
+}
+
+.multimodal-indicator:hover {
+  border-color: var(--primary-300);
+  background: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.multimodal-indicator.active {
+  border-color: var(--primary-500);
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .search-container {
+    margin: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .result-card {
+    padding: var(--space-4);
+  }
+}
+
+/* Ant Design 主题定制 */
+.ant-layout {
+  background: var(--bg-secondary);
+}
+
+.ant-menu {
+  background: transparent;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.ant-btn-primary {
+  background: var(--primary-600);
+  border-color: var(--primary-600);
+}
+
+.ant-btn-primary:hover {
+  background: var(--primary-700);
+  border-color: var(--primary-700);
+}
+
+.ant-input {
+  border-radius: var(--radius-lg);
+  border-color: var(--border-light);
+}
+
+.ant-input:focus, .ant-input-focused {
+  border-color: var(--primary-400);
+  box-shadow: 0 0 0 2px var(--primary-100);
+}
+
+.ant-card {
+  border-radius: var(--radius-xl);
+  border-color: var(--border-light);
+  box-shadow: var(--shadow-base);
+}
+
+.ant-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* 动画效果 */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity var(--transition-base);
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active, .slide-up-leave-active {
+  transition: all var(--transition-base);
+}
+
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}

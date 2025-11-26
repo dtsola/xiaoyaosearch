@@ -26,7 +26,10 @@
       "Bash(./backend/venv/Scripts/python:*)",
       "Bash(npm run dev)",
       "Bash(powershell \"Stop-Process -Id 26760 -Force\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(find:*)",
+      "Bash(./venv/Scripts/pytest.exe:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

@@ -122,7 +122,7 @@ class AIModelService:
                 "model_name": "BAAI/bge-m3",
                 "config": {
                     "model_name": str(project_root / "data" / "models" / "embedding" / "BAAI" / "bge-m3"),
-                    "device": "cpu",
+                    "device": "gpu",
                     "embedding_dim": 768,
                     "max_length": 8192,
                     "normalize_embeddings": True
@@ -131,10 +131,10 @@ class AIModelService:
             "whisper_local": {
                 "model_type": "speech",
                 "provider": "local",
-                "model_name": "faster-whisper-base",
+                "model_name": str(project_root / "data" / "models" / "faster-whisper" / "Systran" / "faster-whisper-base"),
                 "config": {
                     "model_size": "base",
-                    "device": "cpu",
+                    "device": "gpu",
                     "language": "zh",
                     "max_duration": 30
                 }
@@ -145,16 +145,16 @@ class AIModelService:
                 "model_name": "OFA-Sys/chinese-clip-vit-base-patch16",
                 "config": {
                     "model_name": str(project_root / "data" / "models" / "cn-clip" / "OFA-Sys" / "chinese-clip-vit-base-patch16"),
-                    "device": "cpu",
+                    "device": "gpu",
                     "max_image_size": 512
                 }
             },
             "ollama_local": {
                 "model_type": "llm",
                 "provider": "local",
-                "model_name": "qwen:7b",
+                "model_name": "qwen2.5:1.5b",
                 "config": {
-                    "model_name": "qwen:7b",
+                    "model_name": "qwen2.5:1.5b",
                     "base_url": "http://localhost:11434",
                     "temperature": 0.7
                 }

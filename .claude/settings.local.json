@@ -29,7 +29,8 @@
       "Bash(powershell:*)",
       "Bash(find:*)",
       "Bash(./venv/Scripts/pytest.exe:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

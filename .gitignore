@@ -69,3 +69,6 @@ app/dist/
 
 # 测试文件目录
 test-dir/
+
+# 发布版应用
+release/

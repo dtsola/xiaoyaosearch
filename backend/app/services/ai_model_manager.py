@@ -1,6 +1,6 @@
 """
 AI模型管理服务
-统一管理和协调所有AI模型实例
+统一管理和协调所有AI模型实例 - 修复版
 """
 import asyncio
 import logging
@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 from app.services.ai_model_base import BaseAIModel, ModelType, ProviderType, ModelStatus, ModelManager, AIModelException
 from app.utils.enum_helpers import get_enum_value
+from app.core.config import get_settings
 
 # 尝试导入AI模型服务，如果模块不存在则跳过
 try:
@@ -45,7 +46,7 @@ except ImportError as e:
     create_ollama_service = None
     OLLAMA_AVAILABLE = False
 from app.models.ai_model import AIModelModel
-from app.core.database import get_db as get_db_session
+from app.core.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ class AIModelService:
     async def _load_model_configs_from_db(self):
         """从数据库加载模型配置"""
         try:
-            with get_db_session() as db:
+            with get_db() as db:
                 # 查询所有活跃的模型配置
                 model_configs = db.query(AIModelModel).filter(AIModelModel.is_active == True).all()
 
@@ -122,8 +123,8 @@ class AIModelService:
                 "model_name": "BAAI/bge-m3",
                 "config": {
                     "model_name": str(project_root / "data" / "models" / "embedding" / "BAAI" / "bge-m3"),
-                    "device": "gpu",
-                    "embedding_dim": 768,
+                    "device": get_settings().ai.get_optimal_device(),
+                    "embedding_dim": 1024,
                     "max_length": 8192,
                     "normalize_embeddings": True
                 }
@@ -134,7 +135,7 @@ class AIModelService:
                 "model_name": str(project_root / "data" / "models" / "faster-whisper" / "Systran" / "faster-whisper-base"),
                 "config": {
                     "model_size": "base",
-                    "device": "gpu",
+                    "device": get_settings().ai.get_optimal_device(),
                     "language": "zh",
                     "max_duration": 30
                 }
@@ -145,7 +146,7 @@ class AIModelService:
                 "model_name": "OFA-Sys/chinese-clip-vit-base-patch16",
                 "config": {
                     "model_name": str(project_root / "data" / "models" / "cn-clip" / "OFA-Sys" / "chinese-clip-vit-base-patch16"),
-                    "device": "gpu",
+                    "device": get_settings().ai.get_optimal_device(),
                     "max_image_size": 512
                 }
             },

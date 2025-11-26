@@ -645,7 +645,7 @@ async def run_full_index_task(
                 db.commit()
 
         # 执行完整索引构建
-        result = index_service.build_full_index(
+        result = await index_service.build_full_index(
             scan_paths=[folder_path],
             progress_callback=progress_callback
         )

@@ -23,7 +23,7 @@ except ImportError:
 
 try:
     from whoosh import fields, index
-    from whoosh.analysis import ChineseAnalyzer, StandardAnalyzer
+    from whoosh.analysis import StandardAnalyzer, RegexTokenizer
     from whoosh.filedb.filestore import FileStorage
     from whoosh.writing import IndexWriter
     WHOOSH_AVAILABLE = True
@@ -34,8 +34,20 @@ except ImportError:
 try:
     import jieba
     JIEBA_AVAILABLE = True
+
+    # 创建jieba分词分析器
+    def jieba_tokenizer(text):
+        from whoosh.analysis import Token
+        return (Token(text=token, pos=i) for i, token in enumerate(jieba.cut(text)) if token.strip())
+
+    from whoosh.analysis import Analyzer
+    class JiebaAnalyzer(Analyzer):
+        def __call__(self, text, **kwargs):
+            return jieba_tokenizer(text)
+
 except ImportError:
     JIEBA_AVAILABLE = False
+    JiebaAnalyzer = None
     logging.warning("jieba未安装，中文分词功能不可用")
 
 logger = logging.getLogger(__name__)
@@ -77,9 +89,9 @@ class IndexBuilder:
 
         # 配置分析器
         if WHOOSH_AVAILABLE:
-            if use_chinese_analyzer and JIEBA_AVAILABLE:
-                # 使用中文分析器
-                self.analyzer = ChineseAnalyzer()
+            if use_chinese_analyzer and JIEBA_AVAILABLE and JiebaAnalyzer:
+                # 使用jieba分词创建中文分析器
+                self.analyzer = JiebaAnalyzer()
             else:
                 # 使用标准分析器
                 self.analyzer = StandardAnalyzer()
@@ -275,8 +287,8 @@ class IndexBuilder:
 
         except Exception as e:
             logger.error(f"批量嵌入生成失败: {e}")
-            # 返回零向量作为fallback
-            return [[0.0] * 768 for _ in texts]
+            # 返回零向量作为fallback，使用1024维度匹配BGE-M3
+            return [[0.0] * 1024 for _ in texts]
 
     def _extract_simple_vectors(self, documents: List[Dict[str, Any]]) -> List[List[float]]:
         """提取简单特征向量（fallback方法）"""
@@ -470,7 +482,7 @@ class IndexBuilder:
             logger.error(f"增量更新Whoosh索引失败: {e}")
             return False
 
-    def _extract_simple_vector(self, text: str, dimension: int = 512) -> List[float]:
+    def _extract_simple_vector(self, text: str, dimension: int = 1024) -> List[float]:
         """简单的文本特征向量提取
 
         注意：这是一个简化的实现，实际应用中应该使用预训练的文本嵌入模型

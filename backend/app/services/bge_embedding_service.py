@@ -43,7 +43,7 @@ class BGEEmbeddingService(BaseAIModel):
         default_config = {
             "model_name": "BAAI/bge-m3",
             "device": "cpu",
-            "embedding_dim": 768,
+            "embedding_dim": 1024,
             "max_length": 8192,
             "normalize_embeddings": True,
             "batch_size": 32,
@@ -268,6 +268,9 @@ class BGEEmbeddingService(BaseAIModel):
             # 手动使用Transformers编码
             embeddings = self._encode_with_transformers(texts, batch_size, normalize_embeddings)
 
+        # BGE-M3输出完整的1024维向量，不需要截断
+        logger.info(f"生成 {embeddings.shape[1]} 维嵌入向量")
+
         return embeddings
 
     def _encode_with_transformers(self, texts: List[str], batch_size: int, normalize_embeddings: bool) -> np.ndarray:
@@ -404,7 +407,7 @@ class BGEEmbeddingService(BaseAIModel):
             "model_name": self.model_name,
             "model_type": get_enum_value(self.model_type),
             "provider": get_enum_value(self.provider),
-            "embedding_dim": self.config.get("embedding_dim", 768),
+            "embedding_dim": self.config.get("embedding_dim", 1024),
             "max_length": self.config.get("max_length", 8192),
             "device": str(self.device),
             "normalize_embeddings": self.config.get("normalize_embeddings", True),

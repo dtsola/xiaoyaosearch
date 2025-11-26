@@ -6,6 +6,7 @@
 
 import os
 import uuid
+import asyncio
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
@@ -82,7 +83,7 @@ class FileIndexService:
         # 内存中缓存已索引文件信息（用于变更检测）
         self._indexed_files_cache: Dict[str, FileInfo] = {}
 
-    def build_full_index(
+    async def build_full_index(
         self,
         scan_paths: List[str],
         progress_callback: Optional[callable] = None
@@ -159,9 +160,14 @@ class FileIndexService:
             if progress_callback:
                 progress_callback("构建索引", 80.0)
 
-            index_success = self.index_builder.build_indexes(documents)
+            # 构建索引（异步调用）
+            index_success = await self.index_builder.build_indexes(documents)
 
-            # 4. 更新缓存和状态
+            # 4. 保存文件数据到数据库
+            if index_success:
+                await self._save_files_to_database(all_files, documents)
+
+            # 5. 更新缓存和状态
             if index_success:
                 self._update_indexed_files_cache(all_files)
                 self.index_status.update({
@@ -281,6 +287,155 @@ class FileIndexService:
                 'success': False,
                 'error': str(e)
             }
+
+    async def _save_files_to_database(self, all_files: List[FileInfo], documents: List[Dict[str, Any]]):
+        """保存文件数据到数据库
+
+        Args:
+            all_files: 扫描到的所有文件列表
+            documents: 处理成功的文档列表
+        """
+        try:
+            from app.core.database import SessionLocal
+            from app.models.file import FileModel
+            from app.models.file_content import FileContentModel
+            import hashlib
+
+            db = SessionLocal()
+            try:
+                logger.info(f"开始保存 {len(documents)} 个文件到数据库")
+
+                for i, (file_info, document) in enumerate(zip(all_files, documents)):
+                    try:
+                        # 计算文件内容哈希
+                        content_hash = self._calculate_file_hash(file_info.path)
+
+                        # 从mime_type推断文件类型
+                        file_type = 'unknown'
+                        if file_info.mime_type:
+                            if 'image' in file_info.mime_type:
+                                file_type = 'image'
+                            elif 'video' in file_info.mime_type:
+                                file_type = 'video'
+                            elif 'audio' in file_info.mime_type:
+                                file_type = 'audio'
+                            elif 'text' in file_info.mime_type:
+                                file_type = 'text'
+                            elif 'application/pdf' in file_info.mime_type:
+                                file_type = 'pdf'
+                            elif 'application/' in file_info.mime_type:
+                                file_type = 'document'
+
+                        # 创建或更新文件记录
+                        file_record = FileModel(
+                            file_path=file_info.path,
+                            file_name=file_info.name,
+                            file_extension=file_info.extension,
+                            file_type=file_type,
+                            file_size=file_info.size,
+                            created_at=file_info.created_time,
+                            modified_at=file_info.modified_time,
+                            indexed_at=datetime.now(),
+                            content_hash=content_hash,
+                            is_indexed=True,
+                            is_content_parsed=True,
+                            index_status='completed',
+                            mime_type=file_info.mime_type,
+                            title=document.get('title', ''),
+                            author=document.get('author', ''),
+                            keywords=document.get('keywords', ''),
+                            content_length=len(document.get('content', '')),
+                            word_count=len(document.get('content', '').split()),
+                            parse_confidence=1.0,  # 简化处理
+                            index_quality_score=1.0,
+                            needs_reindex=False
+                        )
+
+                        # 合并处理：如果文件已存在则更新，否则创建
+                        existing_file = db.query(FileModel).filter(
+                            FileModel.file_path == file_info.path
+                        ).first()
+
+                        if existing_file:
+                            # 更新现有记录
+                            for key, value in file_record.__dict__.items():
+                                if key != 'id' and not key.startswith('_'):
+                                    setattr(existing_file, key, value)
+                            db_file = existing_file
+                        else:
+                            # 创建新记录
+                            db.add(file_record)
+                            db.flush()  # 获取ID
+                            db_file = file_record
+
+                        # 创建文件内容记录
+                        if document.get('content'):
+                            content_record = FileContentModel(
+                                file_id=db_file.id,
+                                title=document.get('title', ''),
+                                content=document.get('content', ''),
+                                content_length=len(document.get('content', '')),
+                                word_count=len(document.get('content', '').split()),
+                                language=document.get('language', 'unknown'),
+                                confidence=1.0,
+                                is_parsed=True,
+                                has_error=False,
+                                parsed_at=datetime.now(),
+                                updated_at=datetime.now()
+                            )
+
+                            # 检查是否已存在内容记录
+                            existing_content = db.query(FileContentModel).filter(
+                                FileContentModel.file_id == db_file.id
+                            ).first()
+
+                            if existing_content:
+                                # 更新现有记录
+                                for key, value in content_record.__dict__.items():
+                                    if key != 'id' and not key.startswith('_'):
+                                        setattr(existing_content, key, value)
+                            else:
+                                db.add(content_record)
+
+                        # 定期提交以避免内存占用过大
+                        if (i + 1) % 10 == 0:
+                            db.commit()
+                            logger.debug(f"已保存 {i + 1}/{len(documents)} 个文件")
+
+                    except Exception as e:
+                        logger.error(f"保存文件到数据库失败 {file_info.path}: {e}")
+                        continue
+
+                # 最终提交
+                db.commit()
+                logger.info(f"成功保存 {len(documents)} 个文件到数据库")
+
+            finally:
+                db.close()
+
+        except Exception as e:
+            logger.error(f"保存文件数据到数据库失败: {e}")
+
+    def _calculate_file_hash(self, file_path: str) -> str:
+        """计算文件内容的SHA256哈希值"""
+        try:
+            import hashlib
+            hash_sha256 = hashlib.sha256()
+
+            # 对于大文件，读取前1MB来计算哈希（提高性能）
+            with open(file_path, "rb") as f:
+                # 读取前1MB
+                chunk = f.read(1024 * 1024)
+                if chunk:
+                    hash_sha256.update(chunk)
+                else:
+                    # 空文件
+                    hash_sha256.update(b'')
+
+            return hash_sha256.hexdigest()
+        except Exception as e:
+            logger.warning(f"计算文件哈希失败 {file_path}: {e}")
+            return ""
 
     def _process_file_to_document(self, file_info: FileInfo) -> Optional[Dict[str, Any]]:
         """将文件信息处理为索引文档

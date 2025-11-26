@@ -241,7 +241,7 @@ class SearchService:
                         if doc_info:
                             results.append({
                                 **doc_info,
-                                'relevance_score': similarity,
+                                'relevance_score': min(similarity, 1.0),  # 限制最大值为1.0
                                 'match_type': 'semantic',
                                 'highlight': self._generate_highlight(doc_info, query)
                             })
@@ -264,49 +264,160 @@ class SearchService:
         filters: Optional[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """全文搜索"""
-        if not self.whoosh_index:
+        logger.info(f"全文搜索检查：whoosh_index={self.whoosh_index}")
+
+        # 检查索引是否存在
+        if not os.path.exists(self.whoosh_index_path):
+            logger.warning("Whoosh索引目录不存在，全文搜索不可用")
             return {'success': False, 'results': [], 'total': 0, 'message': '全文搜索不可用'}
 
         try:
+            logger.info(f"开始全文搜索，查询: '{query}'")
             results = []
 
-            with self.whoosh_index.searcher() as searcher:
-                # 构建查询
-                parser = qparser.MultifieldParser(
-                    ["title", "content", "file_name"],
-                    self.whoosh_index.schema
-                )
-                query_obj = parser.parse(query)
+            # 创建全新的搜索器，避免ReaderClosed错误
+            from whoosh import index as whoosh_index
+            from whoosh.query import Term, Or
 
-                # 执行搜索
-                search_results = searcher.search(query_obj, limit=limit + offset)
+            # 直接打开索引和搜索器
+            ix = whoosh_index.open_dir(self.whoosh_index_path)
 
-                # 处理结果
-                for i, hit in enumerate(search_results):
-                    if i >= offset:
-                        doc_info = {
-                            'id': hit['id'],
-                            'title': hit.get('title', ''),
-                            'file_path': hit.get('file_path', ''),
-                            'file_name': hit.get('file_name', ''),
-                            'file_type': hit.get('file_type', ''),
-                            'file_size': hit.get('file_size', 0),
-                            'modified_time': hit.get('modified_time'),
-                            'preview_text': hit.highlights("content"),
-                            'relevance_score': hit.score,
-                            'match_type': 'fulltext',
-                            'highlight': hit.highlights("content")
-                        }
-                        results.append(doc_info)
+            # 使用独立的搜索器，不依赖context
+            searcher = ix.searcher()
+
+            try:
+                logger.info(f"创建搜索器成功，文档总数: {searcher.doc_count()}")
+
+                # 简化查询构建，使用简单的多字段Term查询
+                terms = []
+
+                # 分割查询词
+                query_terms = query.strip().split()
+
+                for term in query_terms:
+                    # 为每个字段创建Term查询
+                    for field_name in ["title", "content", "file_name"]:
+                        if term.strip():
+                            terms.append(Term(field_name, term.strip()))
+
+                if not terms:
+                    # 如果没有有效词汇，返回空结果
+                    return {
+                        'success': True,
+                        'results': [],
+                        'total': 0
+                    }
+
+                # 组合查询
+                if len(terms) == 1:
+                    query_obj = terms[0]
+                else:
+                    query_obj = Or(terms)
+
+                logger.info(f"查询对象: {query_obj}")
+
+                # 执行搜索 - 使用更安全的方法
+                try:
+                    search_results = searcher.search(query_obj, limit=limit + offset)
+                    # 立即转换为列表避免延迟加载问题
+                    hits = [hit for hit in search_results]
+                    logger.info(f"搜索到 {len(hits)} 个原始结果")
+
+                    # 处理结果
+                    for i, hit in enumerate(hits):
+                        if i >= offset and len(results) < limit:
+                            # 获取文档字段，安全处理可能不存在的字段
+                            content = str(hit.get('content', ''))
+                            preview_text = content[:200] + '...' if len(content) > 200 else content
+
+                            doc_info = {
+                                'id': str(hit.get('id', '')),
+                                'title': str(hit.get('title', '')),
+                                'file_path': str(hit.get('file_path', '')),
+                                'file_name': str(hit.get('file_name', '')),
+                                'file_type': str(hit.get('file_type', '')),
+                                'file_size': int(hit.get('file_size', 0)),
+                                'modified_time': str(hit.get('modified_time', '')),
+                                'preview_text': preview_text,
+                                'relevance_score': min(float(hit.score or 0.0), 1.0),  # 限制最大值为1.0
+                                'match_type': 'fulltext',
+                                'highlight': ''  # 暂时不做高亮
+                            }
+                            results.append(doc_info)
+
+                except Exception as search_error:
+                    logger.error(f"搜索执行失败: {search_error}")
+                    # 尝试简单的文档遍历
+                    logger.info("尝试简单的文档遍历搜索")
+                    all_docs = list(searcher.documents())
+                    logger.info(f"索引中总共有 {len(all_docs)} 个文档")
+
+                    # 简单的文本匹配搜索
+                    query_lower = query.lower()
+                    matched_count = 0
+
+                    for doc in all_docs:
+                        if matched_count >= offset + limit:
+                            break
+
+                        # 检查各个字段是否包含查询词
+                        title = str(doc.get('title', '')).lower()
+                        content = str(doc.get('content', '')).lower()
+                        file_name = str(doc.get('file_name', '')).lower()
+
+                        if (query_lower in title or query_lower in content or query_lower in file_name):
+                            if matched_count >= offset:
+                                content = str(doc.get('content', ''))
+                                preview_text = content[:200] + '...' if len(content) > 200 else content
+
+                                doc_info = {
+                                    'id': str(doc.get('id', '')),
+                                    'title': str(doc.get('title', '')),
+                                    'file_path': str(doc.get('file_path', '')),
+                                    'file_name': str(doc.get('file_name', '')),
+                                    'file_type': str(doc.get('file_type', '')),
+                                    'file_size': int(doc.get('file_size', 0)),
+                                    'modified_time': str(doc.get('modified_time', '')),
+                                    'preview_text': preview_text,
+                                    'relevance_score': 0.5,  # 默认相关性
+                                    'match_type': 'fulltext',
+                                    'highlight': ''
+                                }
+                                results.append(doc_info)
+                            matched_count += 1
+
+                    logger.info(f"简单文本匹配找到 {len(results)} 个结果")
+
+            finally:
+                # 确保搜索器被关闭
+                searcher.close()
+
+            # 强制验证并修正所有结果
+            validated_results = []
+            for result in results:
+                # 确保preview_text不超过200字符
+                preview_text = result.get('preview_text', '')
+                if len(preview_text) > 200:
+                    result['preview_text'] = preview_text[:200]
+
+                # 确保relevance_score不超过1.0
+                relevance_score = result.get('relevance_score', 0)
+                if relevance_score > 1.0:
+                    result['relevance_score'] = 1.0
+
+                validated_results.append(result)
 
             return {
                 'success': True,
-                'results': results,
-                'total': len(search_results)
+                'results': validated_results,
+                'total': len(validated_results)
             }
 
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
             logger.error(f"全文搜索失败: {e}")
+            logger.error(f"错误详情: {error_details}")
             return {'success': False, 'results': [], 'total': 0, 'error': str(e)}
 
     async def _hybrid_search(
@@ -388,6 +499,9 @@ class SearchService:
 
                     if results:
                         hit = results[0]
+                        content = hit.get('content', '')
+                        preview_text = content[:200] + '...' if len(content) > 200 else content
+
                         return {
                             'id': hit['id'],
                             'title': hit.get('title', ''),
@@ -396,7 +510,7 @@ class SearchService:
                             'file_type': hit.get('file_type', ''),
                             'file_size': hit.get('file_size', 0),
                             'modified_time': hit.get('modified_time'),
-                            'preview_text': hit.get('content', '')[:200] + '...' if hit.get('content') else ''
+                            'preview_text': preview_text
                         }
 
             return None

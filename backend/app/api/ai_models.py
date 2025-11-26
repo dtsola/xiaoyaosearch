@@ -283,18 +283,74 @@ async def test_text_embedding(text: str = "这是一个测试文本"):
         Dict[str, Any]: 文本嵌入结果
     """
     try:
+        # 检查AI模型服务是否已初始化
+        if not hasattr(ai_model_service, 'model_manager'):
+            logger.warning("AI模型服务未初始化，尝试初始化")
+            await ai_model_service.initialize()
+
+        # 获取文本嵌入模型
+        embedding_model = await ai_model_service.get_model("embedding")
+        if not embedding_model:
+            logger.error("文本嵌入模型不可用")
+            return {
+                "success": False,
+                "data": {
+                    "text": text,
+                    "error": "文本嵌入模型不可用",
+                    "model_status": await ai_model_service.get_model_status()
+                },
+                "message": "文本嵌入模型未加载"
+            }
+
+        # 执行文本嵌入
         embeddings = await ai_model_service.text_embedding(text)
+
+        # 处理不同类型的嵌入结果
+        if hasattr(embeddings, 'shape'):
+            # NumPy数组或类似结构
+            embedding_shape = embeddings.shape
+            if hasattr(embeddings, 'flatten'):
+                embedding_sample = embeddings.flatten()[:10].tolist()
+            else:
+                embedding_sample = str(embeddings)[:100]
+        elif hasattr(embeddings, '__len__'):
+            # 列表或类似结构
+            embedding_shape = (len(embeddings),)
+            embedding_sample = embeddings[:10] if len(embeddings) > 10 else embeddings
+        else:
+            # 其他类型
+            embedding_shape = "unknown"
+            embedding_sample = str(embeddings)[:100]
 
         return {
             "success": True,
             "data": {
                 "text": text,
-                "embedding_shape": embeddings.shape if hasattr(embeddings, 'shape') else len(embeddings),
-                "embedding_sample": embeddings.flatten()[:10].tolist() if hasattr(embeddings, 'flatten') else str(embeddings)[:100]
+                "embedding_shape": embedding_shape,
+                "embedding_sample": embedding_sample,
+                "model_name": embedding_model.model_name if hasattr(embedding_model, 'model_name') else "unknown"
             },
             "message": "文本嵌入测试成功"
         }
 
     except Exception as e:
         logger.error(f"文本嵌入测试失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"文本嵌入测试失败: {str(e)}")
+        # 返回详细的错误信息而不是抛出异常
+        error_detail = {
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "text": text
+        }
+
+        # 尝试获取模型状态信息
+        try:
+            model_status = await ai_model_service.get_model_status()
+            error_detail["model_status"] = model_status
+        except:
+            error_detail["model_status"] = "无法获取模型状态"
+
+        return {
+            "success": False,
+            "data": error_detail,
+            "message": f"文本嵌入测试失败: {str(e)}"
+        }

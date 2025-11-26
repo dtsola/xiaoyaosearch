@@ -18,7 +18,15 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git reset:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)",
+      "Bash(time curl:*)",
+      "Bash(./backend/venv/Scripts/pytest:*)",
+      "Bash(./backend/venv/Scripts/python:*)",
+      "Bash(npm run dev)",
+      "Bash(powershell \"Stop-Process -Id 26760 -Force\")",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

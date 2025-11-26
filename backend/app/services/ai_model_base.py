@@ -289,18 +289,62 @@ class ModelManager:
 
     async def load_all_models(self) -> Dict[str, bool]:
         """
-        加载所有模型
+        加载所有模型（并行加载优化）
 
         Returns:
             Dict[str, bool]: 每个模型的加载结果
         """
-        results = {}
+        logger.info(f"开始并行加载 {len(self.models)} 个模型")
+        start_time = datetime.now()
+
+        # 创建并行加载任务
+        load_tasks = []
+        model_ids = []
+
         for model_id, model in self.models.items():
-            try:
-                results[model_id] = await model.load_model()
-            except Exception as e:
-                logger.error(f"加载模型{model_id}失败: {str(e)}")
-                results[model_id] = False
+            if model.status == ModelStatus.LOADED:
+                # 跳过已加载的模型
+                logger.info(f"模型 {model_id} 已加载，跳过")
+                continue
+
+            async def load_model_with_error_handling(mid: str, m: BaseAIModel):
+                try:
+                    logger.info(f"开始加载模型: {mid}")
+                    result = await m.load_model()
+                    if result:
+                        logger.info(f"模型 {mid} 加载成功")
+                    else:
+                        logger.warning(f"模型 {mid} 加载失败")
+                    return mid, result
+                except Exception as e:
+                    logger.error(f"加载模型 {mid} 失败: {str(e)}")
+                    return mid, False
+
+            load_tasks.append(load_model_with_error_handling(model_id, model))
+            model_ids.append(model_id)
+
+        # 并行执行所有加载任务
+        if load_tasks:
+            results_list = await asyncio.gather(*load_tasks, return_exceptions=True)
+
+            # 处理结果
+            results = {}
+            for i, result in enumerate(results_list):
+                if isinstance(result, Exception):
+                    model_id = model_ids[i]
+                    logger.error(f"模型 {model_id} 加载异常: {str(result)}")
+                    results[model_id] = False
+                else:
+                    model_id, success = result
+                    results[model_id] = success
+        else:
+            results = {}
+
+        load_time = (datetime.now() - start_time).total_seconds()
+        success_count = sum(1 for success in results.values() if success)
+
+        logger.info(f"模型加载完成: {success_count}/{len(results)} 成功，耗时 {load_time:.2f}s")
+
         return results
 
     async def unload_all_models(self) -> Dict[str, bool]:

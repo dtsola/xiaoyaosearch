@@ -271,10 +271,25 @@ async def get_index_status(
         if not index_job:
             raise ResourceNotFoundException("索引任务", str(index_id))
 
+        # 获取模型字典并过滤只保留IndexJobInfo需要的字段
+        model_dict = index_job.to_dict()
+        job_dict = {
+            'index_id': model_dict['index_id'],
+            'folder_path': model_dict['folder_path'],
+            'status': model_dict['status'],
+            'progress': model_dict['progress'],
+            'total_files': model_dict['total_files'],
+            'processed_files': model_dict['processed_files'],
+            'error_count': model_dict['error_count'],
+            'started_at': model_dict['started_at'],
+            'completed_at': model_dict['completed_at'],
+            'error_message': model_dict['error_message']
+        }
+
         logger.info(f"索引状态查询完成: id={index_id}, status={index_job.status}")
 
         return IndexCreateResponse(
-            data=IndexJobInfo(**index_job.to_dict()),
+            data=IndexJobInfo(**job_dict),
             message="索引状态查询成功"
         )
 

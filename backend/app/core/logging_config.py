@@ -64,14 +64,22 @@ def setup_logging():
     # 清除现有的处理器
     root_logger.handlers.clear()
 
-    # 控制台处理器
-    console_handler = logging.StreamHandler()
+    # 控制台处理器 - 修复编码问题
+    import sys
+    console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(getattr(logging, log_level))
+
+    # 设置编码流处理器，解决Windows控制台中文显示问题
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8')
 
     # 开发环境使用彩色格式，生产环境使用JSON格式
     if os.getenv("NODE_ENV") == "production":
         console_formatter = JSONFormatter()
     else:
+        # 简化格式，避免特殊字符导致的编码问题
         console_formatter = logging.Formatter(
             fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"

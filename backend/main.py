@@ -15,7 +15,6 @@ from app.api import (
     index_router,
     config_router,
     system_router,
-    ai_models_router,
     websocket_router
 )
 
@@ -106,7 +105,6 @@ app.include_router(search_router)
 app.include_router(index_router)
 app.include_router(config_router)
 app.include_router(system_router)
-app.include_router(ai_models_router)
 app.include_router(websocket_router)
 
 # 根路径

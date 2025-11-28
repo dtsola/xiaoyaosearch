@@ -7,7 +7,6 @@ from app.api.search import router as search_router
 from app.api.index import router as index_router
 from app.api.config import router as config_router
 from app.api.system import router as system_router
-from app.api.ai_models import router as ai_models_router
 from app.api.websocket import router as websocket_router
 
 __all__ = [
@@ -15,6 +14,5 @@ __all__ = [
     "index_router",
     "config_router",
     "system_router",
-    "ai_models_router",
     "websocket_router"
 ]

@@ -34,7 +34,8 @@
       "Bash(git rm:*)",
       "Bash(sqlite3:*)",
       "Bash(npm run preview:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

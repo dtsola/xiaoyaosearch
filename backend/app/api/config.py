@@ -38,9 +38,6 @@ async def update_ai_model_config(
     logger.info(f"更新AI模型配置: type={request.model_type}, provider={request.provider}, name={request.model_name}")
 
     try:
-        # TODO: 实现模型配置验证
-        # validate_model_config(request.model_type, request.provider, request.config)
-
         # 检查是否已存在相同模型类型的配置（按model_type更新，而不是按model_name）
         model_type_value = get_enum_value(request.model_type)
         logger.info(f"查找模型类型: {model_type_value} (原始: {request.model_type})")

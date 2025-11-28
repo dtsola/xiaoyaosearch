@@ -32,7 +32,8 @@ try:
     WHOOSH_AVAILABLE = True
 except ImportError:
     WHOOSH_AVAILABLE = False
-    logging.warning("whoosh未安装，全文搜索功能不可用")
+    # 注释掉模块级别的警告，避免误报
+    # logging.warning("whoosh未安装，全文搜索功能不可用")
 
 try:
     from app.services.ai_model_manager import ai_model_service
@@ -43,6 +44,14 @@ except ImportError as e:
     logger.warning(f"AI模型服务不可用: {e}")
 
 logger = get_logger(__name__)
+
+
+def _check_search_dependencies():
+    """检查搜索依赖库是否可用，并在需要时输出警告"""
+    if not WHOOSH_AVAILABLE:
+        logger.warning("Whoosh未安装，全文搜索功能将不可用。请安装: pip install whoosh")
+    if not FAISS_AVAILABLE:
+        logger.warning("Faiss未安装，向量搜索功能将不可用。请安装: pip install faiss-cpu 或 faiss-gpu")
 
 
 class ChunkSearchService:
@@ -71,8 +80,10 @@ class ChunkSearchService:
             whoosh_index_path: 传统Whoosh索引目录路径
             chunk_faiss_index_path: 分块Faiss索引文件路径
             chunk_whoosh_index_path: 分块Whoosh索引目录路径
-            use_ai_models: 是否使用AI模型进行搜索
+            use_ai_models: 是否使用AI模型进行搜索增强
         """
+        # 检查依赖库可用性（仅在初始化时检查一次，避免重复警告）
+        _check_search_dependencies()
         self.faiss_index_path = faiss_index_path
         self.whoosh_index_path = whoosh_index_path
         self.use_ai_models = use_ai_models

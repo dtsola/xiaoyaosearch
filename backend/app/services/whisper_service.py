@@ -192,7 +192,7 @@ class WhisperTranscriptionService(BaseAIModel):
 
         try:
             # 预处理音频输入
-            audio_path = await self._preprocess_audio(audio_input)
+            audio_path = await self._preprocess_audio(audio_input, **kwargs)
 
             # 获取预测参数
             language = kwargs.get("language", self.config.get("language"))
@@ -222,12 +222,14 @@ class WhisperTranscriptionService(BaseAIModel):
             logger.error(error_msg)
             raise AIModelException(error_msg, model_name=self.model_name)
 
-    async def _preprocess_audio(self, audio_input: Union[str, bytes, BinaryIO, np.ndarray]) -> str:
+    async def _preprocess_audio(self, audio_input: Union[str, bytes, BinaryIO, np.ndarray], **kwargs) -> str:
         """
         预处理音频输入
 
         Args:
             audio_input: 音频输入
+            **kwargs: 其他参数
+                - indexing_mode: 索引模式标志
 
         Returns:
             str: 处理后的音频文件路径

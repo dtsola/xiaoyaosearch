@@ -12,7 +12,8 @@
       "Bash(findstr:*)",
       "Bash(powershell \"Stop-Process -Name python -Force\")",
       "Bash(netstat:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

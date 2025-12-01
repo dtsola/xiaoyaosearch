@@ -191,10 +191,24 @@ class MetadataExtractor:
                     })
 
                 # PDF结构信息
+                pdf_header = getattr(reader, 'pdf_header', None)
+                pdf_version = 'unknown'
+                if isinstance(pdf_header, dict):
+                    pdf_version = pdf_header.get('version', 'unknown')
+                elif isinstance(pdf_header, str):
+                    # 如果pdf_header是字符串，尝试解析版本信息
+                    if '%' in pdf_header:
+                        try:
+                            pdf_version = pdf_header.split('%')[1].strip().split('-')[0]
+                        except:
+                            pdf_version = pdf_header.strip()
+                    else:
+                        pdf_version = pdf_header.strip()
+
                 metadata.update({
                     'page_count': len(reader.pages),
                     'is_encrypted': reader.is_encrypted,
-                    'pdf_version': getattr(reader, 'pdf_header', {}).get('version', 'unknown')
+                    'pdf_version': pdf_version
                 })
 
         except Exception as e:

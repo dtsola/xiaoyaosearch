@@ -47,6 +47,10 @@ librosa==0.11.0                   # 音频处理库（Whisper依赖）
 pillow==10.1.0                   # 图像处理库（已有）
 clip-by-openai==1.0              # CLIP模型
 
+# OCR文字识别
+paddlepaddle==2.5.2              # PaddlePaddle深度学习框架
+paddleocr==2.7.3                 # PaddleOCR文字识别库
+
 # 大语言模型集成
 ollama-python==0.1.7             # Ollama Python客户端
 langchain==0.0.340               # LangChain框架

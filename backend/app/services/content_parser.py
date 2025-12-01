@@ -11,6 +11,11 @@ from typing import Optional, Dict, Any, List
 import logging
 from dataclasses import dataclass
 from datetime import datetime
+import asyncio
+
+# 全局PaddleOCR实例，避免重复初始化
+_paddle_ocr_instance = None
+_paddle_ocr_lock = asyncio.Lock()
 
 # 导入统一配置
 try:
@@ -1212,98 +1217,60 @@ class ContentParser:
 
             logger.info(f"开始处理图片文件: {path.name}, 大小: {file_size}字节")
 
-            # 使用AI模型服务进行图像理解
+            # 使用OCR识别图片中的文字内容
             try:
-                from app.services.ai_model_manager import ai_model_service
+                # 提取图片文字内容
+                ocr_text = await self._extract_text_from_image(path)
 
-                # 确保AI模型服务已初始化
-                if not hasattr(ai_model_service, '_initialized') or not ai_model_service._initialized:
-                    await ai_model_service.initialize()
-                    ai_model_service._initialized = True
+                # 构建图片描述信息
+                description_parts = []
 
-                # 准备图像理解查询文本
-                query_texts = [
-                    "描述这张图片的内容",
-                    "这张图片展示了什么",
-                    "详细说明图片中的主要元素"
-                ]
+                # 基本信息
+                description_parts.append(f"{extension.upper()}格式图片")
 
-                # 调用CLIP模型进行图像理解
-                understanding_result = await ai_model_service.image_understanding(
-                    str(path),
-                    query_texts
+                # 添加OCR识别的文字内容
+                if ocr_text.strip():
+                    description_parts.append(f"文字内容：{ocr_text}")
+                    # OCR成功，置信度较高
+                    confidence = 0.9
+                    ocr_success = True
+                else:
+                    description_parts.append("未检测到文字内容")
+                    confidence = 0.6  # 只有基本信息，置信度较低
+                    ocr_success = False
+
+                # 组合描述文本
+                image_description = " | ".join(description_parts)
+
+                # 提取图片元数据
+                with Image.open(path) as img:
+                    width, height = img.size
+                    metadata = {
+                        "format": "image",
+                        "file_extension": extension,
+                        "file_size": file_size,
+                        "width": width,
+                        "height": height,
+                        "mode": img.mode,
+                        "ocr_extracted": ocr_success,
+                        "ocr_text_length": len(ocr_text.strip()),
+                        "processed_at": datetime.now().isoformat()
+                    }
+
+                logger.info(f"图片OCR处理完成: {path.name}, 文字长度: {len(ocr_text)}字符")
+
+                return ParsedContent(
+                    text=image_description,
+                    title=path.stem,
+                    language="zh",
+                    confidence=confidence,
+                    metadata=metadata
                 )
 
-                # 判断图像理解是否成功（根据返回结果的结构，有best_match即为成功）
-                success = (understanding_result and
-                          isinstance(understanding_result, dict) and
-                          "best_match" in understanding_result and
-                          understanding_result["best_match"] is not None)
-
-                if success:
-                    # 提取最佳匹配的描述
-                    best_match = understanding_result.get("best_match", {})
-                    image_description = best_match.get("text", "").strip()
-                    similarity = best_match.get("similarity", 0.0)
-
-                    # 将相似度转换为0-1之间的置信度
-                    # CLIP返回的相似度可能在不同范围，需要归一化
-                    if similarity > 1.0:
-                        # 如果相似度大于1，假设是logits值，使用sigmoid归一化
-                        import math
-                        confidence = 1 / (1 + math.exp(-similarity / 10))  # 缩放因子为10
-                    else:
-                        # 如果相似度在0-1之间，直接使用
-                        confidence = max(0.0, min(1.0, float(similarity)))
-
-                    # 如果没有获取到描述，使用默认文本
-                    if not image_description:
-                        image_description = f"这是一张{extension.upper()}格式的图片"
-
-                    # 提取图片元数据
-                    with Image.open(path) as img:
-                        width, height = img.size
-                        metadata = {
-                            "format": "image",
-                            "file_extension": extension,
-                            "file_size": file_size,
-                            "width": width,
-                            "height": height,
-                            "mode": img.mode,
-                            "image_understood": True,
-                            "clip_similarity": float(similarity),
-                            "clip_confidence": float(confidence),
-                            "processed_at": datetime.now().isoformat()
-                        }
-
-                    logger.info(f"图片理解完成: {path.name}, 描述长度: {len(image_description)}字符")
-
-                    return ParsedContent(
-                        text=image_description,
-                        title=path.stem,
-                        language="zh",
-                        confidence=confidence,
-                        metadata=metadata
-                    )
-                else:
-                    # 根据不同情况确定错误消息
-                    if not understanding_result:
-                        error_msg = "AI模型服务返回空结果"
-                    elif not isinstance(understanding_result, dict):
-                        error_msg = f"AI模型服务返回格式错误: {type(understanding_result)}"
-                    elif "error" in understanding_result:
-                        error_msg = understanding_result.get("error", "图像理解失败")
-                    else:
-                        error_msg = "图像理解服务返回异常结果"
-
-                    logger.warning(f"图像理解失败: {path.name}, 错误: {error_msg}")
-
-                    # 降级为元数据提取
-                    return self._parse_image_metadata_fallback(path, error_msg)
-
             except Exception as e:
-                logger.error(f"调用AI模型服务失败: {str(e)}")
-                return self._parse_image_metadata_fallback(path, str(e))
+                logger.error(f"OCR处理图片失败 {path}: {str(e)}")
+                # OCR失败时降级为元数据提取
+                return self._parse_image_metadata_fallback(path, f"OCR处理失败: {str(e)}")
 
         except Exception as e:
             logger.error(f"提取图片内容失败 {path}: {e}")
@@ -1500,6 +1467,121 @@ class ContentParser:
         """获取支持的文件格式"""
         return list(self.supported_formats.keys())
 
+    async def _extract_text_from_image(self, path: Path) -> str:
+        """
+        使用PaddleOCR从图片中提取文字内容
+
+        Args:
+            path: 图片文件路径
+
+        Returns:
+            str: 提取的文字内容
+        """
+        try:
+            return await self._ocr_with_paddle(path)
+        except ImportError:
+            logger.warning("PaddleOCR未安装，请运行: pip install paddlepaddle paddleocr")
+            return ""
+        except Exception as e:
+            logger.error(f"PaddleOCR文字提取失败: {str(e)}")
+            return ""
+
+    async def _ocr_with_paddle(self, path: Path) -> str:
+        """使用PaddleOCR进行文字识别"""
+        try:
+            from paddleocr import PaddleOCR
+        except ImportError:
+            raise ImportError("PaddleOCR未安装，请运行: pip install paddlepaddle paddleocr")
+
+        global _paddle_ocr_instance, _paddle_ocr_lock
+
+        # 确保OCR实例已初始化
+        async with _paddle_ocr_lock:
+            if _paddle_ocr_instance is None:
+                logger.info("初始化PaddleOCR实例...")
+                try:
+                    # 初始化PaddleOCR，使用中英文识别模型
+                    _paddle_ocr_instance = PaddleOCR(
+                        use_angle_cls=True,  # 使用角度分类
+                        lang='ch',  # 支持中英文
+                        det_db_thresh=0.3,  # 检测阈值
+                        rec_batch_num=6  # 批量识别数量
+                    )
+                    logger.info("PaddleOCR实例初始化成功")
+                except Exception as e:
+                    logger.error(f"PaddleOCR实例初始化失败: {str(e)}")
+                    raise RuntimeError(f"PaddleOCR初始化失败: {str(e)}")
+
+        # 验证文件存在
+        if not path.exists():
+            logger.warning(f"图片文件不存在: {path}")
+            return ""
+
+        # 在线程池中执行OCR
+        loop = asyncio.get_event_loop()
+
+        def paddle_ocr_sync():
+            try:
+                # 使用绝对路径执行OCR识别
+                abs_path = str(path.resolve())
+                logger.debug(f"开始OCR识别: {abs_path}")
+
+                result = _paddle_ocr_instance.ocr(abs_path)
+
+                # 详细记录OCR结果
+                logger.debug(f"OCR原始结果类型: {type(result)}")
+                logger.debug(f"OCR原始结果: {result}")
+
+                texts = []
+
+                # PaddleOCR返回格式可能是字典或列表
+                if isinstance(result, list) and len(result) > 0 and isinstance(result[0], dict):
+                    # 新格式：字典格式
+                    ocr_data = result[0]
+                    if 'rec_texts' in ocr_data and 'rec_scores' in ocr_data:
+                        rec_texts = ocr_data['rec_texts']
+                        rec_scores = ocr_data['rec_scores']
+
+                        logger.debug(f"识别到 {len(rec_texts)} 个文本行")
+                        for i, (text, score) in enumerate(zip(rec_texts, rec_scores)):
+                            logger.debug(f"第{i+1}行: '{text}' (置信度: {score:.3f})")
+
+                            if text.strip() and score > 0.3:  # 降低置信度阈值
+                                texts.append(text.strip())
+                                logger.debug(f"采用文字: '{text.strip()}' (置信度: {score:.2f})")
+                    else:
+                        logger.debug("新格式中未找到rec_texts或rec_scores")
+
+                elif isinstance(result, list) and len(result) > 0 and result[0]:
+                    # 旧格式：列表格式
+                    logger.debug(f"检测到 {len(result[0])} 个文本行")
+                    for i, line in enumerate(result[0]):
+                        logger.debug(f"第{i+1}行: {line}")
+                        if line and len(line) >= 2:
+                            # line[1] 包含文字和置信度
+                            text = line[1][0] if line[1] and len(line[1]) > 0 else ""
+                            confidence = line[1][1] if line[1] and len(line[1]) > 1 else 0.0
+
+                            logger.debug(f"文字: '{text}', 置信度: {confidence:.3f}")
+
+                            # 过滤低置信度和空文字
+                            if text.strip() and confidence > 0.3:  # 降低置信度阈值
+                                texts.append(text.strip())
+                                logger.debug(f"采用文字: '{text.strip()}' (置信度: {confidence:.2f})")
+                else:
+                    logger.debug("OCR未检测到任何文本区域或格式不匹配")
+
+                recognized_text = " ".join(texts)
+                logger.debug(f"最终OCR结果: '{recognized_text}' (总文字数: {len(recognized_text)})")
+                return recognized_text
+
+            except Exception as e:
+                logger.error(f"OCR识别过程中出错: {str(e)}")
+                return ""
+
+        return await loop.run_in_executor(None, paddle_ocr_sync)
+
+    
 
 # 测试代码
 if __name__ == "__main__":

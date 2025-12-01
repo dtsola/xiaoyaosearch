@@ -55,7 +55,7 @@ class OllamaLLMService(BaseAIModel):
             "cloud_provider": "aliyun",
             "cloud_config": {
                 "aliyun": {
-                    "model": "qwen-turbo",
+                    "model": "qwen-plus",
                     "api_key": os.getenv("ALIYUN_ACCESS_KEY_ID"),
                     "api_secret": os.getenv("ALIYUN_ACCESS_KEY_SECRET"),
                     "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1"

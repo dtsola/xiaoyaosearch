@@ -22,8 +22,8 @@ class AIModelModel(Base):
     model_name = Column(String(100), nullable=False, comment="模型名称")
     config_json = Column(Text, nullable=False, comment="JSON格式配置参数")
     is_active = Column(Boolean, default=True, nullable=False, comment="是否启用")
-    created_at = Column(DateTime, nullable=False, comment="创建时间")
-    updated_at = Column(DateTime, nullable=False, comment="更新时间")
+    created_at = Column(DateTime, nullable=False, default=datetime.now, comment="创建时间")
+    updated_at = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now, comment="更新时间")
 
     def to_dict(self) -> dict:
         """

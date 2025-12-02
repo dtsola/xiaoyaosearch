@@ -23,7 +23,7 @@ class SearchHistoryModel(Base):
     ai_model_used = Column(String(100), nullable=True, comment="使用的AI模型")
     result_count = Column(Integer, nullable=False, default=0, comment="结果数量")
     response_time = Column(Float, nullable=False, comment="响应时间(秒)")
-    created_at = Column(DateTime, nullable=False, comment="搜索时间")
+    created_at = Column(DateTime, nullable=False, default=datetime.now, comment="搜索时间")
 
     def to_dict(self) -> dict:
         """

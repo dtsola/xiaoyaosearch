@@ -269,9 +269,20 @@ class AIModelService:
         if isinstance(model_type, str):
             model_type = ModelType(model_type)
 
-        model_id = self.default_models.get(get_enum_value(model_type))
+        # 记录调试信息
+        model_type_str = get_enum_value(model_type)
+        logger.debug(f"获取模型类型: {model_type_str}")
+        logger.debug(f"当前默认模型映射: {self.default_models}")
+
+        model_id = self.default_models.get(model_type_str)
+        logger.debug(f"找到模型ID: {model_id}")
+
         if model_id:
-            return self.model_manager.get_model(model_id)
+            model = self.model_manager.get_model(model_id)
+            logger.debug(f"获取到模型: {model}")
+            return model
+
+        logger.warning(f"未找到模型类型 {model_type_str} 的默认模型")
         return None
 
     async def text_embedding(self, texts: Union[str, List[str]], **kwargs) -> Any:

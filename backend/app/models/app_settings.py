@@ -56,6 +56,7 @@ class AppSettingsModel(Base):
     updated_at = Column(
         DateTime,
         nullable=False,
+        default=datetime.now,
         comment="设置更新时间"
     )
 

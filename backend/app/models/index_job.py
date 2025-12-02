@@ -26,7 +26,7 @@ class IndexJobModel(Base):
     started_at = Column(DateTime, nullable=True, comment="开始时间")
     completed_at = Column(DateTime, nullable=True, comment="完成时间")
     error_message = Column(Text, nullable=True, comment="错误信息")
-    created_at = Column(DateTime, nullable=False, comment="创建时间")
+    created_at = Column(DateTime, nullable=False, default=datetime.now, comment="创建时间")
 
     def to_dict(self) -> dict:
         """

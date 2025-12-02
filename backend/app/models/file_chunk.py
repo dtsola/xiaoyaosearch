@@ -36,7 +36,7 @@ class FileChunkModel(Base):
     index_status = Column(String(20), default="pending", comment="索引状态(pending/processing/completed/failed)")
 
     # 时间戳
-    created_at = Column(DateTime, nullable=False, comment="创建时间")
+    created_at = Column(DateTime, nullable=False, default=datetime.now, comment="创建时间")
     indexed_at = Column(DateTime, nullable=True, comment="索引完成时间")
 
     # 注意：软外键模式下不定义SQLAlchemy relationship

@@ -20,7 +20,7 @@ from app.schemas.enums import JobType, JobStatus
 from app.models.index_job import IndexJobModel
 from app.utils.enum_helpers import get_enum_value
 from app.models.file import FileModel
-from app.services.file_index_service import FileIndexService
+from app.services.file_index_service import FileIndexService, get_file_index_service as get_global_file_index_service
 
 router = APIRouter(prefix="/api/index", tags=["索引管理"])
 logger = get_logger(__name__)
@@ -49,7 +49,7 @@ def get_file_index_service() -> FileIndexService:
                 'max_content_length': settings.index.max_content_length
             }
         )
-    return _file_index_service
+    return get_global_file_index_service()
 
 
 @router.post("/create", response_model=IndexCreateResponse, summary="创建索引")
@@ -659,22 +659,8 @@ async def run_full_index_task(
             filtered_extensions = settings.default.get_supported_extensions()
             logger.info(f"使用DefaultConfig默认支持的所有文件类型: {filtered_extensions}")
 
-        # 创建支持指定文件类型的临时索引服务
-        faiss_path, whoosh_path = settings.get_index_paths()
-        temp_index_service = FileIndexService(
-            data_root=settings.index.data_root,
-            faiss_index_path=faiss_path,
-            whoosh_index_path=whoosh_path,
-            use_chinese_analyzer=settings.index.use_chinese_analyzer,
-            scanner_config={
-                'max_workers': settings.index.scanner_max_workers,
-                'max_file_size': settings.index.max_file_size,
-                'supported_extensions': filtered_extensions
-            },
-            parser_config={
-                'max_content_length': settings.index.max_content_length
-            }
-        )
+        # 使用全局单例索引服务
+        temp_index_service = get_global_file_index_service()
 
         result = await temp_index_service.build_full_index(
             scan_paths=[folder_path],
@@ -752,22 +738,8 @@ async def run_incremental_index_task(
             filtered_extensions = settings.default.get_supported_extensions()
             logger.info(f"增量索引使用DefaultConfig默认支持的所有文件类型: {filtered_extensions}")
 
-        # 创建支持指定文件类型的临时索引服务
-        faiss_path, whoosh_path = settings.get_index_paths()
-        temp_index_service = FileIndexService(
-            data_root=settings.index.data_root,
-            faiss_index_path=faiss_path,
-            whoosh_index_path=whoosh_path,
-            use_chinese_analyzer=settings.index.use_chinese_analyzer,
-            scanner_config={
-                'max_workers': settings.index.scanner_max_workers,
-                'max_file_size': settings.index.max_file_size,
-                'supported_extensions': filtered_extensions
-            },
-            parser_config={
-                'max_content_length': settings.index.max_content_length
-            }
-        )
+        # 使用全局单例索引服务
+        temp_index_service = get_global_file_index_service()
 
         result = await temp_index_service.update_incremental_index(
             scan_paths=[folder_path]

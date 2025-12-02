@@ -704,38 +704,6 @@ async def run_incremental_index_task(
         recursive: 是否递归搜索
         file_types: 指定文件类型过滤列表，为None时使用默认配置
     """
-    # 🔧 确保后台任务的日志能够输出到控制台
-    import logging
-    import sys
-
-    # 强制添加控制台处理器（确保后台任务日志能显示在终端）
-    root_logger = logging.getLogger()
-
-    # 检查是否已有控制台处理器
-    has_console_handler = any(
-        isinstance(h, logging.StreamHandler) and h.stream == sys.stdout
-        for h in root_logger.handlers
-    )
-
-    if not has_console_handler:
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(logging.INFO)
-        console_formatter = logging.Formatter(
-            fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        )
-        console_handler.setFormatter(console_formatter)
-        # 添加到根日志器，不阻止其他处理器
-        root_logger.addHandler(console_handler)
-        root_logger.info("🔧 后台任务控制台日志处理器已添加")
-
-    # 确保当前模块的logger也能输出到控制台
-    current_logger = logging.getLogger(__name__)
-    current_logger.setLevel(logging.INFO)
-
-    # 测试日志输出
-    print(f"🚀 增量索引任务开始: id={index_id}", flush=True)
-
     logger.info(f"开始执行增量索引任务: id={index_id}, folder={folder_path}")
 
     from app.core.database import SessionLocal

@@ -1430,6 +1430,203 @@ class ChunkIndexService:
             logger.error(f"详细错误信息: {traceback.format_exc()}")
             return False
 
+    async def delete_file_from_indexes(self, file_path: str) -> Dict[str, Any]:
+        """从索引中删除文件
+
+        Args:
+            file_path: 文件路径
+
+        Returns:
+            Dict[str, Any]: 删除结果
+        """
+        try:
+            logger.info(f"开始从索引中删除文件: {file_path}")
+            start_time = time.time()
+
+            # 1. 从数据库查找文件记录和相关的分块记录
+            from app.core.database import SessionLocal
+            from app.models.file import FileModel
+            from app.models.file_chunk import FileChunkModel
+
+            db = SessionLocal()
+            try:
+                # 查找文件记录
+                file_record = db.query(FileModel).filter(
+                    FileModel.file_path == file_path
+                ).first()
+
+                if not file_record:
+                    logger.warning(f"文件不存在于数据库中: {file_path}")
+                    return {
+                        'success': False,
+                        'error': f'文件不存在于数据库中: {file_path}'
+                    }
+
+                # 查找相关的分块记录
+                chunk_records = db.query(FileChunkModel).filter(
+                    FileChunkModel.file_id == file_record.id
+                ).all()
+
+                logger.info(f"找到文件记录: {file_record.id}, 分块数量: {len(chunk_records)}")
+
+                # 2. 从Faiss索引删除相关向量
+                faiss_deleted_count = 0
+                if chunk_records:
+                    faiss_deleted_count = await self._delete_from_faiss_index(chunk_records)
+
+                # 3. 从Whoosh索引删除相关文档
+                whoosh_deleted_count = 0
+                if chunk_records:
+                    whoosh_deleted_count = await self._delete_from_whoosh_index(chunk_records)
+
+                # 4. 从数据库删除分块记录
+                if chunk_records:
+                    deleted_chunks = db.query(FileChunkModel).filter(
+                        FileChunkModel.file_id == file_record.id
+                    ).delete()
+                    logger.info(f"从数据库删除了 {deleted_chunks} 个分块记录")
+
+                # 5. 从数据库删除文件记录
+                db.delete(file_record)
+                db.commit()
+
+                duration = time.time() - start_time
+                logger.info(f"文件删除完成，耗时: {duration:.2f} 秒")
+
+                return {
+                    'success': True,
+                    'file_path': file_path,
+                    'deleted_chunks': len(chunk_records),
+                    'faiss_deleted_count': faiss_deleted_count,
+                    'whoosh_deleted_count': whoosh_deleted_count,
+                    'duration_seconds': duration
+                }
+
+            finally:
+                db.close()
+
+        except Exception as e:
+            logger.error(f"从索引删除文件失败 {file_path}: {e}")
+            import traceback
+            logger.error(f"详细错误信息: {traceback.format_exc()}")
+            return {
+                'success': False,
+                'error': str(e),
+                'file_path': file_path
+            }
+
+    async def _delete_from_faiss_index(self, chunk_records: List) -> int:
+        """从Faiss索引删除向量
+
+        Args:
+            chunk_records: 分块记录列表
+
+        Returns:
+            int: 删除的向量数量
+        """
+        try:
+            if not os.path.exists(self.chunk_faiss_index_path):
+                logger.warning("Faiss索引文件不存在，跳过删除")
+                return 0
+
+            # 加载Faiss索引
+            import faiss
+            index = faiss.read_index(self.chunk_faiss_index_path)
+
+            # 加载元数据
+            metadata_path = self.chunk_faiss_index_path.replace('.faiss', '_metadata.pkl')
+            if not os.path.exists(metadata_path):
+                logger.warning("Faiss元数据文件不存在，无法精确删除")
+                return 0
+
+            with open(metadata_path, 'rb') as f:
+                metadata = pickle.load(f)
+
+            # 收集需要删除的向量ID
+            ids_to_remove = set()
+            for chunk in chunk_records:
+                if chunk.faiss_index_id is not None:
+                    ids_to_remove.add(chunk.faiss_index_id)
+
+            if not ids_to_remove:
+                logger.info("没有需要删除的Faiss向量ID")
+                return 0
+
+            logger.info(f"准备从Faiss索引删除 {len(ids_to_remove)} 个向量")
+
+            # 重建索引（Faiss不支持直接删除）
+            new_index = faiss.IndexFlatL2(index.d)
+            new_metadata = []
+
+            # 遍历现有向量，跳过需要删除的
+            removed_count = 0
+            for i in range(index.ntotal):
+                vector_id = metadata.get('vector_ids', [])[i] if i < len(metadata.get('vector_ids', [])) else None
+
+                if vector_id not in ids_to_remove:
+                    # 保留这个向量
+                    vector = index.reconstruct(i)
+                    new_index.add(vector.reshape(1, -1))
+                    new_metadata.append(vector_id)
+                    removed_count += 1
+                else:
+                    logger.debug(f"跳过删除的向量ID: {vector_id}")
+
+            if removed_count < index.ntotal:
+                # 有向量被删除，重建索引文件
+                faiss.write_index(new_index, self.chunk_faiss_index_path)
+
+                # 保存新的元数据
+                new_metadata_dict = {'vector_ids': new_metadata}
+                with open(metadata_path, 'wb') as f:
+                    pickle.dump(new_metadata_dict, f)
+
+                logger.info(f"Faiss索引重建完成，保留了 {removed_count} 个向量，删除了 {index.ntotal - removed_count} 个向量")
+                return index.ntotal - removed_count
+            else:
+                logger.info("没有向量需要删除")
+                return 0
+
+        except Exception as e:
+            logger.error(f"从Faiss索引删除失败: {e}")
+            return 0
+
+    async def _delete_from_whoosh_index(self, chunk_records: List) -> int:
+        """从Whoosh索引删除文档
+
+        Args:
+            chunk_records: 分块记录列表
+
+        Returns:
+            int: 删除的文档数量
+        """
+        try:
+            if not os.path.exists(self.chunk_whoosh_index_path):
+                logger.warning("Whoosh索引目录不存在，跳过删除")
+                return 0
+
+            from whoosh.index import open_dir
+            from whoosh.query import Term
+
+            # 打开Whoosh索引
+            ix = open_dir(self.chunk_whoosh_index_path)
+            deleted_count = 0
+
+            with ix.writer() as writer:
+                for chunk in chunk_records:
+                    if chunk.whoosh_doc_id:
+                        # 通过文档ID删除
+                        writer.delete_by_term('id', chunk.whoosh_doc_id)
+                        deleted_count += 1
+                        logger.debug(f"删除Whoosh文档: {chunk.whoosh_doc_id}")
+
+            logger.info(f"从Whoosh索引删除了 {deleted_count} 个文档")
+            return deleted_count
+
+        except Exception as e:
+            logger.error(f"从Whoosh索引删除失败: {e}")
+            return 0
+
 
 # 创建全局分块索引服务实例
 _chunk_index_service: Optional[ChunkIndexService] = None

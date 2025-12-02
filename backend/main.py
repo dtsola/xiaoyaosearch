@@ -15,8 +15,7 @@ from app.api import (
     index_router,
     config_router,
     system_router,
-    websocket_router,
-    database_router
+    websocket_router
 )
 
 # 配置日志系统
@@ -113,7 +112,6 @@ app.include_router(index_router)
 app.include_router(config_router)
 app.include_router(system_router)
 app.include_router(websocket_router)
-app.include_router(database_router)
 
 # 根路径
 @app.get("/")

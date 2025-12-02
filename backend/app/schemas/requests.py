@@ -60,21 +60,8 @@ class IndexCreateRequest(BaseModel):
     """
     folder_path: str = Field(..., description="索引文件夹路径")
     file_types: List[str] = Field(
-        default=[
-            # 视频类 - P0要求
-            "mp4", "avi",
-            # 音频类 - P0要求
-            "mp3", "wav",
-            # 图片类 - P0要求
-            "png", "jpg", "jpeg",
-            # 文档类 - P0要求
-            # Office文档 (支持现代格式和经典格式)
-            "pdf", "docx", "xlsx", "pptx",  # 现代Office格式
-            "doc", "xls", "ppt",  # 经典Office格式
-            # 文本文档
-            "txt", "md",
-        ],
-        description="支持文件类型（基于DefaultConfig的P0要求格式）"
+        default=None,
+        description="支持文件类型"
     )
     recursive: bool = Field(True, description="是否递归搜索子文件夹")
 

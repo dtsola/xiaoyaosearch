@@ -196,7 +196,7 @@ class ChunkIndexService:
 
             # 3. 构建分块Faiss向量索引（使用雪花ID）
             if self.use_ai_models and all_chunks:
-                logger.info(f"开始构建分块Faiss向量索引，分块数量: {len(all_chunks)}")
+                logger.info(f"开始构建分块Faiss���量索引，分���数量: {len(all_chunks)}")
                 faiss_success = await self._build_chunk_faiss_index_with_ids(all_chunks, faiss_index_ids)
                 if not faiss_success:
                     logger.warning("分块Faiss索引构建失败，但继续构建其他索引")
@@ -210,7 +210,7 @@ class ChunkIndexService:
                 logger.info(f"开始构建分块Whoosh全文索引，分块数量: {len(all_chunks)}")
                 whoosh_success = await self._build_chunk_whoosh_index_with_ids(all_chunks, whoosh_doc_ids)
                 if not whoosh_success:
-                    logger.warning("分块Whoosh索引构建失败，但继续构建其他索引")
+                    logger.warning("分块Whoosh索引构建失败���但继续构建其他索引")
                     whoosh_doc_ids = []
             else:
                 logger.info("跳过分块Whoosh索引构建（条件不满足）")
@@ -263,7 +263,7 @@ class ChunkIndexService:
                     'file_path': document.get('file_path', ''),
                     'file_type': document.get('file_type', ''),
                     'file_size': document.get('file_size', 0),
-                    'modified_time': document.get('modified_time', ''),
+                    'modified_time': document.get('modified_time', datetime.now()),
                     'created_at': datetime.now()
                 }
                 chunks.append(chunk_data)
@@ -498,6 +498,7 @@ class ChunkIndexService:
                 file_name=fields.TEXT(stored=True, analyzer=StandardAnalyzer()),
                 file_path=fields.ID(stored=True),
                 file_type=fields.ID(stored=True),
+                file_size=fields.NUMERIC(stored=True, sortable=True),
 
                 # 内容字段（支持多种搜索方式）
                 content=fields.TEXT(stored=True, analyzer=StandardAnalyzer()),
@@ -528,12 +529,12 @@ class ChunkIndexService:
 
             if os.path.exists(self.chunk_whoosh_index_path) and os.listdir(self.chunk_whoosh_index_path):
                 # 索引已存在，打开并添加
-                storage = FileStorage(self.chunk_whoosh_index_path)
-                ix = storage.open_index(schema=chunk_schema)
+                from whoosh.index import open_dir
+                ix = open_dir(self.chunk_whoosh_index_path, schema=chunk_schema)
             else:
                 # 创建新索引
-                storage = FileStorage(self.chunk_whoosh_index_path)
-                ix = storage.create_index(chunk_schema)
+                from whoosh.index import create_in
+                ix = create_in(self.chunk_whoosh_index_path, chunk_schema)
 
             # 3. 使用异步writer提高性能
             writer = AsyncWriter(ix)
@@ -582,6 +583,7 @@ class ChunkIndexService:
                                 file_name=file_name,
                                 file_path=chunk.get('file_path', ''),
                                 file_type=chunk.get('file_type', ''),
+                                file_size=int(chunk.get('file_size', 0)),
                                 content=content,
                                 content_stored=content,
                                 chunk_index=int(chunk.get('chunk_index', i)),
@@ -944,6 +946,7 @@ class ChunkIndexService:
                         file_name=chunk['file_name'],
                         file_path=chunk['file_path'],
                         file_type=chunk['file_type'],
+                        file_size=int(chunk.get('file_size', 0)),
                         content=chunk['content'],
                         chunk_index=chunk['chunk_index'],
                         start_position=chunk['start_position'],
@@ -1259,12 +1262,21 @@ class ChunkIndexService:
                 file_id=fields.NUMERIC(stored=True, numtype=int),
                 content=fields.TEXT(analyzer=analyzer, stored=True, phrase=True),
                 file_name=fields.TEXT(analyzer=analyzer, stored=True),
+                file_path=fields.ID(stored=True),
                 file_type=fields.ID(stored=True),
+                file_size=fields.NUMERIC(stored=True, sortable=True),
                 chunk_index=fields.NUMERIC(stored=True, numtype=int),
                 total_chunks=fields.NUMERIC(stored=True, numtype=int),
                 keywords=fields.KEYWORD(stored=True, commas=True),
                 embedding=fields.TEXT(stored=True),
-                created_at=fields.DATETIME(stored=True)
+                modified_time=fields.ID(stored=True, sortable=True),
+                created_at=fields.ID(stored=True, sortable=True),  # 改为ID字段存储时间戳
+                # 添加缺失的字段
+                content_stored=fields.STORED(),
+                start_position=fields.NUMERIC(stored=True, numtype=int),
+                end_position=fields.NUMERIC(stored=True, numtype=int),
+                content_length=fields.NUMERIC(stored=True, numtype=int),
+                title=fields.TEXT(analyzer=analyzer, stored=True)  # 标题字段
             )
 
             # 3. 创建索引
@@ -1277,19 +1289,35 @@ class ChunkIndexService:
             writer = AsyncWriter(ix)
 
             for chunk, doc_id in zip(chunks, pregenerated_ids):
-                # 使用雪花ID作为文档ID
+                # 处理日期时间字段 - 使用Unix时间戳
+                modified_time = chunk.get('modified_time', datetime.now())
+                created_at = chunk.get('created_at', datetime.now())
+
+                # 转换为Unix时间戳（秒级）
+                modified_timestamp = int(modified_time.timestamp()) if isinstance(modified_time, datetime) else int(float(modified_time))
+                created_timestamp = int(created_at.timestamp()) if isinstance(created_at, datetime) else int(float(created_at))
+
+                # 使用雪花ID作为文档ID，存储完整信息避免搜索时查数据库
                 doc = {
                     'id': doc_id,
                     'chunk_id': chunk.get('chunk_id', ''),
                     'file_id': chunk.get('file_id', 0),
                     'content': chunk.get('content', ''),
+                    'content_stored': chunk.get('content', ''),  # 原始内容存储
                     'file_name': chunk.get('file_name', ''),
+                    'file_path': chunk.get('file_path', ''),  # 完整文件路径
                     'file_type': chunk.get('file_type', ''),
+                    'file_size': chunk.get('file_size', 0),  # 文件大小
                     'chunk_index': chunk.get('chunk_index', 0),
+                    'start_position': chunk.get('start_position', 0),
+                    'end_position': chunk.get('end_position', 0),
+                    'content_length': chunk.get('content_length', len(chunk.get('content', ''))),
                     'total_chunks': chunk.get('total_chunks', 1),
                     'keywords': ' '.join(chunk.get('keywords', [])),
                     'embedding': str(chunk.get('embedding', [])),
-                    'created_at': datetime.now()
+                    'modified_time': str(modified_timestamp),  # 使用时间戳字符串
+                    'created_at': str(created_timestamp),    # 使用时间戳字符串
+                    'title': chunk.get('file_name', '')  # 从文件名提取作为标题
                 }
 
                 writer.add_document(**doc)

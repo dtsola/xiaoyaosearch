@@ -362,30 +362,59 @@ class ChunkSearchService:
         """分块级全文搜索"""
         try:
             from whoosh import index as whoosh_index
-            from whoosh.qparser import QueryParser, OrGroup
+            from whoosh.qparser import QueryParser, MultifieldParser, OrGroup
+            from whoosh.query import And, Or, Term
 
             # 打开分块索引
             ix = whoosh_index.open_dir(self.chunk_whoosh_index_path)
             searcher = ix.searcher()
 
             try:
-                # 使用QueryParser解析查询，支持中文搜索
-                # 使用OrGroup让多个词之间是OR关系
-                parser = QueryParser("content", ix.schema, group=OrGroup)
+                query_str = query.strip()
+                logger.info(f"执行全文搜索: '{query_str}'")
 
-                # 解析查询
-                query_obj = parser.parse(query.strip())
-                logger.debug(f"全文搜索查询: {query_obj}")
+                # 创建多字段查询解析器，同时搜索内容和文件名
+                parser = MultifieldParser(["content", "file_name"],
+                                        ix.schema, group=OrGroup)
+
+                # 设置查询为模糊搜索，支持中文
+                # 对于中文，我们使用通配符和短语查询
+                if len(query_str) == 1:
+                    # 单个字符，使用通配符搜索
+                    query_obj = parser.parse(f"*{query_str}*")
+                else:
+                    # 多个字符，尝试精确匹配和模糊匹配
+                    exact_query = parser.parse(f'"{query_str}"')  # 短语查询
+                    fuzzy_terms = []
+
+                    # 为每个字段创建通配符查询
+                    for field in ["content", "file_name"]:
+                        fuzzy_terms.append(Term(field, query_str))
+                        fuzzy_terms.append(parser.parse(f"{field}:*{query_str}*"))
+
+                    # 组合查询：精确匹配或模糊匹配
+                    if fuzzy_terms:
+                        query_obj = Or([exact_query] + fuzzy_terms)
+                    else:
+                        query_obj = exact_query
+
+                logger.debug(f"全文搜索查询对象: {query_obj}")
 
                 # 执行搜索
                 search_results = searcher.search(query_obj, limit=limit * 3)
                 hits = [hit for hit in search_results]
 
-                logger.debug(f"全文搜索找到 {len(hits)} 个结果")
+                logger.info(f"全文搜索找到 {len(hits)} 个结果")
 
-                # 处理结果
+                # 处理结果 - 直接使用索引数据，不再查询数据库
                 results = []
                 for hit in hits:
+                    # 获取实际存储的内容
+                    content = hit.get('content', '')
+                    if not content:
+                        content = hit.get('content_stored', '')
+
+                    # 直接从索引获取完整信息
                     chunk_info = {
                         'id': str(hit.get('file_id', '')),
                         'chunk_id': str(hit.get('chunk_id', '')),
@@ -393,14 +422,23 @@ class ChunkSearchService:
                         'file_name': str(hit.get('file_name', '')),
                         'file_path': str(hit.get('file_path', '')),
                         'file_type': str(hit.get('file_type', '')),
-                        'content': str(hit.get('content', '')),
+                        'file_size': int(hit.get('file_size', 0)),
+                        'content': content,
                         'chunk_index': int(hit.get('chunk_index', 0)),
                         'start_position': int(hit.get('start_position', 0)),
                         'end_position': int(hit.get('end_position', 0)),
-                        'content_length': len(str(hit.get('content', ''))),
+                        'content_length': int(hit.get('content_length', 0)),
+                        'created_at': hit.get('created_at'),
+                        'modified_time': hit.get('modified_time'),
                         'relevance_score': min(float(hit.score or 0.0), 1.0),
                         'match_type': 'fulltext'
                     }
+
+                    # 生成预览文本和高亮
+                    if content:
+                        chunk_info['preview_text'] = self._generate_preview_text(content)
+                        chunk_info['highlight'] = self._generate_highlight(content, query_str)
+
                     results.append(chunk_info)
 
                 return results

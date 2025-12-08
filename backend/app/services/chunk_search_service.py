@@ -362,36 +362,32 @@ class ChunkSearchService:
         """分块级全文搜索"""
         try:
             from whoosh import index as whoosh_index
-            from whoosh.query import Term, Or
+            from whoosh.qparser import QueryParser, OrGroup
 
             # 打开分块索引
             ix = whoosh_index.open_dir(self.chunk_whoosh_index_path)
             searcher = ix.searcher()
 
             try:
-                # 构建查询
-                terms = []
-                query_terms = query.strip().split()
+                # 使用QueryParser解析查询，支持中文搜索
+                # 使用OrGroup让多个词之间是OR关系
+                parser = QueryParser("content", ix.schema, group=OrGroup)
 
-                for term in query_terms:
-                    for field_name in ["content", "file_name"]:
-                        if term.strip():
-                            terms.append(Term(field_name, term.strip()))
-
-                if not terms:
-                    return []
-
-                query_obj = Or(terms) if len(terms) > 1 else terms[0]
+                # 解析查询
+                query_obj = parser.parse(query.strip())
+                logger.debug(f"全文搜索查询: {query_obj}")
 
                 # 执行搜索
                 search_results = searcher.search(query_obj, limit=limit * 3)
                 hits = [hit for hit in search_results]
 
+                logger.debug(f"全文搜索找到 {len(hits)} 个结果")
+
                 # 处理结果
                 results = []
                 for hit in hits:
                     chunk_info = {
-                        'id': str(hit.get('id', '')),
+                        'id': str(hit.get('file_id', '')),
                         'chunk_id': str(hit.get('chunk_id', '')),
                         'file_id': str(hit.get('file_id', '')),
                         'file_name': str(hit.get('file_name', '')),

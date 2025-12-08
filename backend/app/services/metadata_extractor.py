@@ -121,9 +121,9 @@ class MetadataExtractor:
         metadata = {}
 
         try:
-            if extension == '.pdf' and PDF_AVAILABLE:
+            if extension == '.pdf':
                 metadata.update(self._extract_pdf_metadata(path))
-            elif extension in ['.docx'] and DOCX_AVAILABLE:
+            elif extension in ['.docx']:
                 metadata.update(self._extract_docx_metadata(path))
             elif extension in ['.txt', '.md']:
                 metadata.update(self._extract_text_metadata(path))
@@ -247,7 +247,7 @@ class MetadataExtractor:
         metadata = {}
 
         try:
-            if path.suffix.lower() in ['.xlsx'] and EXCEL_AVAILABLE:
+            if path.suffix.lower() in ['.xlsx']:
                 workbook = load_workbook(str(path), read_only=True)
 
                 metadata.update({
@@ -277,7 +277,7 @@ class MetadataExtractor:
         metadata = {}
 
         try:
-            if path.suffix.lower() in ['.pptx'] and PPTX_AVAILABLE:
+            if path.suffix.lower() in ['.pptx']:
                 prs = Presentation(str(path))
 
                 # 核心属性

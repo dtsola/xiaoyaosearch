@@ -13,39 +13,10 @@ logger = logging.getLogger(__name__)
 from app.services.ai_model_base import BaseAIModel, ModelType, ProviderType, ModelStatus, ModelManager, AIModelException
 from app.utils.enum_helpers import get_enum_value
 from app.core.config import get_settings
-
-# 尝试导入AI模型服务，如果模块不存在则跳过
-try:
-    from app.services.bge_embedding_service import create_bge_service
-    BGE_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"BGE嵌入服务不可用: {e}")
-    create_bge_service = None
-    BGE_AVAILABLE = False
-
-try:
-    from app.services.whisper_service import create_whisper_service
-    WHISPER_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"Whisper语音服务不可用: {e}")
-    create_whisper_service = None
-    WHISPER_AVAILABLE = False
-
-try:
-    from app.services.clip_service import create_clip_service
-    CLIP_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"CLIP图像服务不可用: {e}")
-    create_clip_service = None
-    CLIP_AVAILABLE = False
-
-try:
-    from app.services.ollama_service import create_ollama_service
-    OLLAMA_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"Ollama服务不可用: {e}")
-    create_ollama_service = None
-    OLLAMA_AVAILABLE = False
+from app.services.bge_embedding_service import create_bge_service
+from app.services.whisper_service import create_whisper_service
+from app.services.clip_service import create_clip_service
+from app.services.ollama_service import create_ollama_service
 from app.models.ai_model import AIModelModel
 from app.core.database import get_db, SessionLocal
 
@@ -182,7 +153,7 @@ class AIModelService:
                     config = json.loads(config)
 
                 try:
-                    if model_type == "embedding" and BGE_AVAILABLE:
+                    if model_type == "embedding":
                         # 创建文本嵌入模型
                         bge_service = create_bge_service(config)
                         self.model_manager.register_model(model_id, bge_service)
@@ -191,7 +162,7 @@ class AIModelService:
                         await self.model_manager.load_model(model_id)
                         logger.info(f"创建并加载embedding模型: {model_id}")
 
-                    elif model_type == "speech" and WHISPER_AVAILABLE:
+                    elif model_type == "speech":
                         # 创建语音识别模型
                         whisper_service = create_whisper_service(config)
                         self.model_manager.register_model(model_id, whisper_service)
@@ -200,7 +171,7 @@ class AIModelService:
                         await self.model_manager.load_model(model_id)
                         logger.info(f"创建并加载speech模型: {model_id}")
 
-                    elif model_type == "vision" and CLIP_AVAILABLE:
+                    elif model_type == "vision":
                         # 创建图像理解模型
                         clip_service = create_clip_service(config)
                         self.model_manager.register_model(model_id, clip_service)
@@ -209,7 +180,7 @@ class AIModelService:
                         await self.model_manager.load_model(model_id)
                         logger.info(f"创建并加载vision模型: {model_id}")
 
-                    elif model_type == "llm" and OLLAMA_AVAILABLE:
+                    elif model_type == "llm":
                         # 创建大语言模型
                         ollama_service = create_ollama_service(config)
                         self.model_manager.register_model(model_id, ollama_service)

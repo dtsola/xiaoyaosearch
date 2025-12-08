@@ -11,14 +11,6 @@ import numpy as np
 import torch
 from transformers import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer
-
-try:
-    
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-import faiss
-
 from app.services.ai_model_base import BaseAIModel, ModelType, ProviderType, ModelStatus, AIModelException
 from app.utils.enum_helpers import get_enum_value
 from app.core.config import get_settings

@@ -301,27 +301,26 @@ class MetadataExtractor:
         metadata = {}
 
         try:
-            if IMAGE_AVAILABLE:
-                with Image.open(path) as img:
-                    metadata.update({
-                        'format': img.format,
-                        'mode': img.mode,
-                        'width': img.width,
-                        'height': img.height,
-                        'has_transparency': img.mode in ('RGBA', 'LA') or 'transparency' in img.info
-                    })
+            with Image.open(path) as img:
+                metadata.update({
+                    'format': img.format,
+                    'mode': img.mode,
+                    'width': img.width,
+                    'height': img.height,
+                    'has_transparency': img.mode in ('RGBA', 'LA') or 'transparency' in img.info
+                })
 
-                    # EXIF数据
-                    if hasattr(img, '_getexif') and img._getexif():
-                        exif_data = {}
-                        exif = img._getexif()
-                        for tag_id, value in exif.items():
-                            tag = TAGS.get(tag_id, tag_id)
-                            exif_data[tag] = str(value)
-                        metadata['exif'] = exif_data
+                # EXIF数据
+                if hasattr(img, '_getexif') and img._getexif():
+                    exif_data = {}
+                    exif = img._getexif()
+                    for tag_id, value in exif.items():
+                        tag = TAGS.get(tag_id, tag_id)
+                        exif_data[tag] = str(value)
+                    metadata['exif'] = exif_data
 
-                    # 图像信息
-                    metadata['info'] = dict(img.info)
+                # 图像信息
+                metadata['info'] = dict(img.info)
 
         except Exception as e:
             logger.error(f"提取图像元数据失败 {path}: {e}")
@@ -333,27 +332,26 @@ class MetadataExtractor:
         metadata = {}
 
         try:
-            if AUDIO_AVAILABLE:
-                audio_file = MutagenFile(str(path))
-                if audio_file:
-                    metadata.update({
-                        'duration': getattr(audio_file.info, 'length', 0),
-                        'bitrate': getattr(audio_file.info, 'bitrate', 0),
-                        'sample_rate': getattr(audio_file.info, 'sample_rate', 0),
-                        'channels': getattr(audio_file.info, 'channels', 0),
-                        'format': audio_file.mime[0] if audio_file.mime else 'unknown'
-                    })
+            audio_file = MutagenFile(str(path))
+            if audio_file:
+                metadata.update({
+                    'duration': getattr(audio_file.info, 'length', 0),
+                    'bitrate': getattr(audio_file.info, 'bitrate', 0),
+                    'sample_rate': getattr(audio_file.info, 'sample_rate', 0),
+                    'channels': getattr(audio_file.info, 'channels', 0),
+                    'format': audio_file.mime[0] if audio_file.mime else 'unknown'
+                })
 
-                    # 标签信息
-                    tags = {}
-                    if hasattr(audio_file, 'tags') and audio_file.tags:
-                        for key, value in audio_file.tags.items():
-                            if isinstance(value, list) and value:
-                                tags[key] = str(value[0])
-                            else:
-                                tags[key] = str(value)
+                # 标签信息
+                tags = {}
+                if hasattr(audio_file, 'tags') and audio_file.tags:
+                    for key, value in audio_file.tags.items():
+                        if isinstance(value, list) and value:
+                            tags[key] = str(value[0])
+                        else:
+                            tags[key] = str(value)
 
-                    metadata['tags'] = tags
+                metadata['tags'] = tags
 
         except Exception as e:
             logger.error(f"提取音频元数据失败 {path}: {e}")

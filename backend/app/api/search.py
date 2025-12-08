@@ -80,7 +80,7 @@ async def search_files(
             filters=request.file_types
         )
 
-        # 处理搜索结果数据格式（适配ChunkSearchService的响应格式）
+        # 处理搜索结果数据格式
         search_result = search_result_data.get('data', {})
         results = []
         for item in search_result.get('results', []):

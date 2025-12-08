@@ -19,6 +19,7 @@ from app.models.search_history import SearchHistoryModel
 from app.utils.enum_helpers import get_enum_value, is_semantic_search, is_hybrid_search, is_text_input, is_voice_input, is_image_input
 from app.services.chunk_search_service import get_chunk_search_service
 from app.services.ai_model_manager import ai_model_service
+from app.services.llm_query_enhancer import get_llm_query_enhancer
 
 router = APIRouter(prefix="/api/search", tags=["搜索服务"])
 logger = get_logger(__name__)
@@ -70,9 +71,32 @@ async def search_files(
                 message="搜索服务未就绪"
             )
 
+        # LLM查询增强
+        enhanced_query = request.query
+        query_enhancer = get_llm_query_enhancer()
+
+        if is_text_input(request.input_type):
+            try:
+                # 使用LLM增强查询
+                enhancement_result = await query_enhancer.enhance_query(request.query)
+                if enhancement_result.get('success', False) and enhancement_result.get('enhanced', False):
+                    # 根据搜索类型选择最佳查询
+                    if is_semantic_search(request.search_type):
+                        enhanced_query = enhancement_result.get('expanded_query', request.query)
+                    elif request.search_type == SearchType.FULLTEXT:
+                        enhanced_query = enhancement_result.get('rewritten_query', request.query)
+                    else:  # HYBRID
+                        # 混合搜索使用扩展查询
+                        enhanced_query = enhancement_result.get('expanded_query', request.query)
+
+                    logger.info(f"LLM查询增强: '{request.query}' -> '{enhanced_query}'")
+            except Exception as e:
+                logger.warning(f"LLM查询增强失败，使用原始查询: {str(e)}")
+                enhanced_query = request.query
+
         # 执行分块搜索
         search_result_data = await search_service.search(
-            query=request.query,
+            query=enhanced_query,
             search_type=request.search_type,  # 直接使用SearchType枚举
             limit=request.limit,
             offset=0,
@@ -102,6 +126,10 @@ async def search_files(
         # 计算响应时间和使用的AI模型
         response_time = search_result.get('search_time', 0)
         ai_models_used = []
+
+        # 记录LLM查询增强
+        if enhanced_query != request.query:
+            ai_models_used.append("qwen2.5:1.5b(LLM增强)")
 
         # 根据搜索类型记录使用的AI模型
         if is_semantic_search(request.search_type) or is_hybrid_search(request.search_type):

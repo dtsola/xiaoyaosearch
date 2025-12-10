@@ -1448,7 +1448,9 @@ class ContentParser:
                         texts=get_image_prompts()
                     )
 
-                    image_understanding = clip_result.get('content', '').strip()
+                    # CLIP返回的是best_match格式，不是content
+                    best_match = clip_result.get('best_match', {})
+                    image_understanding = best_match.get('text', '').strip()
                     if image_understanding:
                         description_parts.append(f"图像描述：{image_understanding}")
                         # CLIP成功，提升置信度

@@ -285,6 +285,9 @@ class ImageSearchService:
                     'file_name': metadata['file_name'],
                     'file_path': metadata['file_path'],
                     'file_type': metadata.get('file_type', 'image'),
+                    'file_size': metadata.get('file_size', 0),
+                    'created_at': metadata.get('created_at', ''),
+                    'modified_at': metadata.get('modified_at', ''),
                     'similarity': similarity,
                     'vector_id': int(vector_id)
                 })

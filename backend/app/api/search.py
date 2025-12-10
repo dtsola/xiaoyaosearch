@@ -271,6 +271,16 @@ async def multimodal_search(
                             # 确保relevance_score在[0, 1]范围内，避免浮点数精度问题
                             relevance_score = min(max(relevance_score, 0.0), 1.0)
 
+                            # 处理日期时间字段，如果元数据中有就使用，否则用当前时间
+                            created_at = item.get('created_at', '')
+                            modified_at = item.get('modified_at', '')
+
+                            # 如果日期字段为空或无效格式，使用当前时间
+                            if not created_at:
+                                created_at = now
+                            if not modified_at:
+                                modified_at = now
+
                             image_results.append(SearchResult(
                                 file_id=item.get('file_id', 0),
                                 file_name=item.get('file_name', ''),
@@ -279,8 +289,8 @@ async def multimodal_search(
                                 relevance_score=relevance_score,
                                 preview_text=f"相似度: {relevance_score:.3f}",
                                 highlight=f"图像匹配度: {relevance_score:.3f}",
-                                created_at=item.get('created_at', now),
-                                modified_at=item.get('modified_at', now),
+                                created_at=created_at,
+                                modified_at=modified_at,
                                 file_size=item.get('file_size', 0),
                                 match_type='image_vector'
                             ))

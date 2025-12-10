@@ -4,6 +4,7 @@
 """
 import os
 import asyncio
+import threading
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -616,7 +617,12 @@ async def run_full_index_task(
         recursive: 是否递归搜索
         file_types: 指定文件类型过滤列表，为None时使用默认配置
     """
-    logger.info(f"开始执行完整索引任务: id={index_id}, folder={folder_path}")
+    # 获取 logger 实例
+    from app.core.logging_config import get_logger
+    task_logger = get_logger("background_task")
+
+    task_logger.info(f"开始执行完整索引任务: id={index_id}, folder={folder_path}")
+    task_logger.debug(f"当前线程ID: {threading.get_ident()}")
 
     from app.core.database import SessionLocal
 
@@ -629,7 +635,7 @@ async def run_full_index_task(
         ).first()
 
         if not index_job or index_job.status != get_enum_value(JobStatus.PENDING):
-            logger.warning(f"索引任务不存在或状态不正确: id={index_id}")
+            task_logger.warning(f"索引任务不存在或状态不正确: id={index_id}")
             return
 
         # 开始任务
@@ -638,7 +644,7 @@ async def run_full_index_task(
 
         # 定义进度回调
         def progress_callback(message: str, progress: float):
-            logger.info(f"索引进度[{index_id}]: {message} - {progress:.1f}%")
+            task_logger.info(f"索引进度[{index_id}]: {message} - {progress:.1f}%")
             # 更新任务进度（简化处理）
             if index_job.total_files > 0:
                 processed = int((progress / 100) * index_job.total_files)
@@ -653,11 +659,11 @@ async def run_full_index_task(
                 if not ext.startswith('.'):
                     ext = '.' + ext
                 filtered_extensions.add(ext.lower())
-            logger.info(f"使用指定的文件类型过滤: {filtered_extensions}")
+            task_logger.info(f"使用指定的文件类型过滤: {filtered_extensions}")
         else:
             # 使用DefaultConfig支持的所有文件类型
             filtered_extensions = settings.default.get_supported_extensions()
-            logger.info(f"使用DefaultConfig默认支持的所有文件类型: {filtered_extensions}")
+            task_logger.info(f"使用DefaultConfig默认支持的所有文件类型: {filtered_extensions}")
 
         # 使用全局单例索引服务
         temp_index_service = get_global_file_index_service()
@@ -673,15 +679,15 @@ async def run_full_index_task(
             index_job.processed_files = result.get('documents_indexed', 0)
             index_job.error_count = result.get('failed_files', 0)
             index_job.complete_job()
-            logger.info(f"完整索引任务完成: id={index_id}, 成功索引 {index_job.processed_files} 个文件")
+            task_logger.info(f"完整索引任务完成: id={index_id}, 成功索引 {index_job.processed_files} 个文件")
         else:
             index_job.fail_job(result.get('error', '未知错误'))
-            logger.error(f"完整索引任务失败: id={index_id}, 错误: {result.get('error')}")
+            task_logger.error(f"完整索引任务失败: id={index_id}, 错误: {result.get('error')}")
 
         db.commit()
 
     except Exception as e:
-        logger.error(f"完整索引任务执行异常: {str(e)}")
+        task_logger.error(f"完整索引任务执行异常: {str(e)}")
         if index_job:
             index_job.fail_job(str(e))
             db.commit()
@@ -704,7 +710,11 @@ async def run_incremental_index_task(
         recursive: 是否递归搜索
         file_types: 指定文件类型过滤列表，为None时使用默认配置
     """
-    logger.info(f"开始执行增量索引任务: id={index_id}, folder={folder_path}")
+    # 获取 logger 实例
+    from app.core.logging_config import get_logger
+    task_logger = get_logger("background_task")
+
+    task_logger.info(f"开始执行增量索引任务: id={index_id}, folder={folder_path}")
 
     from app.core.database import SessionLocal
 
@@ -717,7 +727,7 @@ async def run_incremental_index_task(
         ).first()
 
         if not index_job or index_job.status != get_enum_value(JobStatus.PENDING):
-            logger.warning(f"增量索引任务不存在或状态不正确: id={index_id}")
+            task_logger.warning(f"增量索引任务不存在或状态不正确: id={index_id}")
             return
 
         # 开始任务
@@ -732,11 +742,11 @@ async def run_incremental_index_task(
                 if not ext.startswith('.'):
                     ext = '.' + ext
                 filtered_extensions.add(ext.lower())
-            logger.info(f"增量索引使用指定的文件类型过滤: {filtered_extensions}")
+            task_logger.info(f"增量索引使用指定的文件类型过滤: {filtered_extensions}")
         else:
             # 使用DefaultConfig支持的所有文件类型
             filtered_extensions = settings.default.get_supported_extensions()
-            logger.info(f"增量索引使用DefaultConfig默认支持的所有文件类型: {filtered_extensions}")
+            task_logger.info(f"增量索引使用DefaultConfig默认支持的所有文件类型: {filtered_extensions}")
 
         # 使用全局单例索引服务
         temp_index_service = get_global_file_index_service()
@@ -751,15 +761,15 @@ async def run_incremental_index_task(
             index_job.processed_files = result.get('changed_files', 0)
             index_job.error_count = 0  # 增量更新通常不会有错误
             index_job.complete_job()
-            logger.info(f"增量索引任务完成: id={index_id}, 处理 {index_job.processed_files} 个变更文件")
+            task_logger.info(f"增量索引任务完成: id={index_id}, 处理 {index_job.processed_files} 个变更文件")
         else:
             index_job.fail_job(result.get('error', '未知错误'))
-            logger.error(f"增量索引任务失败: id={index_id}, 错误: {result.get('error')}")
+            task_logger.error(f"增量索引任务失败: id={index_id}, 错误: {result.get('error')}")
 
         db.commit()
 
     except Exception as e:
-        logger.error(f"增量索引任务执行异常: {str(e)}")
+        task_logger.error(f"增量索引任务执行异常: {str(e)}")
         if index_job:
             index_job.fail_job(str(e))
             db.commit()

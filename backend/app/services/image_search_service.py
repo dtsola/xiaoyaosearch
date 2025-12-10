@@ -22,24 +22,28 @@ logger = get_logger(__name__)
 
 class ImageSearchService:
     """
-    独立图像搜索服务
+    图像搜索服务
 
-    基于CLIP特征向量的图像搜索实现
-    - 独立的Faiss索引，专门存储图像向量
+    基于CLIP特征向量的图像搜索实现，使用 chunk_index_service 构建的索引
+    - 使用 chunk_index_service 已构建的图像索引
     - 完全基于特征向量的搜索，避免文本匹配错误
-    - 支持图像索引的构建、更新和搜索
+    - 专门负责图像搜索功能，索引构建由 chunk_index_service 处理
     """
 
     def __init__(self, index_path: str = None):
         """
         初始化图像搜索服务
 
+        使用 chunk_index_service 已有的图像索引路径
+
         Args:
             index_path: 图像索引文件路径
         """
         self.clip_service = None
-        self.index_path = index_path or "../data/indexes/faiss/image_index.faiss"
-        self.metadata_path = index_path.replace('.faiss', '_metadata.pkl') if index_path else "../data/indexes/faiss/image_index_metadata.pkl"
+        # 使用 chunk_index_service 的索引路径
+        base_path = index_path or "../data/indexes/faiss"
+        self.index_path = os.path.join(base_path, "clip_image_index.faiss")
+        self.metadata_path = os.path.join(base_path, "clip_image_metadata.pkl")
 
         # Faiss索引和元数据
         self.image_index = None
@@ -142,7 +146,9 @@ class ImageSearchService:
 
     async def add_image(self, file_path: str, file_id: int, file_name: str) -> bool:
         """
-        添加图像到索引
+        检查图像是否存在于索引中（只读模式）
+
+        注意：索引构建由 chunk_index_service 负责，此服务只负责搜索
 
         Args:
             file_path: 图像文件路径
@@ -150,7 +156,7 @@ class ImageSearchService:
             file_name: 文件名
 
         Returns:
-            bool: 添加是否成功
+            bool: 图像是否已存在于索引中
         """
         try:
             if not self.is_ready():
@@ -168,41 +174,11 @@ class ImageSearchService:
                 logger.debug(f"图像已存在于索引中: {file_path}")
                 return True
 
-            logger.info(f"添加图像到索引: {file_path}")
-
-            # 使用CLIP提取图像特征向量
-            image_vector = await self.clip_service.encode_image(file_path)
-
-            if image_vector is None or len(image_vector) == 0:
-                logger.error(f"无法提取图像特征向量: {file_path}")
-                return False
-
-            # 确保向量维度正确
-            if len(image_vector) != self.vector_dimension:
-                logger.error(f"图像向量维度不匹配: 期望{self.vector_dimension}, 实际{len(image_vector)}")
-                return False
-
-            # 归一化向量（用于余弦相似度）
-            image_vector = image_vector / np.linalg.norm(image_vector)
-
-            # 添加到Faiss索引
-            vector_id = self.image_index.ntotal
-            self.image_index.add(np.array([image_vector], dtype=np.float32))
-
-            # 存储元数据
-            self.image_metadata[vector_id] = {
-                'file_id': file_id,
-                'file_name': file_name,
-                'file_path': file_path,
-                'vector_id': vector_id,
-                'added_time': time.time()
-            }
-
-            logger.info(f"图像添加成功: {file_name}, 向量ID: {vector_id}")
-            return True
+            logger.warning(f"图像不在索引中，需要通过 chunk_index_service 重建索引: {file_path}")
+            return False
 
         except Exception as e:
-            logger.error(f"添加图像失败 {file_path}: {str(e)}")
+            logger.error(f"检查图像失败 {file_path}: {str(e)}")
             return False
 
     def _is_image_file(self, file_path: str) -> bool:

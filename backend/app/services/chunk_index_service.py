@@ -851,47 +851,76 @@ class ChunkIndexService:
         if total_docs > 0:
             self.index_stats['avg_chunks_per_document'] = self.index_stats['total_chunks_created'] / total_docs
 
-    async def update_chunk_indexes(self, new_chunks: List[Dict[str, Any]]) -> bool:
-        """增量更新分块索引
+    async def update_chunk_indexes(self, documents: List[Dict[str, Any]]) -> bool:
+        """增量更新分块索引和CLIP图像索引
 
         Args:
-            new_chunks: 新分块列表
+            documents: 新文档列表（包含文本和图片文件）
 
         Returns:
             bool: 更新是否成功
         """
         try:
-            logger.info(f"开始增量更新分块索引，新分块数: {len(new_chunks)}")
+            logger.info(f"开始增量更新索引，文档数量: {len(documents)}")
+            start_time = time.time()
 
-            # 1. 更新Faiss索引（如果存在）
-            if os.path.exists(self.chunk_faiss_index_path):
-                faiss_success = await self._update_faiss_index(new_chunks)
+            # 1. 处理文本分块索引
+            # 过滤出需要分块的文档
+            chunked_docs = []
+            image_docs = []
+
+            for doc in documents:
+                if self._should_chunk_document(doc.get('content', ''), doc.get('file_type', '')):
+                    chunked_docs.append(doc)
+                elif doc.get('file_type') == 'image':
+                    image_docs.append(doc)
+
+            logger.info(f"需要分块的文档: {len(chunked_docs)}, 图片文档: {len(image_docs)}")
+
+            # 2. 处理文本分块
+            text_success = True
+            if chunked_docs:
+                # 生成分块
+                all_chunks = []
+                for doc in chunked_docs:
+                    chunks = await self._chunk_document(doc)
+                    all_chunks.extend(chunks)
+
+                if all_chunks:
+                    # 更新Faiss和Whoosh索引
+                    faiss_success = await self._update_faiss_index(all_chunks)
+                    whoosh_success = await self._update_whoosh_index(all_chunks)
+
+                    # 生成索引ID
+                    new_faiss_ids = []
+                    new_whoosh_ids = []
+                    for i, chunk in enumerate(all_chunks):
+                        faiss_id = generate_snowflake_id(machine_id=1 + i % 1024)
+                        new_faiss_ids.append(faiss_id)
+                        whoosh_id = str(generate_snowflake_id(machine_id=1 + (i + 1000) % 1024))
+                        new_whoosh_ids.append(whoosh_id)
+
+                    # 保存到数据库
+                    db_success = await self._save_chunks_to_database(all_chunks, new_faiss_ids, new_whoosh_ids)
+                    text_success = faiss_success and whoosh_success and db_success
+
+            # 3. 更新CLIP图像索引
+            image_success = True
+            if image_docs and self.use_ai_models:
+                logger.info(f"开始更新CLIP图像索引，图片数量: {len(image_docs)}")
+                image_success = await self._update_clip_image_index(image_docs)
             else:
-                faiss_success = True  # 如果没有索引，认为更新成功
+                logger.info("没有新的图片文件需要更新CLIP索引")
 
-            # 2. 更新Whoosh索引（如果存在）
-            if os.path.exists(self.chunk_whoosh_index_path):
-                whoosh_success = await self._update_whoosh_index(new_chunks)
-            else:
-                whoosh_success = True
+            duration = time.time() - start_time
+            logger.info(f"增量索引更新完成，耗时: {duration:.2f}秒")
 
-            # 3. 为新分块生成索引ID
-            new_faiss_ids = []
-            new_whoosh_ids = []
-            if new_chunks:
-                for i, chunk in enumerate(new_chunks):
-                    faiss_id = generate_snowflake_id(machine_id=1 + i % 1024)
-                    new_faiss_ids.append(faiss_id)
-                    whoosh_id = str(generate_snowflake_id(machine_id=1 + (i + 1000) % 1024))
-                    new_whoosh_ids.append(whoosh_id)
-
-            # 4. 保存到数据库
-            db_success = await self._save_chunks_to_database(new_chunks, new_faiss_ids, new_whoosh_ids)
-
-            return faiss_success and whoosh_success and db_success
+            return text_success and image_success
 
         except Exception as e:
-            logger.error(f"增量更新分块索引失败: {e}")
+            logger.error(f"增量更新索引失败: {e}")
+            import traceback
+            logger.error(f"详细错误信息: {traceback.format_exc()}")
             return False
 
     async def _update_faiss_index(self, new_chunks: List[Dict[str, Any]]) -> bool:
@@ -974,6 +1003,115 @@ class ChunkIndexService:
 
         except Exception as e:
             logger.error(f"Whoosh索引增量更新失败: {e}")
+            return False
+
+    async def _update_clip_image_index(self, image_documents: List[Dict[str, Any]]) -> bool:
+        """增量更新CLIP图像向量索引
+
+        Args:
+            image_documents: 图片文档列表
+
+        Returns:
+            bool: 更新是否成功
+        """
+        try:
+            logger.info(f"开始增量更新CLIP图像索引，图片数量: {len(image_documents)}")
+            start_time = time.time()
+
+            # 检查现有图像索引
+            base_path = os.path.dirname(self.chunk_faiss_index_path)
+            clip_faiss_path = os.path.join(base_path, 'clip_image_index.faiss')
+            clip_metadata_path = os.path.join(base_path, 'clip_image_metadata.pkl')
+
+            if not os.path.exists(clip_faiss_path) or not os.path.exists(clip_metadata_path):
+                logger.warning("CLIP图像索引不存在，跳过增量更新")
+                return True
+
+            # 加载现有索引和元数据
+            clip_index = faiss.read_index(clip_faiss_path)
+            with open(clip_metadata_path, 'rb') as f:
+                existing_metadata = pickle.load(f)
+
+            # 提取新图片的CLIP特征向量
+            new_image_vectors = []
+            new_image_metadata = {}
+
+            current_vector_id = len(existing_metadata)  # 从现有向量ID开始
+
+            for doc in image_documents:
+                try:
+                    file_path = doc.get('file_path', '')
+                    if not file_path or not os.path.exists(file_path):
+                        logger.warning(f"图片文件不存在: {file_path}")
+                        continue
+
+                    # 检查是否已存在于现有索引中
+                    existing_vector_id = None
+                    for vid, metadata in existing_metadata.items():
+                        if metadata.get('file_path') == file_path:
+                            existing_vector_id = vid
+                            break
+
+                    if existing_vector_id is not None:
+                        logger.debug(f"图片已存在于索引中，跳过: {doc.get('file_name', 'unknown')}")
+                        continue
+
+                    # 使用AI模型服务提取CLIP特征向量
+                    clip_vector = await ai_model_service.encode_image(file_path)
+
+                    if clip_vector is not None and len(clip_vector) > 0:
+                        # 存储向量
+                        new_image_vectors.append(np.array(clip_vector, dtype=np.float32))
+
+                        # 存储元数据
+                        vector_id = current_vector_id + len(new_image_vectors) - 1
+                        new_image_metadata[vector_id] = {
+                            'file_id': doc.get('id', 0),
+                            'file_name': doc.get('file_name', ''),
+                            'file_path': file_path,
+                            'file_type': doc.get('file_type', ''),
+                            'file_size': doc.get('file_size', 0),
+                            'created_at': doc.get('created_at', datetime.now()).isoformat() if doc.get('created_at') else '',
+                            'modified_at': doc.get('modified_time', datetime.now()).isoformat() if doc.get('modified_time') else ''
+                        }
+
+                        logger.info(f"提取图片特征向量: {doc.get('file_name', 'unknown')}")
+                    else:
+                        logger.warning(f"图片文件CLIP特征向量提取失败: {file_path}")
+
+                except Exception as e:
+                    logger.warning(f"处理图片文件失败 {doc.get('file_path', 'unknown')}: {str(e)}")
+                    continue
+
+            if len(new_image_vectors) == 0:
+                logger.info("没有新的图片需要添加到CLIP索引")
+                return True
+
+            # 确保向量维度一致
+            vector_matrix = np.vstack(new_image_vectors).astype(np.float32)
+            if vector_matrix.shape[1] != clip_index.d:
+                logger.error(f"新图片向量维度 {vector_matrix.shape[1]} 与索引维度 {clip_index.d} 不匹配")
+                return False
+
+            # 添加新向量到现有索引
+            clip_index.add(vector_matrix)
+
+            # 更新元数据
+            existing_metadata.update(new_image_metadata)
+
+            # 保存更新后的索引和元数据
+            faiss.write_index(clip_index, clip_faiss_path)
+            with open(clip_metadata_path, 'wb') as f:
+                pickle.dump(existing_metadata, f)
+
+            update_time = time.time() - start_time
+            logger.info(f"CLIP图像索引增量更新完成: 新增 {len(new_image_vectors)} 个向量，索引总数: {clip_index.ntotal}，耗时: {update_time:.2f}秒")
+            return True
+
+        except Exception as e:
+            logger.error(f"增量更新CLIP图像索引失败: {str(e)}")
+            import traceback
+            logger.error(f"详细错误信息: {traceback.format_exc()}")
             return False
 
     def get_index_stats(self) -> Dict[str, Any]:
@@ -1532,7 +1670,7 @@ class ChunkIndexService:
                         # 通过文档ID删除
                         writer.delete_by_term('id', chunk.whoosh_doc_id)
                         deleted_count += 1
-                        logger.debug(f"删除Whoosh文档: {chunk.whoosh_doc_id}")
+                        logger.debug(f"��除Whoosh文档: {chunk.whoosh_doc_id}")
 
             logger.info(f"从Whoosh索引删除了 {deleted_count} 个文档")
             return deleted_count
@@ -1556,15 +1694,17 @@ class ChunkIndexService:
             start_time = time.time()
 
             # 1. 筛选出图片文件
-            image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'}
             image_files = []
 
             for doc in documents:
-                file_type = doc.get('file_type', '').lower()
-                logger.debug(f"检查文档: {doc.get('file_name', 'unknown')}, 类型: {file_type}")
-                if file_type in image_extensions:
-                    logger.debug(f"添加图片文件: {doc.get('file_name', 'unknown')}")
+                file_type = doc.get('file_type', '')
+
+                # 直接使用 file_type == 'image' 判断（与content_parser.py逻辑一致）
+                if file_type == 'image':
+                    logger.info(f"找到图片文件: {doc.get('file_name', 'unknown')}, 类型: {file_type}")
                     image_files.append(doc)
+                else:
+                    logger.debug(f"非图片文件: {doc.get('file_name', 'unknown')}, 类型: {file_type}")
 
             if not image_files:
                 logger.info("没有找到图片文件，跳过CLIP索引构建")

@@ -1,53 +1,30 @@
 """
-日志配置模块
-配置应用的结构化日志记录系统
+Loguru 日志配置模块
+提供现代化的日志记录功能，解决多线程环境下的日志写入问题
 """
 import os
-import logging
-import logging.handlers
-from datetime import datetime
+import sys
 from pathlib import Path
-import json
+from loguru import logger
 
 
-class JSONFormatter(logging.Formatter):
+def setup_ai_logging():
     """
-    JSON格式的日志格式化器
-    将日志记录格式化为JSON格式，便于日志分析和监控
+    配置AI模型相关的日志设置，抑制C++库的日志警告
+
+    必须在导入任何AI模型库（tensorflow、transformers等）之前调用
     """
-
-    def format(self, record):
-        """格式化日志记录为JSON"""
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-            "module": record.module,
-            "function": record.funcName,
-            "line": record.lineno
-        }
-
-        # 添加异常信息（如果有）
-        if record.exc_info:
-            log_entry["exception"] = self.formatException(record.exc_info)
-
-        # 添加额外的字段
-        if hasattr(record, 'user_id'):
-            log_entry["user_id"] = record.user_id
-        if hasattr(record, 'request_id'):
-            log_entry["request_id"] = record.request_id
-        if hasattr(record, 'file_path'):
-            log_entry["file_path"] = record.file_path
-        if hasattr(record, 'model_type'):
-            log_entry["model_type"] = record.model_type
-
-        return json.dumps(log_entry, ensure_ascii=False)
+    # 设置环境变量抑制C++库日志
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # TensorFlow日志级别
+    os.environ['GRPC_VERBOSITY'] = 'ERROR'    # gRPC日志级别
+    os.environ['GLOG_minloglevel'] = '2'      # Google日志最小级别
+    os.environ['GLOG_v'] = '0'               # Google日志详细程度
+    os.environ['PYTHONWARNINGS'] = 'ignore'  # 忽略Python警告
 
 
 def setup_logging():
     """
-    配置应用日志系统
+    配置 loguru 日志系统
     """
     # 获取配置
     log_level = os.getenv("LOG_LEVEL", "info").upper()
@@ -57,153 +34,82 @@ def setup_logging():
     log_dir = Path(log_file).parent
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    # 创建根日志记录器
-    root_logger = logging.getLogger()
-    root_logger.setLevel(getattr(logging, log_level))
+    # 移除默认处理器
+    logger.remove()
 
-    # 清除现有的处理器
-    root_logger.handlers.clear()
-
-    # 控制台处理器 - 修复编码问题
-    import sys
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(getattr(logging, log_level))
-
-    # 设置编码流处理器，解决Windows控制台中文显示问题
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8')
-    if hasattr(sys.stderr, 'reconfigure'):
-        sys.stderr.reconfigure(encoding='utf-8')
-
-    # 开发环境使用彩色格式，生产环境使用JSON格式
-    if os.getenv("NODE_ENV") == "production":
-        console_formatter = JSONFormatter()
-    else:
-        # 简化格式，避免特殊字符导致的编码问题
-        console_formatter = logging.Formatter(
-            fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        )
-
-    console_handler.setFormatter(console_formatter)
-    root_logger.addHandler(console_handler)
-
-    # 文件处理器（按时间轮转）
-    file_handler = logging.handlers.TimedRotatingFileHandler(
-        filename=log_file,
-        when="midnight",
-        interval=1,
-        backupCount=30,  # 保留30天的日志
-        encoding="utf-8"
+    # 添加控制台输出
+    logger.add(
+        sys.stdout,
+        level=log_level,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+               "<level>{level: <8}</level> | "
+               "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+               "<level>{message}</level>",
+        colorize=True,
+        backtrace=True,
+        diagnose=True
     )
-    file_handler.setLevel(logging.INFO)  # 文件日志至少记录INFO级别
 
-    # 文件日志使用JSON格式
-    file_formatter = JSONFormatter()
-    file_handler.setFormatter(file_formatter)
-    root_logger.addHandler(file_handler)
+    # 添加文件输出（所有日志）
+    logger.add(
+        log_file,
+        level="DEBUG",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} | {message}",
+        rotation="00:00",  # 每天午夜轮转
+        retention="30 days",  # 保留30天
+        compression="zip",  # 压缩旧日志
+        encoding="utf-8",
+        backtrace=True,
+        diagnose=True,
+        catch=True,
+    )
 
-    # 错误日志单独文件
+    # 添加错误日志单独文件
     error_log_file = log_file.replace(".log", "_error.log")
-    error_handler = logging.handlers.TimedRotatingFileHandler(
-        filename=error_log_file,
-        when="midnight",
-        interval=1,
-        backupCount=30,
-        encoding="utf-8"
+    logger.add(
+        error_log_file,
+        level="ERROR",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} | {message}",
+        rotation="00:00",
+        retention="30 days",
+        compression="zip",
+        encoding="utf-8",
+        backtrace=True,
+        diagnose=True,
+        catch=True,
     )
-    error_handler.setLevel(logging.ERROR)
-    error_handler.setFormatter(file_formatter)
-    root_logger.addHandler(error_handler)
 
-    # 设置特定日志记录器的级别
-    logging.getLogger("uvicorn").setLevel(logging.INFO)
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-
-    logging.info(f"日志系统配置完成 - 级别: {log_level}, 文件: {log_file}")
+    # 记录初始化完成
+    logger.info(f"Loguru 日志系统初始化完成 - 级别: {log_level}")
+    logger.info(f"日志文件: {log_file}")
+    logger.info(f"错误日志: {error_log_file}")
 
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(name: str = None):
     """
-    获取指定名称的日志记录器
+    获取日志记录器
 
     Args:
         name: 日志记录器名称
 
     Returns:
-        logging.Logger: 日志记录器实例
+        logger 实例
     """
-    return logging.getLogger(name)
+    # 使用 bind 添加额外信息
+    return logger.bind(name=name) if name else logger
 
 
+# 为了兼容性，提供 LoggerMixin 类
 class LoggerMixin:
     """
     日志记录器混入类
     为类提供日志记录功能
     """
-
     @property
-    def logger(self) -> logging.Logger:
+    def logger(self):
         """获取当前类的日志记录器"""
-        return logging.getLogger(self.__class__.__module__ + "." + self.__class__.__name__)
+        return logger.bind(name=self.__class__.__module__ + "." + self.__class__.__name__)
 
 
-def log_function_call(func):
-    """
-    函数调用日志装饰器
-
-    Args:
-        func: 要装饰的函数
-
-    Returns:
-        装饰后的函数
-    """
-    import functools
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        logger = logging.getLogger(func.__module__)
-
-        # 记录函数调用
-        logger.debug(f"调用函数: {func.__name__}")
-
-        try:
-            result = func(*args, **kwargs)
-            logger.debug(f"函数完成: {func.__name__}")
-            return result
-        except Exception as e:
-            logger.error(f"函数异常: {func.__name__} - {str(e)}")
-            raise
-
-    return wrapper
-
-
-def log_async_function_call(func):
-    """
-    异步函数调用日志装饰器
-
-    Args:
-        func: 要装饰的异步函数
-
-    Returns:
-        装饰后的异步函数
-    """
-    import functools
-
-    @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
-        logger = logging.getLogger(func.__module__)
-
-        # 记录函数调用
-        logger.debug(f"调用异步函数: {func.__name__}")
-
-        try:
-            result = await func(*args, **kwargs)
-            logger.debug(f"异步函数完成: {func.__name__}")
-            return result
-        except Exception as e:
-            logger.error(f"异步函数异常: {func.__name__} - {str(e)}")
-            raise
-
-    return wrapper
+# 导出所有内容
+__all__ = ["logger", "setup_logging", "setup_ai_logging", "get_logger", "LoggerMixin"]

@@ -341,17 +341,19 @@ async def multimodal_search(
                 )
 
                 # 转换搜索结果为SearchResult格式
-                for item in search_result.get('results', []):
+                # 注意：search_result返回格式为 {'success': True, 'data': {'results': [...]}}
+                search_data = search_result.get('data', {})
+                for item in search_data.get('results', []):
                     search_results.append(SearchResult(
-                        file_id=item.get('id', 0),
+                        file_id=item.get('file_id', 0),
                         file_name=item.get('file_name', ''),
                         file_path=item.get('file_path', ''),
                         file_type=item.get('file_type', ''),
                         relevance_score=item.get('relevance_score', 0.0),
                         preview_text=item.get('preview_text', ''),
                         highlight=item.get('highlight', ''),
-                        created_at=item.get('modified_time', ''),
-                        modified_at=item.get('modified_time', ''),
+                        created_at=item.get('created_at', ''),
+                        modified_at=item.get('modified_at', ''),
                         file_size=item.get('file_size', 0),
                         match_type=item.get('match_type', '')
                     ))

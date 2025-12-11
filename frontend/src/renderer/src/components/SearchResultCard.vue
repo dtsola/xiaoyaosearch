@@ -1,5 +1,5 @@
 <template>
-  <div class="result-card" :class="{ 'is-favorite': isFavorite }">
+  <div class="result-card">
     <!-- 文件头部信息 -->
     <div class="card-header">
       <div class="file-info">
@@ -67,25 +67,11 @@
 
     <!-- 操作按钮 -->
     <div class="card-actions">
-      <a-button type="text" size="small" @click="$emit('preview', result)">
-        <EyeOutlined />
-        预览
-      </a-button>
       <a-button type="text" size="small" @click="$emit('open', result)">
         <FolderOpenOutlined />
         打开
       </a-button>
-      <a-button
-        type="text"
-        size="small"
-        :class="{ 'is-favorite': isFavorite }"
-        @click="toggleFavorite"
-      >
-        <StarFilled v-if="isFavorite" />
-        <StarOutlined v-else />
-        {{ isFavorite ? '已收藏' : '收藏' }}
-      </a-button>
-      <a-dropdown>
+        <a-dropdown>
         <a-button type="text" size="small">
           <MoreOutlined />
           更多
@@ -99,11 +85,6 @@
             <a-menu-item @click="showFileProperties">
               <InfoCircleOutlined />
               文件属性
-            </a-menu-item>
-            <a-menu-divider />
-            <a-menu-item @click="$emit('delete', result)" class="danger-item">
-              <DeleteOutlined />
-              删除
             </a-menu-item>
           </a-menu>
         </template>
@@ -123,14 +104,10 @@ import {
   PictureOutlined,
   FileOutlined,
   FolderOutlined,
-  EyeOutlined,
   FolderOpenOutlined,
-  StarOutlined,
-  StarFilled,
   MoreOutlined,
   CopyOutlined,
   InfoCircleOutlined,
-  DeleteOutlined,
   CalendarOutlined,
   HddOutlined,
   TagOutlined
@@ -145,14 +122,8 @@ const props = defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-  preview: [result: SearchResult]
   open: [result: SearchResult]
-  favorite: [result: SearchResult, isFavorite: boolean]
-  delete: [result: SearchResult]
 }>()
-
-// 响应式数据
-const isFavorite = ref(false)
 
 // 计算属性
 const getScoreColor = (score: number) => {
@@ -171,12 +142,6 @@ const getMatchTypeLabel = (type: string) => {
   return typeMap[type] || type
 }
 
-// 方法
-const toggleFavorite = () => {
-  isFavorite.value = !isFavorite.value
-  emit('favorite', props.result, isFavorite.value)
-  message.success(isFavorite.value ? '已添加到收藏' : '已取消收藏')
-}
 
 const copyFilePath = async () => {
   try {
@@ -241,20 +206,6 @@ const formatDate = (dateString: string): string => {
   transform: translateY(-1px);
 }
 
-.result-card.is-favorite {
-  border-color: var(--warning);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.02));
-}
-
-.result-card.is-favorite::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--warning), var(--warning-light));
-}
 
 .card-header {
   display: flex;
@@ -411,22 +362,7 @@ const formatDate = (dateString: string): string => {
   transform: translateY(-1px);
 }
 
-.card-actions .ant-btn.is-favorite {
-  color: var(--warning);
-  background: rgba(245, 158, 11, 0.1);
-}
 
-.card-actions .ant-btn.is-favorite:hover {
-  background: rgba(245, 158, 11, 0.2);
-}
-
-.danger-item {
-  color: var(--error);
-}
-
-.danger-item:hover {
-  background: rgba(239, 68, 68, 0.1);
-}
 
 /* 响应式设计 */
 @media (max-width: 768px) {

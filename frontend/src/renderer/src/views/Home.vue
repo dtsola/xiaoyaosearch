@@ -194,24 +194,9 @@
             <SearchOutlined />
             开始搜索
           </a-button>
-          <a-button size="large" @click="showFolderSelector = true">
-            <FolderOutlined />
-            选择目录
-          </a-button>
-        </div>
+          </div>
       </div>
 
-      <!-- 搜索状态信息 -->
-      <div class="search-status">
-        <a-tag color="blue">
-          <RobotOutlined />
-          AI引擎: {{ aiEngine }}
-        </a-tag>
-        <a-tag color="green">
-          <DatabaseOutlined />
-          搜索范围: {{ searchScope }}
-        </a-tag>
-      </div>
     </div>
 
     <!-- 搜索结果 -->
@@ -228,37 +213,6 @@
         </div>
       </div>
 
-      <!-- 支持的文件格式信息 -->
-      <div class="supported-formats" v-if="!isSearching">
-        <a-alert
-          message="支持的文件格式"
-          type="info"
-          show-icon
-          closable
-        >
-          <template #description>
-            <div class="formats-grid">
-              <div class="format-category">
-                <strong>📄 文档文件:</strong>
-                <span>txt, md, pdf, docx, xlsx, pptx, doc, xls, ppt</span>
-              </div>
-              <div class="format-category">
-                <strong>🎵 音频文件:</strong>
-                <span>mp3, wav</span>
-              </div>
-              <div class="format-category">
-                <strong>🎬 视频文件:</strong>
-                <span>mp4, avi</span>
-              </div>
-              <div class="format-category">
-                <strong>🖼️ 图片文件:</strong>
-                <span>jpg, jpeg, png</span>
-              </div>
-            </div>
-          </template>
-        </a-alert>
-      </div>
-
       <!-- 结果列表 -->
       <div class="results-list">
         <a-spin :spinning="isSearching" size="large">
@@ -267,10 +221,7 @@
               v-for="result in searchResults"
               :key="result.file_id"
               :result="result"
-              @preview="handlePreview"
               @open="handleOpen"
-              @favorite="handleFavorite"
-              @delete="handleDelete"
             />
           </TransitionGroup>
         </a-spin>
@@ -298,37 +249,7 @@
       </a-empty>
     </div>
 
-    <!-- 文件夹选择器 -->
-    <a-modal
-      v-model:open="showFolderSelector"
-      title="选择搜索目录"
-      @ok="handleFolderSelect"
-    >
-      <a-list
-        :data-source="recentFolders"
-        item-layout="horizontal"
-        size="small"
-      >
-        <template #renderItem="{ item }">
-          <a-list-item>
-            <a-list-item-meta>
-              <template #title>
-                <a-checkbox
-                  :checked="selectedFolders.includes(item.path)"
-                  @change="handleFolderCheck(item.path)"
-                >
-                  {{ item.name }}
-                </a-checkbox>
-              </template>
-              <template #description>
-                {{ item.path }}
-              </template>
-            </a-list-item-meta>
-          </a-list-item>
-        </template>
-      </a-list>
-    </a-modal>
-  </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -346,7 +267,6 @@ import {
   VideoCameraOutlined,
   EyeOutlined,
   DeleteOutlined,
-  FolderOutlined,
   RobotOutlined,
   DatabaseOutlined
 } from '@ant-design/icons-vue'
@@ -358,8 +278,6 @@ const searchQuery = ref('')
 const isSearching = ref(false)
 const hasSearched = ref(false)
 const showSearchOptions = ref(false)
-const showFolderSelector = ref(false)
-const selectedFolders = ref<string[]>([])
 
 // 搜索建议
 const searchSuggestions = ref<string[]>([])
@@ -395,13 +313,6 @@ const searchStats = reactive({
 const aiEngine = ref('Ollama')
 const searchScope = ref('所有文件夹')
 
-// 最近使用的文件夹列表
-const recentFolders = ref([
-  { name: '文档', path: 'D:\\Documents' },
-  { name: '下载', path: 'D:\\Downloads' },
-  { name: '工作项目', path: 'D:\\Work\\Projects' },
-  { name: '桌面', path: 'D:\\Desktop' }
-])
 
 // 计算属性
 const canSearch = computed(() => {
@@ -588,21 +499,11 @@ const clearImage = () => {
 }
 
 // 搜索结果操作
-const handlePreview = (result: SearchResult) => {
-  message.info(`预览文件: ${result.file_name}`)
-}
-
 const handleOpen = (result: SearchResult) => {
   message.success(`打开文件: ${result.file_name}`)
 }
 
-const handleFavorite = (result: SearchResult) => {
-  message.success(`已收藏: ${result.file_name}`)
-}
 
-const handleDelete = (result: SearchResult) => {
-  message.warning(`删除功能暂未实现`)
-}
 
 // 加载更多
 const loadMore = async () => {
@@ -621,23 +522,6 @@ const showAdvancedSearch = () => {
   showSearchOptions.value = true
 }
 
-// 文件夹选择
-const handleFolderCheck = (folderPath: string) => {
-  const index = selectedFolders.value.indexOf(folderPath)
-  if (index > -1) {
-    selectedFolders.value.splice(index, 1)
-  } else {
-    selectedFolders.value.push(folderPath)
-  }
-}
-
-const handleFolderSelect = () => {
-  if (selectedFolders.value.length > 0) {
-    searchScope.value = `${selectedFolders.value.length} 个文件夹`
-    message.success('搜索范围已更新')
-  }
-  showFolderSelector.value = false
-}
 
 // 工具函数
 const formatTime = (seconds: number): string => {

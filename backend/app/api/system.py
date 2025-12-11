@@ -141,3 +141,113 @@ async def health_check(db: Session = Depends(get_db)):
             },
             message="健康检查失败"
         )
+
+
+@router.get("/running-status", summary="获取系统运行状态")
+async def get_running_status(db: Session = Depends(get_db)):
+    """
+    获取系统运行状态
+
+    专为前端底部状态栏设计的接口，返回简化的系统状态信息
+    """
+    logger.info("获取系统运行状态")
+
+    try:
+        # 获取索引文件数量
+        index_count = 0
+        try:
+            from app.services.chunk_search_service import get_chunk_search_service
+            search_service = get_chunk_search_service()
+            index_info = search_service.get_index_info()
+            # 取两个索引的最大文档数量
+            faiss_count = index_info.get('faiss_doc_count', 0)
+            whoosh_count = index_info.get('whoosh_doc_count', 0)
+            index_count = max(faiss_count, whoosh_count)
+        except Exception as e:
+            logger.warning(f"获取索引状态失败: {str(e)}")
+
+        # 获取数据总大小（从files表计算）
+        data_size = 0
+        try:
+            from app.models.file import FileModel
+            from sqlalchemy import func
+
+            # 计算所有已索引文件的总大小
+            total_size_result = db.query(func.sum(FileModel.file_size)).filter(
+                FileModel.is_indexed == True
+            ).scalar()
+
+            if total_size_result:
+                data_size = total_size_result
+        except Exception as e:
+            logger.warning(f"获取数据大小失败: {str(e)}")
+
+        # 获取今日搜索次数
+        today_searches = 0
+        try:
+            from datetime import date
+            from app.models.search_history import SearchHistoryModel
+
+            # 查询今日搜索次数
+            today = date.today()
+            today_searches = db.query(SearchHistoryModel).filter(
+                func.date(SearchHistoryModel.created_at) == today
+            ).count()
+        except Exception as e:
+            logger.warning(f"获取今日搜索次数失败: {str(e)}")
+
+        # 获取最近索引任务完成时间
+        last_update = datetime.now()
+        try:
+            from app.models.index_job import IndexJobModel
+
+            # 查询最近完成的索引任务
+            last_completed_job = db.query(IndexJobModel).filter(
+                IndexJobModel.status == 'completed'
+            ).order_by(IndexJobModel.completed_at.desc()).first()
+
+            if last_completed_job and last_completed_job.completed_at:
+                last_update = last_completed_job.completed_at
+        except Exception as e:
+            logger.warning(f"获取最后更新时间失败: {str(e)}")
+
+        # 判断系统状态
+        system_status = "正常"
+        system_color = "green"
+
+        # 检查数据库连接
+        db_status = get_database_info()
+        if db_status["status"] != "connected":
+            system_status = "异常"
+            system_color = "red"
+
+        # 检查是否有索引
+        if index_count == 0:
+            system_status = "待索引"
+            system_color = "orange"
+
+        response_data = {
+            "success": True,
+            "data": {
+                "index_status": system_status,
+                "data_count": index_count,
+                "today_searches": today_searches,
+                "system_status": system_status,
+                "last_update": last_update.isoformat()
+            }
+        }
+
+        logger.info(f"运行状态获取成功: index_count={index_count}, today_searches={today_searches}, data_size={data_size}")
+
+        return response_data
+
+    except Exception as e:
+        logger.error(f"获取运行状态失败: {str(e)}")
+        return {
+            "success": False,
+            "error": {
+                "code": "SYSTEM_STATUS_ERROR",
+                "message": f"获取系统运行状态失败: {str(e)}",
+                "type": "SystemError"
+            }
+        }

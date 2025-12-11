@@ -8,43 +8,63 @@ import type {
   SearchResult
 } from '@/types/api'
 import { InputType, FileType, SearchType } from '@/types/api'
+import { httpClient } from '@/utils/http'
 
 // 真实API服务
 export class SearchService {
   // 文本搜索
   static async search(params: SearchRequest): Promise<SearchResponse> {
-    // TODO: 替换为真实API调用
-    return await SearchServiceMock.search(params)
+    return await httpClient.post<SearchResponse>('/api/search', params)
   }
 
   // 多模态搜索
   static async multimodalSearch(inputType: InputType.VOICE | InputType.IMAGE, file: File): Promise<MultimodalResponse> {
-    // TODO: 替换为真实API调用
-    return await SearchServiceMock.multimodalSearch(inputType, file)
+    const formData = new FormData()
+    formData.append('input_data', await this.fileToBase64(file))
+    formData.append('input_type', inputType)
+    formData.append('search_type', SearchType.HYBRID)
+    formData.append('limit', '20')
+    formData.append('threshold', '0.7')
+
+    return await httpClient.postFormData<MultimodalResponse>('/api/search/multimodal', formData)
   }
 
   // 获取搜索历史
   static async getHistory(limit = 20, offset = 0): Promise<{ success: boolean; data: { history: SearchHistory[]; total: number } }> {
-    // TODO: 替换为真实API调用
-    return await SearchServiceMock.getHistory(limit, offset)
+    return await httpClient.get<{ success: boolean; data: { history: SearchHistory[]; total: number } }>(`/api/search/history?limit=${limit}&offset=${offset}`)
   }
 
   // 删除搜索历史
   static async deleteHistory(id: number): Promise<{ success: boolean; message: string }> {
-    // TODO: 替换为真实API调用
-    return await SearchServiceMock.deleteHistory(id)
+    return await httpClient.delete<{ success: boolean; message: string }>(`/api/search/history/${id}`)
   }
 
   // 清空搜索历史
   static async clearHistory(): Promise<{ success: boolean; message: string }> {
-    // TODO: 替换为真实API调用
-    return await SearchServiceMock.clearHistory()
+    return await httpClient.delete<{ success: boolean; message: string }>('/api/search/history')
   }
 
   // 搜索建议
   static async getSuggestions(query: string, limit = 5): Promise<{ success: boolean; data: { suggestions: string[]; query: string; total: number } }> {
-    // TODO: 替换为真实API调用
-    return await SearchServiceMock.getSuggestions(query, limit)
+    return await httpClient.get<{ success: boolean; data: { suggestions: string[]; query: string; total: number } }>(`/api/search/suggestions?query=${encodeURIComponent(query)}&limit=${limit}`)
+  }
+
+  // 辅助方法：将文件转换为 Base64
+  private static async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => {
+        // 移除 data:image/xxx;base64, 前缀
+        const base64 = reader.result?.toString().split(',')[1]
+        if (base64) {
+          resolve(base64)
+        } else {
+          reject(new Error('Failed to convert file to base64'))
+        }
+      }
+      reader.onerror = () => reject(new Error('Failed to read file'))
+    })
   }
 }
 

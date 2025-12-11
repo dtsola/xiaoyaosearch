@@ -255,7 +255,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { SearchServiceMock } from '@/api/search'
+import { SearchService } from '@/api/search'
 import type { SearchResult, SearchType, FileType } from '@/types/api'
 import SearchResultCard from '@/components/SearchResultCard.vue'
 import {
@@ -348,7 +348,7 @@ const handleSearch = async () => {
   hasSearched.value = true
 
   try {
-    const response = await SearchServiceMock.search({
+    const response = await SearchService.search({
       query: searchQuery.value,
       search_type: searchOptions.searchType,
       threshold: searchOptions.threshold,
@@ -405,7 +405,7 @@ const fetchSearchSuggestions = async () => {
   }
 
   try {
-    const response = await SearchServiceMock.getSuggestions(searchQuery.value, 5)
+    const response = await SearchService.getSuggestions(searchQuery.value, 5)
 
     if (response.success && response.data.suggestions.length > 0) {
       searchSuggestions.value = response.data.suggestions

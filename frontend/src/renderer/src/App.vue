@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { message } from 'ant-design-vue'
+import { SystemService } from '@/api/system'
 import {
   HomeOutlined,
   SettingOutlined,
@@ -9,6 +11,7 @@ import {
   InfoCircleOutlined,
   UserOutlined,
   CheckCircleOutlined,
+  ExclamationCircleOutlined,
   HddOutlined,
   SearchOutlined
 } from '@ant-design/icons-vue'
@@ -17,10 +20,14 @@ const router = useRouter()
 const route = useRoute()
 
 // 响应式数据
-const indexCount = ref(1234)
-const dataSize = ref(8700000000) // 8.7GB
-const searchCount = ref(15)
+const indexCount = ref(0)
+const dataSize = ref(0)
+const searchCount = ref(0)
 const lastUpdate = ref(new Date())
+const systemStatus = ref<'正常' | '异常' | '未知'>('正常')
+const statusColor = ref<'green' | 'red' | 'orange'>('green')
+const loading = ref(false)
+const refreshTimer = ref<NodeJS.Timeout>()
 
 // 当前路由
 const currentRoute = computed(() => {
@@ -69,12 +76,118 @@ const formatTime = (date: Date): string => {
   })
 }
 
+// 获取系统状态数据
+const fetchSystemStatus = async () => {
+  if (loading.value) return
+
+  loading.value = true
+  try {
+    const response = await SystemService.getStatus()
+
+    if (response.success) {
+      const data = response.data
+
+      // 更新索引状态
+      if (data.system_status) {
+        if (data.system_status === '正常') {
+          systemStatus.value = '正常'
+          statusColor.value = 'green'
+        } else if (data.system_status === '异常') {
+          systemStatus.value = '异常'
+          statusColor.value = 'red'
+        } else {
+          systemStatus.value = data.system_status
+          statusColor.value = 'orange'
+        }
+      }
+
+      // 更新索引文件数量
+      if (typeof data.data_count === 'number') {
+        indexCount.value = data.data_count
+      }
+
+      // 更新今日搜索次数
+      if (typeof data.today_searches === 'number') {
+        searchCount.value = data.today_searches
+      }
+
+      // 更新最后更新时间
+      if (data.last_update) {
+        lastUpdate.value = new Date(data.last_update)
+      }
+
+      // 从系统健康接口获取数据大小
+      try {
+        const healthResponse = await SystemService.getHealth()
+        if (healthResponse.data && healthResponse.data.indexes) {
+          // 计算索引大小作为数据大小的近似值
+          const faissSize = healthResponse.data.indexes.faiss_index?.index_size || '0KB'
+          const whooshSize = healthResponse.data.indexes.whoosh_index?.index_size || '0KB'
+
+          // 简单的大小解析和转换（可以后续完善）
+          const parseSize = (sizeStr: string): number => {
+            const match = sizeStr.match(/(\d+(?:\.\d+)?)\s*(KB|MB|GB)/)
+            if (match) {
+              const value = parseFloat(match[1])
+              const unit = match[2]
+              switch (unit) {
+                case 'KB': return value * 1024
+                case 'MB': return value * 1024 * 1024
+                case 'GB': return value * 1024 * 1024 * 1024
+                default: return 0
+              }
+            }
+            return 0
+          }
+
+          const totalSize = parseSize(faissSize) + parseSize(whooshSize)
+          if (totalSize > 0) {
+            dataSize.value = totalSize
+          }
+        }
+      } catch (healthError) {
+        console.warn('获取数据大小失败，使用默认值:', healthError)
+        // 保持默认值
+      }
+    }
+  } catch (error) {
+    console.error('获取系统状态失败:', error)
+    message.warning('系统状态更新失败，使用缓存数据')
+
+    // 设置降级状态
+    systemStatus.value = '未知'
+    statusColor.value = 'orange'
+  } finally {
+    loading.value = false
+  }
+}
+
+// 手动刷新状态
+const refreshStatus = () => {
+  fetchSystemStatus()
+}
+
 // 组件挂载
 onMounted(() => {
-  // 模拟实时数据更新
+  // 立即获取一次系统状态
+  fetchSystemStatus()
+
+  // 设置定时刷新（每5分钟更新一次）
+  refreshTimer.value = setInterval(() => {
+    fetchSystemStatus()
+  }, 5 * 60 * 1000)
+
+  // 每分钟更新最后更新时间显示
   setInterval(() => {
     lastUpdate.value = new Date()
-  }, 60000)
+  }, 60 * 1000)
+})
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value)
+  }
 })
 </script>
 
@@ -157,9 +270,10 @@ onMounted(() => {
           </span>
         </div>
         <div class="system-status">
-          <a-tag color="green" class="status-tag">
-            <CheckCircleOutlined />
-            系统正常
+          <a-tag :color="statusColor" class="status-tag">
+            <CheckCircleOutlined v-if="systemStatus === '正常'" />
+            <ExclamationCircleOutlined v-else />
+            系统{{ systemStatus }}
           </a-tag>
           <span class="last-update">
             最后更新: {{ formatTime(lastUpdate) }}

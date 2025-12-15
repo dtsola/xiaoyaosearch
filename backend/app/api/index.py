@@ -471,6 +471,13 @@ async def stop_index(
         if index_job.status != get_enum_value(JobStatus.PROCESSING):
             raise ValidationException("只能停止正在运行的索引任务")
 
+        # 调用索引服务的停止方法
+        index_service = get_file_index_service()
+        stop_result = index_service.stop_indexing(index_id)
+
+        if not stop_result.get('success', False):
+            raise HTTPException(status_code=500, detail=stop_result.get('error', '停止索引任务失败'))
+
         # 标记任务为失败
         index_job.fail_job("任务被手动停止")
         db.commit()
@@ -673,6 +680,10 @@ async def run_full_index_task(
         index_job.start_job()
         db.commit()
 
+        # 重置索引服务的停止标志
+        temp_index_service = get_global_file_index_service()
+        temp_index_service.reset_stop_flag(index_id)
+
         # 定义进度回调
         def progress_callback(message: str, progress: float):
             task_logger.info(f"索引进度[{index_id}]: {message} - {progress:.1f}%")
@@ -692,16 +703,17 @@ async def run_full_index_task(
             filtered_extensions = settings.default.get_supported_extensions()
             task_logger.info(f"使用DefaultConfig默认支持的所有文件类型: {filtered_extensions}")
 
-        # 使用全局单例索引服务
-        temp_index_service = get_global_file_index_service()
-
         result = await temp_index_service.build_full_index(
             scan_paths=[folder_path],
             progress_callback=progress_callback
         )
 
         # 更新任务结果
-        if result['success']:
+        if result.get('stopped', False):
+            # 任务被手动停止
+            index_job.fail_job("任务被手动停止")
+            task_logger.info(f"完整索引任务被停止: id={index_id}")
+        elif result['success']:
             index_job.total_files = result.get('total_files_found', 0)
             index_job.processed_files = result.get('documents_indexed', 0)
             index_job.error_count = result.get('failed_files', 0)
@@ -761,6 +773,10 @@ async def run_incremental_index_task(
         index_job.start_job()
         db.commit()
 
+        # 重置索引服务的停止标志
+        temp_index_service = get_global_file_index_service()
+        temp_index_service.reset_stop_flag(index_id)
+
         # 处理文件类型过滤：如果未指定file_types，则使用DefaultConfig支持的所有类型
         if file_types:
             # 将文件类型扩展名格式统一
@@ -774,9 +790,6 @@ async def run_incremental_index_task(
             # 使用DefaultConfig支持的所有文件类型
             filtered_extensions = settings.default.get_supported_extensions()
             task_logger.info(f"增量索引使用DefaultConfig默认支持的所有文件类型: {filtered_extensions}")
-
-        # 使用全局单例索引服务
-        temp_index_service = get_global_file_index_service()
 
         # 定义进度更新回调函数
         def progress_callback(current: int, total: int, stage: str = ""):
@@ -793,7 +806,11 @@ async def run_incremental_index_task(
         )
 
         # 更新任务结果
-        if result['success']:
+        if result.get('stopped', False):
+            # 任务被手动停止
+            index_job.fail_job("任务被手动停止")
+            task_logger.info(f"增量索引任务被停止: id={index_id}")
+        elif result['success']:
             index_job.total_files = result.get('changed_files', 0) + result.get('deleted_files', 0)
             index_job.processed_files = result.get('changed_files', 0)
             index_job.error_count = 0  # 增量更新通常不会有错误

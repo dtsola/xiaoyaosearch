@@ -80,8 +80,64 @@ class FileIndexService:
             'indexing_progress': 0.0
         }
 
+        # 任务停止标志
+        self._should_stop = False
+        self._current_task_id = None
+
         # 内存中缓存已索引文件信息（用于变更检测）
         self._indexed_files_cache: Dict[str, FileInfo] = {}
+
+    def stop_indexing(self, task_id: Optional[int] = None) -> Dict[str, Any]:
+        """停止索引构建任务
+
+        Args:
+            task_id: 任务ID，可选
+
+        Returns:
+            Dict[str, Any]: 停止结果
+        """
+        try:
+            if self._current_task_id and task_id and self._current_task_id != task_id:
+                return {
+                    'success': False,
+                    'error': f'任务ID不匹配，当前任务: {self._current_task_id}, 请求停止: {task_id}'
+                }
+
+            self._should_stop = True
+            logger.info(f"索引停止信号已发送，任务ID: {task_id or self._current_task_id}")
+
+            return {
+                'success': True,
+                'message': '索引任务停止信号已发送',
+                'task_id': self._current_task_id
+            }
+
+        except Exception as e:
+            logger.error(f"停止索引任务失败: {e}")
+            return {
+                'success': False,
+                'error': f'停止索引任务失败: {str(e)}'
+            }
+
+    def reset_stop_flag(self, task_id: Optional[int] = None):
+        """重置停止标志（开始新任务前调用）
+
+        Args:
+            task_id: 新任务ID
+        """
+        self._should_stop = False
+        self._current_task_id = task_id
+        logger.debug(f"停止标志已重置，新任务ID: {task_id}")
+
+    def check_stop_signal(self) -> bool:
+        """检查是否应该停止当前任务
+
+        Returns:
+            bool: 是否应该停止
+        """
+        if self._should_stop:
+            logger.info(f"检测到停止信号，任务ID: {self._current_task_id}")
+        return self._should_stop
 
     def _should_be_chunked(self, content_length: int) -> bool:
         """判断文件是否应该被分块处理
@@ -196,6 +252,14 @@ class FileIndexService:
             # 1. 扫描所有文件
             all_files = []
             for path in scan_paths:
+                # 检查停止信号
+                if self.check_stop_signal():
+                    return {
+                        'success': False,
+                        'error': '索引任务已被停止',
+                        'stopped': True
+                    }
+
                 files = self.scanner.scan_directory(
                     path,
                     recursive=True,
@@ -205,6 +269,14 @@ class FileIndexService:
                     )
                 )
                 all_files.extend(files)
+
+                # 检查停止信号
+                if self.check_stop_signal():
+                    return {
+                        'success': False,
+                        'error': '索引任务已被停止',
+                        'stopped': True
+                    }
 
             if not all_files:
                 return {
@@ -241,6 +313,14 @@ class FileIndexService:
             failed_count = 0
 
             for i, file_info in enumerate(all_files):
+                # 检查停止信号
+                if self.check_stop_signal():
+                    return {
+                        'success': False,
+                        'error': '索引任务已被停止',
+                        'stopped': True
+                    }
+
                 try:
                     doc = await self._process_file_to_document(file_info)
                     if doc:
@@ -444,6 +524,14 @@ class FileIndexService:
                 logger.info("✅ 缓存有数据，进行增量更新")
 
             for path in scan_paths:
+                # 检查停止信号
+                if self.check_stop_signal():
+                    return {
+                        'success': False,
+                        'error': '增量索引任务已被停止',
+                        'stopped': True
+                    }
+
                 logger.info(f"🔍 扫描路径变更: {path}")
                 changed_files, deleted_files, _ = self.scanner.scan_changes(
                     path,
@@ -478,6 +566,14 @@ class FileIndexService:
 
             new_documents = []
             for i, file_info in enumerate(all_changes):
+                # 检查停止信号
+                if self.check_stop_signal():
+                    return {
+                        'success': False,
+                        'error': '增量索引任务已被停止',
+                        'stopped': True
+                    }
+
                 try:
                     doc = await self._process_file_to_document(file_info)
                     if doc:

@@ -162,7 +162,7 @@
             <a-checkbox value="document">文档 (txt, markdown, pdf, xls/xlsx, ppt/pptx, doc/docx)</a-checkbox>
             <a-checkbox value="audio">音频 (mp3, wav)</a-checkbox>
             <a-checkbox value="video">视频 (mp4, avi)</a-checkbox>
-            <a-checkbox value="image">图片 (png, jpg)</a-checkbox>
+            <a-checkbox value="image">图片 (png, jpg, jpeg)</a-checkbox>
           </a-checkbox-group>
         </a-form-item>
       </a-form>

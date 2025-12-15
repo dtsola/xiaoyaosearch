@@ -37,6 +37,9 @@ export interface MultimodalRequest {
   input_data: string;
   input_type: InputType;
   duration?: number;
+  limit?: number;
+  threshold?: number;
+  file_types?: FileType[];
 }
 
 // 索引创建请求

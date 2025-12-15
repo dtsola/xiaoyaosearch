@@ -18,13 +18,26 @@ export class SearchService {
   }
 
   // 多模态搜索
-  static async multimodalSearch(inputType: InputType.VOICE | InputType.IMAGE, file: File): Promise<MultimodalResponse> {
+  static async multimodalSearch(
+    inputType: InputType.VOICE | InputType.IMAGE,
+    file: File,
+    searchType: SearchType = SearchType.HYBRID,
+    limit: number = 20,
+    threshold: number = 0.7,
+    fileTypes?: FileType[]
+  ): Promise<MultimodalResponse> {
     const formData = new FormData()
-    formData.append('input_data', await this.fileToBase64(file))
+    formData.append('file', file)  // 后端期望的文件字段名是 'file'
     formData.append('input_type', inputType)
-    formData.append('search_type', SearchType.HYBRID)
-    formData.append('limit', '20')
-    formData.append('threshold', '0.7')
+    formData.append('search_type', searchType)
+    formData.append('limit', limit.toString())
+    formData.append('threshold', threshold.toString())
+
+    if (fileTypes && fileTypes.length > 0) {
+      fileTypes.forEach(fileType => {
+        formData.append('file_types', fileType)
+      })
+    }
 
     return await httpClient.postFormData<MultimodalResponse>('/api/search/multimodal', formData)
   }
@@ -47,24 +60,6 @@ export class SearchService {
   // 搜索建议
   static async getSuggestions(query: string, limit = 5): Promise<{ success: boolean; data: { suggestions: string[]; query: string; total: number } }> {
     return await httpClient.get<{ success: boolean; data: { suggestions: string[]; query: string; total: number } }>(`/api/search/suggestions?query=${encodeURIComponent(query)}&limit=${limit}`)
-  }
-
-  // 辅助方法：将文件转换为 Base64
-  private static async fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => {
-        // 移除 data:image/xxx;base64, 前缀
-        const base64 = reader.result?.toString().split(',')[1]
-        if (base64) {
-          resolve(base64)
-        } else {
-          reject(new Error('Failed to convert file to base64'))
-        }
-      }
-      reader.onerror = () => reject(new Error('Failed to read file'))
-    })
   }
 }
 

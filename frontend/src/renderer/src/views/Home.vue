@@ -257,6 +257,7 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { SearchService } from '@/api/search'
 import type { SearchResult, SearchType, FileType } from '@/types/api'
+import { InputType } from '@/types/api'
 import SearchResultCard from '@/components/SearchResultCard.vue'
 import {
   FormOutlined,
@@ -288,6 +289,8 @@ const suggestionTimer = ref<NodeJS.Timeout>()
 const isRecording = ref(false)
 const recordingTime = ref(0)
 const recordingTimer = ref<NodeJS.Timeout>()
+const mediaRecorder = ref<MediaRecorder | null>(null)
+const audioChunks = ref<Blob[]>([])
 
 // 图片上传
 const uploadedImage = ref<string>('')
@@ -300,7 +303,7 @@ const isLoadingMore = ref(false)
 const searchOptions = reactive({
   searchType: 'hybrid' as SearchType,
   fileTypes: [] as FileType[],
-  threshold: 0.7
+  threshold: 0.5
 })
 
 // 搜索统计
@@ -308,10 +311,6 @@ const searchStats = reactive({
   total: 0,
   searchTime: 0
 })
-
-// 系统信息
-const aiEngine = ref('Ollama')
-const searchScope = ref('所有文件夹')
 
 
 // 计算属性
@@ -430,45 +429,27 @@ const selectSuggestion = (suggestion: string) => {
   handleSearch()
 }
 
-// 语音录制相关
-const toggleRecording = () => {
-  if (isRecording.value) {
-    stopRecording()
-  } else {
-    startRecording()
-  }
-}
-
-const startRecording = () => {
-  isRecording.value = true
-  recordingTime.value = 0
-
-  recordingTimer.value = setInterval(() => {
-    recordingTime.value += 1
-    if (recordingTime.value >= 30) {
-      stopRecording()
-      message.warning('录音时长达到上限(30秒)')
-    }
-  }, 1000)
-
-  message.info('开始录音...')
-}
-
-const stopRecording = () => {
-  isRecording.value = false
-  if (recordingTimer.value) {
-    clearInterval(recordingTimer.value)
-  }
-
-  if (recordingTime.value > 0) {
-    searchQuery.value = '语音转文字结果：AI技术发展趋势讨论'
-    inputMode.value = 'text'
-    message.success('语音转文字完成')
-  }
-}
+// 存储录音和上传的文件
+const recordedAudioFile = ref<File | null>(null)
+const uploadedImageFile = ref<File | null>(null)
 
 // 图片上传相关
 const handleImageUpload = (file: File) => {
+  // 验证文件类型
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png']
+  if (!validTypes.includes(file.type)) {
+    message.error('请上传 JPG、JPEG 或 PNG 格式的图片')
+    return false // 阻止默认上传
+  }
+
+  // 验证文件大小（10MB）
+  if (file.size > 10 * 1024 * 1024) {
+    message.error('图片大小不能超过10MB')
+    return false // 阻止默认上传
+  }
+
+  uploadedImageFile.value = file
+  // 生成预览
   const reader = new FileReader()
   reader.onload = (e) => {
     uploadedImage.value = e.target?.result as string
@@ -478,17 +459,40 @@ const handleImageUpload = (file: File) => {
 }
 
 const analyzeImage = async () => {
-  if (!uploadedImage.value) return
+  if (!uploadedImageFile.value) {
+    message.error('请先选择图片')
+    return
+  }
 
   isSearching.value = true
   try {
-    // 模拟图片分析
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    searchQuery.value = '图片分析结果：技术架构图、产品原型设计'
-    inputMode.value = 'text'
-    await handleSearch()
+    // 调用多模态搜索API
+    const response = await SearchService.multimodalSearch(
+      InputType.IMAGE,
+      uploadedImageFile.value,
+      searchOptions.searchType,
+      20,
+      searchOptions.threshold,
+      searchOptions.fileTypes
+    )
+
+    if (response.success) {
+      // 将图片分析结果转换为搜索查询
+      searchQuery.value = response.data.converted_text
+      inputMode.value = 'text'
+
+      // 更新搜索结果
+      searchResults.value = response.data.search_results || []
+      searchStats.total = response.data.search_results?.length || 0
+      searchStats.searchTime = 0.95 // 图片搜索的固定时间
+
+      message.success(`图片分析完成，找到 ${response.data.search_results?.length || 0} 个相关文件`)
+    } else {
+      message.error('图片分析失败')
+    }
   } catch (error) {
-    message.error('图片分析失败')
+    message.error('图片分析失败，请重试')
+    console.error('Image analysis error:', error)
   } finally {
     isSearching.value = false
   }
@@ -496,6 +500,150 @@ const analyzeImage = async () => {
 
 const clearImage = () => {
   uploadedImage.value = ''
+  uploadedImageFile.value = null
+}
+
+// 语音录制相关
+const toggleRecording = () => {
+  if (isRecording.value) {
+    stopRecording()
+  } else {
+    startRecording()
+  }
+}
+
+const startRecording = async () => {
+  try {
+    // 请求麦克风权限
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        sampleRate: 44100
+      }
+    })
+
+    // 创建 MediaRecorder 实例
+    const options = { mimeType: 'audio/webm' }
+    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+      // 如果 webm 不支持，尝试其他格式
+      const mimeTypes = ['audio/mp4', 'audio/ogg', 'audio/wav']
+      for (const type of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          options.mimeType = type
+          break
+        }
+      }
+    }
+
+    mediaRecorder.value = new MediaRecorder(stream, options)
+    audioChunks.value = []
+
+    // 设置录音数据处理
+    mediaRecorder.value.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunks.value.push(event.data)
+      }
+    }
+
+    // 录音停止时的处理
+    mediaRecorder.value.onstop = async () => {
+      // 将录音数据合并为一个 Blob
+      const audioBlob = new Blob(audioChunks.value, {
+        type: mediaRecorder.value?.mimeType || 'audio/webm'
+      })
+
+      // 创建 File 对象
+      const fileName = `recording_${new Date().getTime()}.webm`
+      const audioFile = new File([audioBlob], fileName, {
+        type: audioBlob.type
+      })
+
+      // 保存录音文件
+      recordedAudioFile.value = audioFile
+
+      // 停止音轨
+      stream.getTracks().forEach(track => track.stop())
+
+      // 调用语音搜索API
+      await processVoiceSearch(audioFile)
+    }
+
+    // 开始录音
+    mediaRecorder.value.start(100) // 每100ms收集一次数据
+
+    isRecording.value = true
+    recordingTime.value = 0
+
+    recordingTimer.value = setInterval(() => {
+      recordingTime.value += 1
+      if (recordingTime.value >= 30) {
+        stopRecording()
+        message.warning('录音时长达到上限(30秒)')
+      }
+    }, 1000)
+
+    message.info('开始录音...')
+
+  } catch (error) {
+    console.error('录音失败:', error)
+    message.error('无法访问麦克风，请检查权限设置')
+    isRecording.value = false
+  }
+}
+
+const stopRecording = () => {
+  isRecording.value = false
+  if (recordingTimer.value) {
+    clearInterval(recordingTimer.value)
+  }
+
+  // 停止录音
+  if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
+    mediaRecorder.value.stop()
+  }
+}
+
+// 处理语音搜索
+const processVoiceSearch = async (audioFile: File) => {
+  isSearching.value = true
+  try {
+    message.loading('正在识别语音...', 0)
+    const response = await SearchService.multimodalSearch(
+      InputType.VOICE,
+      audioFile,
+      searchOptions.searchType,
+      20,
+      searchOptions.threshold,
+      searchOptions.fileTypes
+    )
+    message.destroy() // 关闭loading
+
+    if (response.success) {
+      // 将语音转文字结果转换为搜索查询
+      searchQuery.value = response.data.converted_text
+      inputMode.value = 'text'
+
+      // 更新搜索结果
+      searchResults.value = response.data.search_results || []
+      searchStats.total = response.data.search_results?.length || 0
+      // 语音搜索没有返回search_time，使用默认值
+      searchStats.searchTime = 1.2
+
+      message.success(`语音转文字完成，找到 ${response.data.search_results?.length || 0} 个相关文件`)
+    } else {
+      message.error(`语音转文字失败: ${response.message || '未知错误'}`)
+    }
+  } catch (error) {
+    message.destroy() // 关闭loading
+    message.error('语音转文字失败，请重试')
+    console.error('Voice recognition error:', error)
+
+    // 如果语音识别失败，切换回文本模式
+    inputMode.value = 'text'
+  } finally {
+    isSearching.value = false
+  }
 }
 
 // 搜索结果操作

@@ -15,7 +15,7 @@ from app.schemas.responses import (
     SearchResponse, MultimodalResponse, SearchHistoryInfo,
     SearchHistoryResponse, SearchResult, FileInfo
 )
-from app.schemas.enums import InputType, SearchType
+from app.schemas.enums import InputType, SearchType, FileType
 from app.models.search_history import SearchHistoryModel
 from app.utils.enum_helpers import get_enum_value, is_semantic_search, is_hybrid_search, is_text_input, is_voice_input, is_image_input
 from app.services.chunk_search_service import get_chunk_search_service
@@ -187,6 +187,7 @@ async def multimodal_search(
     search_type: SearchType = Form(SearchType.HYBRID),
     limit: int = Form(settings.api.default_search_results),
     threshold: float = Form(settings.api.default_similarity_threshold),
+    file_types: Optional[List[FileType]] = Form(None, description="文件类型过滤"),
     db: Session = Depends(get_db)
 ):
     """
@@ -199,6 +200,7 @@ async def multimodal_search(
     - **search_type**: 搜索类型 (semantic/fulltext/hybrid)
     - **limit**: 返回结果数量
     - **threshold**: 相似度阈值
+    - **file_types**: 文件类型过滤
     """
     start_time = time.time()
     # 使用枚举辅助函数确保类型安全
@@ -338,13 +340,18 @@ async def multimodal_search(
             # 执行分块搜索
             search_service = get_chunk_search_service()
             if search_service.is_ready():
+                # 构建过滤器字典
+                filters = {}
+                if file_types:
+                    filters['file_types'] = file_types
+
                 search_result = await search_service.search(
                     query=converted_text,
                     search_type=search_type_str,
                     limit=limit,
                     offset=0,
                     threshold=threshold,
-                    filters=None
+                    filters=filters
                 )
 
                 # 转换搜索结果为SearchResult格式

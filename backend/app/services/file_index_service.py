@@ -297,8 +297,11 @@ class FileIndexService:
                     ).first()
 
                     if active_job:
-                        # 设置总文件数
+                        # 设置总文件数，确保进度从0开始
                         active_job.total_files = len(all_files)
+                        # 确保processed_files不为空且为0
+                        if active_job.processed_files is None:
+                            active_job.processed_files = 0
                         db.commit()
                         logger.info(f"设置总文件数: {active_job.id} - {len(all_files)} 个文件")
 

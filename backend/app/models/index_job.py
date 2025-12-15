@@ -37,8 +37,11 @@ class IndexJobModel(Base):
         """
         # 计算进度百分比
         progress = 0
-        if self.total_files > 0:
-            progress = int((self.processed_files / self.total_files) * 100)
+        # 确保数值不为None
+        total_files = self.total_files or 0
+        processed_files = self.processed_files or 0
+        if total_files > 0:
+            progress = int((processed_files / total_files) * 100)
 
         return {
             "index_id": self.id,
@@ -46,9 +49,9 @@ class IndexJobModel(Base):
             "job_type": self.job_type,
             "status": self.status,
             "progress": progress,
-            "total_files": self.total_files,
-            "processed_files": self.processed_files,
-            "error_count": self.error_count,
+            "total_files": total_files,
+            "processed_files": processed_files,
+            "error_count": self.error_count or 0,
             "started_at": self.started_at.isoformat() if self.started_at else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "error_message": self.error_message,
@@ -79,6 +82,13 @@ class IndexJobModel(Base):
         """开始任务"""
         self.status = "processing"
         self.started_at = datetime.now()
+        # 初始化进度相关字段，确保前端显示正确
+        if self.processed_files is None:
+            self.processed_files = 0
+        if self.total_files is None:
+            self.total_files = 0
+        if self.error_count is None:
+            self.error_count = 0
 
     def complete_job(self) -> None:
         """完成任务"""

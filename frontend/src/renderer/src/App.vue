@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { SystemService } from '@/api/system'
+import { formatIndexSize } from '@/utils/indexUtils'
 import {
   HomeOutlined,
   SettingOutlined,
@@ -38,6 +39,14 @@ const currentRoute = computed(() => {
   if (path === '/help') return ['help']
   if (path === '/about') return ['about']
   return []
+})
+
+// 计算属性：格式化的数据大小（与索引管理页面保持一致）
+const formattedDataSize = computed(() => {
+  if (dataSize.value) {
+    return formatIndexSize(dataSize.value)
+  }
+  return { value: 0, unit: 'B' }
 })
 
 // 菜单点击处理
@@ -109,6 +118,11 @@ const fetchSystemStatus = async () => {
         indexCount.value = data.data_count
       }
 
+      // 更新数据大小（直接使用 running-status 接口返回的 data_size）
+      if (typeof data.data_size === 'number') {
+        dataSize.value = data.data_size
+      }
+
       // 更新今日搜索次数
       if (typeof data.today_searches === 'number') {
         searchCount.value = data.today_searches
@@ -117,40 +131,6 @@ const fetchSystemStatus = async () => {
       // 更新最后更新时间
       if (data.last_update) {
         lastUpdate.value = new Date(data.last_update)
-      }
-
-      // 从系统健康接口获取数据大小
-      try {
-        const healthResponse = await SystemService.getHealth()
-        if (healthResponse.data && healthResponse.data.indexes) {
-          // 计算索引大小作为数据大小的近似值
-          const faissSize = healthResponse.data.indexes.faiss_index?.index_size || '0KB'
-          const whooshSize = healthResponse.data.indexes.whoosh_index?.index_size || '0KB'
-
-          // 简单的大小解析和转换（可以后续完善）
-          const parseSize = (sizeStr: string): number => {
-            const match = sizeStr.match(/(\d+(?:\.\d+)?)\s*(KB|MB|GB)/)
-            if (match) {
-              const value = parseFloat(match[1])
-              const unit = match[2]
-              switch (unit) {
-                case 'KB': return value * 1024
-                case 'MB': return value * 1024 * 1024
-                case 'GB': return value * 1024 * 1024 * 1024
-                default: return 0
-              }
-            }
-            return 0
-          }
-
-          const totalSize = parseSize(faissSize) + parseSize(whooshSize)
-          if (totalSize > 0) {
-            dataSize.value = totalSize
-          }
-        }
-      } catch (healthError) {
-        console.warn('获取数据大小失败，使用默认值:', healthError)
-        // 保持默认值
       }
     }
   } catch (error) {
@@ -201,7 +181,7 @@ onUnmounted(() => {
       <div class="header-content">
         <div class="logo">
           <span class="logo-text">◤小遥搜索◢</span>
-          <span class="version">v2.0</span>
+          <span class="version">v1.0</span>
         </div>
 
         <a-menu
@@ -261,15 +241,15 @@ onUnmounted(() => {
         <div class="status-info">
           <span class="status-item">
             <DatabaseOutlined />
-            索引: {{ indexCount.toLocaleString() }}文件
+            已索引文件：{{ indexCount.toLocaleString() }} 个
           </span>
           <span class="status-item">
             <HddOutlined />
-            数据: {{ formatFileSize(dataSize) }}
+            索引大小：{{ formattedDataSize.value.toFixed(2) }} {{ formattedDataSize.unit }}
           </span>
           <span class="status-item">
             <SearchOutlined />
-            今日: {{ searchCount }}次搜索
+            今日搜索：{{ searchCount }} 次
           </span>
         </div>
         <div class="system-status">

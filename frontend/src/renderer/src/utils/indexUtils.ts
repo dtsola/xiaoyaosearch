@@ -110,6 +110,31 @@ export function calculateIndexSizeInGB(bytes: number): number {
 }
 
 /**
+ * 格式化索引大小为合适的单位
+ * @param bytes 字节数
+ * @returns 格式化后的对象 {value, unit}
+ */
+export function formatIndexSize(bytes: number): { value: number; unit: string } {
+  if (bytes === 0) {
+    return { value: 0, unit: 'B' }
+  }
+
+  const gb = bytes / (1024 * 1024 * 1024)
+  const mb = bytes / (1024 * 1024)
+  const kb = bytes / 1024
+
+  if (gb >= 1) {
+    return { value: gb, unit: 'GB' }
+  } else if (mb >= 1) {
+    return { value: mb, unit: 'MB' }
+  } else if (kb >= 1) {
+    return { value: kb, unit: 'KB' }
+  } else {
+    return { value: bytes, unit: 'B' }
+  }
+}
+
+/**
  * 计算成功率
  * @param processed 已处理数
  * @param total 总数

@@ -8,7 +8,7 @@ import os
 import hashlib
 import mimetypes
 from pathlib import Path
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, List
 from datetime import datetime
 import logging
 from PyPDF2 import PdfReader
@@ -389,4 +389,28 @@ class MetadataExtractor:
             logger.error(f"计算文件哈希失败 {file_path}: {e}")
             return ""
 
-    
+    def get_supported_formats(self) -> List[str]:
+        """获取支持的文件格式列表"""
+        # 基于当前支持的所有文件扩展名
+        supported_formats = []
+
+        try:
+            # 从 file_types 字典中反向提取扩展名
+            file_type_mapping = settings.default.file_types
+
+            # 获取所有支持的扩展名
+            supported_formats = list(file_type_mapping.keys())
+
+            # 去重并排序
+            supported_formats = list(set(supported_formats))
+            supported_formats.sort()
+
+            return supported_formats
+        except Exception as e:
+            logger.error(f"获取支持的文件格式失败: {e}")
+            # 返回默认支持的格式
+            return [
+                '.txt', '.md', '.pdf', '.doc', '.docx', '.xls', '.xlsx',
+                '.ppt', '.pptx', '.png', '.jpg', '.jpeg', '.gif', '.bmp',
+                '.mp3', '.wav', '.mp4', '.avi', '.mov', '.mkv'
+            ]

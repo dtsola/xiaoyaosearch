@@ -26,9 +26,9 @@
           <a-card class="stats-card">
             <a-statistic
               title="索引大小"
-              :value="stats.indexSize"
+              :value="formattedIndexSize.value"
               :precision="2"
-              suffix="GB"
+              :suffix="formattedIndexSize.unit"
             />
           </a-card>
         </a-col>
@@ -236,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import {
   PlusOutlined,
@@ -247,7 +247,7 @@ import {
   DeleteOutlined
 } from '@ant-design/icons-vue'
 import { IndexService } from '@/api/index'
-import { getIndexStatusInfo } from '@/utils/indexUtils'
+import { getIndexStatusInfo, formatIndexSize } from '@/utils/indexUtils'
 
 // 存储 electronAPI 引用，避免生命周期问题
 let electronAPI: any = null
@@ -266,8 +266,17 @@ const selectedIndex = ref(null)
 const stats = reactive({
   totalFiles: 0,
   indexSize: 0,
+  indexSizeBytes: 0, // 添加原始字节数
   activeTasks: 0,
   successRate: 0
+})
+
+// 计算属性：格式化的索引大小
+const formattedIndexSize = computed(() => {
+  if (stats.indexSizeBytes) {
+    return formatIndexSize(stats.indexSizeBytes)
+  }
+  return { value: 0, unit: 'B' }
 })
 
 // 新建文件夹配置
@@ -543,6 +552,16 @@ const handleTableChange = async (pag: any) => {
 // 组件挂载时加载数据
 onMounted(() => {
   refreshData()
+
+  // 设置15秒自动刷新
+  const refreshInterval = setInterval(() => {
+    refreshData()
+  }, 15000) // 15秒 = 15000毫秒
+
+  // 组件卸载时清理定时器
+  onUnmounted(() => {
+    clearInterval(refreshInterval)
+  })
 })
 </script>
 

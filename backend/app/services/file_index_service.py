@@ -747,6 +747,32 @@ class FileIndexService:
         """获取索引状态"""
         status = self.index_status.copy()
 
+        # 从数据库获取准确的统计信息，而不是使用内存缓存
+        try:
+            from app.core.database import get_db
+            from app.models.file import FileModel
+            from app.schemas.enums import JobStatus
+            from app.utils.enum_helpers import get_enum_value
+
+            # 创建数据库会话
+            from sqlalchemy.orm import sessionmaker
+            from app.core.database import engine
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+            with SessionLocal() as db:
+                # 从数据库获取准确的文件统计
+                total_files_indexed = db.query(FileModel).filter(FileModel.is_indexed == True).count()
+                failed_files = db.query(FileModel).filter(FileModel.index_status == get_enum_value(JobStatus.FAILED)).count()
+
+                # 更新状态中的文件数为数据库中的准确数据
+                status['total_files_indexed'] = total_files_indexed
+                status['failed_files'] = failed_files
+
+                logger.info(f"从数据库获取文件统计: 已索引={total_files_indexed}, 失败={failed_files}, 缓存={len(self._indexed_files_cache)}")
+
+        except Exception as e:
+            logger.warning(f"从数据库获取文件统计失败: {e}")
+
         # 添加分块索引统计
         try:
             chunk_index_service = get_chunk_index_service()
@@ -759,6 +785,35 @@ class FileIndexService:
             })
         except Exception as e:
             logger.warning(f"获取分块索引统计失败: {e}")
+
+        # 计算索引文件大小
+        index_size_bytes = 0
+        try:
+            # 计算传统索引文件大小
+            import os
+            from pathlib import Path
+
+            # Faiss 索引文件大小
+            if self.traditional_faiss_path and Path(self.traditional_faiss_path).exists():
+                for file_path in Path(self.traditional_faiss_path).rglob('*'):
+                    if file_path.is_file():
+                        index_size_bytes += file_path.stat().st_size
+
+            # Whoosh 索引文件大小
+            if self.traditional_whoosh_path and Path(self.traditional_whoosh_path).exists():
+                for file_path in Path(self.traditional_whoosh_path).rglob('*'):
+                    if file_path.is_file():
+                        index_size_bytes += file_path.stat().st_size
+
+            # 添加分块索引大小
+            if 'chunk_faiss_index_size' in status:
+                index_size_bytes += status['chunk_faiss_index_size']
+
+        except Exception as e:
+            logger.warning(f"计算索引文件大小失败: {e}")
+
+        # 添加索引大小到状态中
+        status['index_size_bytes'] = index_size_bytes
 
         # 添加缓存状态信息
         status.update({

@@ -327,35 +327,63 @@ async def multimodal_search(
         if 'search_results' not in locals():
             search_results = []
 
-        # 语音输入：需要进行文本搜索
+        # 语音输入：完全复用文本搜索逻辑，包括LLM查询增强
         # 图像输入：直接使用图像向量搜索结果，不需要文本搜索
         if is_voice_input(input_type) and converted_text:
-            # 获取搜索查询的嵌入向量
-            if (is_semantic_search(search_type) or is_hybrid_search(search_type)):
-                await ai_model_service.text_embedding(converted_text, normalize_embeddings=True)
-                ai_models_used.append("BGE-M3")
-
-            # 执行分块搜索
+            # 获取分块搜索服务（完全复制文本搜索逻辑）
             search_service = get_chunk_search_service()
-            if search_service.is_ready():
+
+            # 调试信息
+            logger.info(f"语音搜索服务状态: is_ready={search_service.is_ready()}")
+            logger.info(f"语音搜索索引状态: {search_service.get_index_info()}")
+
+            # 检查搜索服务是否就绪
+            if not search_service.is_ready():
+                logger.warning("搜索服务未就绪，返回空结果")
+                # 返回空结果但不抛出异常，保持与文本搜索一致
+                search_results = []
+            else:
+                # 完全复制文本搜索的LLM查询增强逻辑
+                enhanced_query = converted_text
+                query_enhancer = get_llm_query_enhancer()
+
+                try:
+                    # 使用LLM增强查询
+                    enhancement_result = await query_enhancer.enhance_query(converted_text)
+                    logger.info(f"语音搜索LLM增强结果： {enhancement_result} ")
+                    if enhancement_result.get('success', False) and enhancement_result.get('enhanced', False):
+                        # 根据搜索类型选择最佳查询
+                        if is_semantic_search(search_type):
+                            enhanced_query = enhancement_result.get('expanded_query', converted_text)
+                        elif search_type == SearchType.FULLTEXT:
+                            enhanced_query = enhancement_result.get('rewritten_query', converted_text)
+                        else:  # HYBRID
+                            # 混合搜索使用扩展查询
+                            enhanced_query = enhancement_result.get('expanded_query', converted_text)
+
+                        logger.info(f"语音搜索LLM查询增强: '{converted_text}' -> '{enhanced_query}'")
+                except Exception as e:
+                    logger.warning(f"语音搜索LLM查询增强失败，使用原始查询: {str(e)}")
+                    enhanced_query = converted_text
+
+                # 执行分块搜索（完全复制文本搜索逻辑）
                 # 构建过滤器字典
                 filters = {}
                 if file_types:
                     filters['file_types'] = file_types
 
-                search_result = await search_service.search(
-                    query=converted_text,
-                    search_type=search_type_str,
+                search_result_data = await search_service.search(
+                    query=enhanced_query,
+                    search_type=search_type,  # 直接使用SearchType枚举，与文本搜索保持一致
                     limit=limit,
                     offset=0,
                     threshold=threshold,
                     filters=filters
                 )
 
-                # 转换搜索结果为SearchResult格式
-                # 注意：search_result返回格式为 {'success': True, 'data': {'results': [...]}}
-                search_data = search_result.get('data', {})
-                for item in search_data.get('results', []):
+                # 处理搜索结果数据格式（完全复制文本搜索逻辑）
+                search_result = search_result_data.get('data', {})
+                for item in search_result.get('results', []):
                     search_results.append(SearchResult(
                         file_id=item.get('file_id', 0),
                         file_name=item.get('file_name', ''),
@@ -369,8 +397,20 @@ async def multimodal_search(
                         file_size=item.get('file_size', 0),
                         match_type=item.get('match_type', '')
                     ))
-            else:
-                logger.warning("搜索服务未就绪，无法进行搜索")
+
+                # 记录LLM查询增强
+                if enhanced_query != converted_text:
+                    ai_models_used.append("qwen2.5:1.5b(LLM增强)")
+
+                # 根据搜索类型记录使用的AI模型
+                if is_semantic_search(search_type) or is_hybrid_search(search_type):
+                    ai_models_used.append("BGE-M3")
+
+                # 如果是混合搜索，还有全文搜索
+                if is_hybrid_search(search_type):
+                    ai_models_used.append("Whoosh")
+
+                logger.info(f"语音搜索完成: 结果数量={len(search_results)}, 搜索类型={get_enum_value(search_type)}")
 
         elif is_image_input(input_type):
             # 图像搜索：直接使用已获得的图像向量搜索结果

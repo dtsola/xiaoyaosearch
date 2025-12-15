@@ -298,12 +298,12 @@ class FileIndexService:
 
                     if active_job:
                         # 设置总文件数，确保进度从0开始
-                        active_job.total_files = len(all_files)
-                        # 确保processed_files不为空且为0
+                        # 只有在processed_files为None时才设置为0，避免覆盖已有进度
                         if active_job.processed_files is None:
                             active_job.processed_files = 0
+                        active_job.total_files = len(all_files)
                         db.commit()
-                        logger.info(f"设置总文件数: {active_job.id} - {len(all_files)} 个文件")
+                        logger.info(f"设置总文件数: {active_job.id} - {len(all_files)} 个文件, 已处理: {active_job.processed_files}")
 
                 finally:
                     db.close()
@@ -936,6 +936,7 @@ class FileIndexService:
             self.index_status['indexing_progress'] = progress
 
             # 更新数据库中的进度信息
+            # 注意：扫描阶段不更新processed_files，只更新总文件数
             try:
                 from app.core.database import get_db
                 from app.models.index_job import IndexJobModel
@@ -948,10 +949,20 @@ class FileIndexService:
                     ).first()
 
                     if active_job:
-                        # 更新已处理文件数
-                        active_job.update_progress(current)
+                        # 只在扫描阶段更新总文件数，不更新已处理文件数
+                        if stage == "扫描文件":
+                            # 扫描阶段：只设置total_files，processed_files保持为0
+                            if active_job.total_files is None or active_job.total_files == 0:
+                                active_job.total_files = total
+                                # 确保processed_files为0
+                                if active_job.processed_files is None:
+                                    active_job.processed_files = 0
+                        else:
+                            # 处理阶段：更新processed_files
+                            active_job.update_progress(current)
+
                         db.commit()
-                        logger.debug(f"更新索引进度: {active_job.id} - {current}/{total} ({int(progress)}%)")
+                        logger.debug(f"更新索引进度: {active_job.id} - 阶段: {stage}, 当前: {current}, 总计: {total} ({int(progress)}%)")
 
                 finally:
                     db.close()

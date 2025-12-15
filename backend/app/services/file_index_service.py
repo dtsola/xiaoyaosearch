@@ -212,6 +212,30 @@ class FileIndexService:
                     'error': '没有找到支持的文件'
                 }
 
+            # 扫描完成，设置总文件数到数据库
+            try:
+                from app.core.database import get_db
+                from app.models.index_job import IndexJobModel
+
+                db = next(get_db())
+                try:
+                    # 查找当前正在处理的索引任务
+                    active_job = db.query(IndexJobModel).filter(
+                        IndexJobModel.status == 'processing'
+                    ).first()
+
+                    if active_job:
+                        # 设置总文件数
+                        active_job.total_files = len(all_files)
+                        db.commit()
+                        logger.info(f"设置总文件数: {active_job.id} - {len(all_files)} 个文件")
+
+                finally:
+                    db.close()
+
+            except Exception as e:
+                logger.warning(f"设置总文件数失败: {e}")
+
             # 2. 处理文件并构建文档
             documents = []
             failed_count = 0
@@ -224,6 +248,32 @@ class FileIndexService:
 
                     # 更新进度
                     self.index_status['indexing_progress'] = 30.0 + (i / len(all_files)) * 50.0
+
+                    # 同时更新数据库进度
+                    try:
+                        from app.core.database import get_db
+                        from app.models.index_job import IndexJobModel
+
+                        db = next(get_db())
+                        try:
+                            # 查找当前正在处理的索引任务
+                            active_job = db.query(IndexJobModel).filter(
+                                IndexJobModel.status == 'processing'
+                            ).first()
+
+                            if active_job:
+                                # 更新已处理文件数（包括失败的数量）
+                                processed_count = i + 1
+                                active_job.update_progress(processed_count)
+                                db.commit()
+                                logger.debug(f"更新文件处理进度: {active_job.id} - {processed_count}/{len(all_files)}")
+
+                        finally:
+                            db.close()
+
+                    except Exception as e:
+                        logger.warning(f"更新文件处理进度失败: {e}")
+
                     if progress_callback:
                         progress_callback(f"处理文件: {file_info.name}",
                                          self.index_status['indexing_progress'])
@@ -351,7 +401,8 @@ class FileIndexService:
 
     async def update_incremental_index(
         self,
-        scan_paths: List[str]
+        scan_paths: List[str],
+        progress_callback: Optional[callable] = None
     ) -> Dict[str, Any]:
         """增量更新索引
 
@@ -365,13 +416,20 @@ class FileIndexService:
             logger.info(f"开始增量更新索引，扫描路径: {scan_paths}")
             start_time = datetime.now()
 
+            # 初始进度：准备阶段
+            if progress_callback:
+                progress_callback(0, 100, "准备增量更新")
+
             chunk_index_service = get_chunk_index_service()
             if not chunk_index_service._chunk_indexes_exist():
                 logger.info("索引不存在，执行完整索引构建")
                 # 直接同步调用，因为build_full_index会处理异步操作
                 return self._build_full_index_sync(scan_paths)
 
-            # 1. 扫描文件变更
+            # 1. 扫描文件变更 (10% 进度)
+            if progress_callback:
+                progress_callback(10, 100, "扫描文件变更")
+
             all_changes = []
             all_deletions = []
 
@@ -401,6 +459,9 @@ class FileIndexService:
                 all_deletions.extend(deleted_files)
 
             if not all_changes and not all_deletions:
+                # 完成进度
+                if progress_callback:
+                    progress_callback(100, 100, "没有文件变更")
                 return {
                     'success': True,
                     'message': '没有文件变更',
@@ -408,27 +469,46 @@ class FileIndexService:
                     'deleted_files': 0
                 }
 
-            # 2. 处理变更的文件
+            total_operations = len(all_changes) + len(all_deletions)
+            completed_operations = 0
+
+            # 2. 处理变更的文件 (30-70% 进度)
+            if progress_callback:
+                progress_callback(30, 100, f"处理 {len(all_changes)} 个变更文件")
+
             new_documents = []
-            for file_info in all_changes:
+            for i, file_info in enumerate(all_changes):
                 try:
                     doc = await self._process_file_to_document(file_info)
                     if doc:
                         new_documents.append(doc)
+
+                    # 更新处理进度
+                    completed_operations += 1
+                    if progress_callback and total_operations > 0:
+                        progress_pct = 30 + int((completed_operations / total_operations) * 40)
+                        progress_callback(progress_pct, 100, f"处理变更文件 {i+1}/{len(all_changes)}")
+
                 except Exception as e:
                     logger.error(f"处理变更文件失败 {file_info.path}: {e}")
+                    completed_operations += 1
 
-            # 3. 保存变更文件到数据库（确保获得正确的整数ID）
+            # 3. 保存变更文件到数据库（确保获得正确的整数ID）(70% 进度)
             if new_documents:
+                if progress_callback:
+                    progress_callback(70, 100, f"保存 {len(new_documents)} 个文件到数据库")
                 logger.info(f"开始保存 {len(new_documents)} 个变更文件到数据库")
                 await self._save_files_to_database(all_changes, new_documents)
                 logger.info("变更文件保存到数据库完成")
 
-            # 4. 从索引中删除已删除的文件
+            # 4. 从索引中删除已删除的文件 (70-90% 进度)
             deleted_count = 0
             if all_deletions:
+                if progress_callback:
+                    progress_callback(70, 100, f"删除 {len(all_deletions)} 个已删除文件的索引")
                 logger.info(f"开始删除 {len(all_deletions)} 个已删除文件的索引")
-                for deleted_file_path in all_deletions:
+
+                for i, deleted_file_path in enumerate(all_deletions):
                     try:
                         # 使用分块索引服务删除文件
                         delete_result = await chunk_index_service.delete_file_from_indexes(deleted_file_path)
@@ -440,15 +520,26 @@ class FileIndexService:
                     except Exception as e:
                         logger.error(f"删除文件索引异常: {deleted_file_path}, 错误: {e}")
 
+                    # 更新删除进度
+                    completed_operations += 1
+                    if progress_callback and len(all_deletions) > 0:
+                        progress_pct = 70 + int((i+1) / len(all_deletions) * 20)
+                        progress_callback(progress_pct, 100, f"删除文件索引 {i+1}/{len(all_deletions)}")
+
                 logger.info(f"文件索引删除完成，总共删除了 {deleted_count} 个分块")
 
-            # 5. 添加新文档到索引
+            # 5. 添加新文档到索引 (90-95% 进度)
             if new_documents:
+                if progress_callback:
+                    progress_callback(90, 100, f"构建 {len(new_documents)} 个文档的分块索引")
                 chunk_index_success = await chunk_index_service.build_chunk_indexes(new_documents)
                 if not chunk_index_success:
                     logger.warning("增量更新中构建分块索引失败，但继续处理")
 
-            # 6. 更新缓存
+            # 6. 更新缓存 (95-100% 进度)
+            if progress_callback:
+                progress_callback(95, 100, "更新文件缓存")
+
             # 从缓存中移除已删除的文件
             for deleted_path in all_deletions:
                 self._indexed_files_cache.pop(deleted_path, None)
@@ -456,6 +547,10 @@ class FileIndexService:
             # 更新缓存中的变更文件
             for file_info in all_changes:
                 self._indexed_files_cache[file_info.path] = file_info
+
+            # 完成进度
+            if progress_callback:
+                progress_callback(100, 100, "增量索引更新完成")
 
             duration = datetime.now() - start_time
             logger.info(f"增量索引更新完成，耗时: {duration.total_seconds():.2f} 秒")
@@ -740,6 +835,31 @@ class FileIndexService:
         if total > 0:
             progress = (current / total) * 30.0  # 扫描阶段占30%
             self.index_status['indexing_progress'] = progress
+
+            # 更新数据库中的进度信息
+            try:
+                from app.core.database import get_db
+                from app.models.index_job import IndexJobModel
+
+                db = next(get_db())
+                try:
+                    # 查找当前正在处理的索引任务
+                    active_job = db.query(IndexJobModel).filter(
+                        IndexJobModel.status == 'processing'
+                    ).first()
+
+                    if active_job:
+                        # 更新已处理文件数
+                        active_job.update_progress(current)
+                        db.commit()
+                        logger.debug(f"更新索引进度: {active_job.id} - {current}/{total} ({int(progress)}%)")
+
+                finally:
+                    db.close()
+
+            except Exception as e:
+                logger.warning(f"更新数据库进度失败: {e}")
+
             if callback:
                 callback(f"{stage}: {current}/{total}", progress)
 

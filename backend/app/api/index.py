@@ -676,11 +676,7 @@ async def run_full_index_task(
         # 定义进度回调
         def progress_callback(message: str, progress: float):
             task_logger.info(f"索引进度[{index_id}]: {message} - {progress:.1f}%")
-            # 更新任务进度（简化处理）
-            if index_job.total_files > 0:
-                processed = int((progress / 100) * index_job.total_files)
-                index_job.update_progress(processed)
-                db.commit()
+            # 注意：现在进度由_file_index_service直接更新数据库，这里只记录日志
 
         # 处理文件类型过滤：如果未指定file_types，则使用DefaultConfig支持的所有类型
         if file_types:
@@ -782,8 +778,18 @@ async def run_incremental_index_task(
         # 使用全局单例索引服务
         temp_index_service = get_global_file_index_service()
 
+        # 定义进度更新回调函数
+        def progress_callback(current: int, total: int, stage: str = ""):
+            """增量索引进度更新回调"""
+            if total > 0:
+                progress = (current / total) * 100.0
+                index_job.update_progress(int(progress))
+                db.commit()
+                task_logger.debug(f"增量索引进度更新: {current}/{total} ({progress:.1f}%) - {stage}")
+
         result = await temp_index_service.update_incremental_index(
-            scan_paths=[folder_path]
+            scan_paths=[folder_path],
+            progress_callback=progress_callback
         )
 
         # 更新任务结果

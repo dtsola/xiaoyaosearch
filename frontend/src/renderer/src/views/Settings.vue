@@ -25,7 +25,7 @@
                 <a-select-option value="Systran/faster-whisper-base">Base (快速)</a-select-option>
                 <a-select-option value="Systran/faster-whisper-small">Small (平衡)</a-select-option>
                 <a-select-option value="Systran/faster-whisper-medium">Medium (精确)</a-select-option>
-                <a-select-option value="Systran/faster-whisper-large">Large (高精度)</a-select-option>
+                <a-select-option value="Systran/faster-whisper-large-v3">Large (高精度)</a-select-option>
               </a-select>
             </a-form-item>
             <a-form-item label="运行设备">
@@ -118,7 +118,7 @@
             <a-form-item label="模型版本">
               <a-select v-model:value="visionConfig.model_name" style="width: 100%">
                 <a-select-option value="OFA-Sys/chinese-clip-vit-base-patch16">ViT-Base (快速)</a-select-option>
-                <a-select-option value="OFA-Sys/chinese-clip-vit-large-patch16">ViT-Large (高精度)</a-select-option>
+                <a-select-option value="OFA-Sys/chinese-clip-vit-large-patch14">ViT-Large (高精度)</a-select-option>
               </a-select>
             </a-form-item>
             <a-form-item label="运行设备">

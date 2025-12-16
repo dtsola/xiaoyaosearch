@@ -158,12 +158,17 @@ class AIModelService:
             # 从数据库配置动态创建模型实例
             for model_id, model_config in self.model_configs.items():
                 model_type = model_config["model_type"]
+                provider = model_config.get("provider", "local")
                 config = model_config["config"]
 
                 # 如果config是字符串，需要解析JSON
                 if isinstance(config, str):
                     import json
                     config = json.loads(config)
+
+                # 校验本地模型路径
+                if provider == "local" and model_type in ["embedding", "speech", "vision"]:
+                    await self._validate_and_fix_model_path(model_type, config, model_id)
 
                 try:
                     if model_type == "embedding":
@@ -799,6 +804,100 @@ class AIModelService:
             results[model_type] = await self.reload_model(model_type)
 
         return results
+
+    async def _validate_and_fix_model_path(self, model_type: str, config: dict, model_id: str):
+        """
+        校验并修复模型路径配置
+
+        Args:
+            model_type: 模型类型 (embedding/speech/vision)
+            config: 模型配置字典
+            model_id: 模型ID
+        """
+        import os
+
+        model_path = config.get("model_path")
+        model_name = config.get("model_name")
+
+        if not model_path:
+            logger.info(f"{model_type}模型配置中没有model_path，将使用网络模型: {model_name}")
+            return
+
+        # 检查本地路径是否存在
+        if os.path.exists(model_path):
+            logger.info(f"✅ {model_type}本地模型路径存在: {model_path}")
+            # 验证模型文件完整性
+            await self._verify_model_files(model_type, model_path, model_id)
+        else:
+            logger.warning(f"⚠️ {model_type}本地模型路径不存在: {model_path}")
+            logger.warning(f"📁 尝试创建父目录: {os.path.dirname(model_path)}")
+
+            # 尝试创建父目录
+            parent_dir = os.path.dirname(model_path)
+            try:
+                os.makedirs(parent_dir, exist_ok=True)
+                logger.info(f"✅ 成功创建模型目录: {parent_dir}")
+            except PermissionError:
+                logger.error(f"❌ 没有权限创建目录: {parent_dir}")
+            except Exception as e:
+                logger.error(f"❌ 创建目录失败: {parent_dir}, 错误: {str(e)}")
+
+    async def _verify_model_files(self, model_type: str, model_path: str, model_id: str):
+        """
+        验证模型文件完整性
+
+        Args:
+            model_type: 模型类型
+            model_path: 模型路径
+            model_id: 模型ID
+        """
+        import os
+
+        try:
+            if os.path.isfile(model_path):
+                # 单文件模型
+                file_size = os.path.getsize(model_path)
+                logger.info(f"📄 {model_type}模型文件: {model_path}, 大小: {file_size / (1024*1024):.1f}MB")
+            elif os.path.isdir(model_path):
+                # 目录模型，检查关键文件
+                files = os.listdir(model_path)
+                logger.info(f"📁 {model_type}模型目录: {model_path}, 文件数量: {len(files)}")
+
+                # 根据模型类型检查必需文件
+                required_files = self._get_required_model_files(model_type)
+                missing_files = []
+
+                for file_pattern in required_files:
+                    found = any(file_pattern.replace('*', '') in f for f in files)
+                    if not found:
+                        missing_files.append(file_pattern)
+
+                if missing_files:
+                    logger.warning(f"⚠️ {model_type}模型可能缺少必要文件: {missing_files}")
+                else:
+                    logger.info(f"✅ {model_type}模型文件完整性检查通过")
+
+        except Exception as e:
+            logger.error(f"❌ 验证{model_type}模型文件失败: {str(e)}")
+
+    def _get_required_model_files(self, model_type: str) -> list:
+        """
+        获取各类型模型的必需文件列表
+
+        Args:
+            model_type: 模型类型
+
+        Returns:
+            list: 必需文件模式列表
+        """
+        if model_type == "embedding":
+            return ["config.json", "pytorch_model.bin"]
+        elif model_type == "speech":
+            return ["model.bin"]
+        elif model_type == "vision":
+            return ["config.json", "pytorch_model.bin"]
+        else:
+            return []
 
     async def __aenter__(self):
         """异步上下文管理器入口"""

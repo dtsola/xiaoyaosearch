@@ -119,16 +119,23 @@ class BGEEmbeddingService(BaseAIModel):
     def _load_model_sync(self):
         """同步加载模型"""
         model_name = self.config["model_name"]
+        model_path = self.config.get("model_path")
         cache_dir = self.config.get("cache_dir")
 
-        logger.info(f"BGE配置: use_sentence_transformers={self.config.get('use_sentence_transformers')}, model_name={model_name}, cache_dir={cache_dir}")
+        logger.info(f"BGE配置: model_name={model_name}, model_path={model_path}, use_sentence_transformers={self.config.get('use_sentence_transformers')}, cache_dir={cache_dir}")
 
-        # 强制检查是否为本地路径
+        # 优先使用本地路径
         import os
-        if os.path.exists(model_name) or "xiaoyaosearch" in model_name:
-            logger.info(f"检测到本地模型路径，强制使用Transformers加载: {model_name}")
+        if model_path and os.path.exists(model_path):
+            logger.info(f"✅ 使用本地模型路径: {model_path}")
+            model_name = model_path
             use_sentence_transformers = False
+            cache_dir = None  # 本地路径不需要缓存
+        elif model_path:
+            logger.warning(f"⚠️ 本地模型路径不存在，将使用网络下载: {model_path}")
+            use_sentence_transformers = self.config.get("use_sentence_transformers", True)
         else:
+            logger.info(f"🌐 使用网络模型: {model_name}")
             use_sentence_transformers = self.config.get("use_sentence_transformers", True)
 
         # 根据配置选择加载方式

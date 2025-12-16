@@ -113,13 +113,22 @@ class CLIPVisionService(BaseAIModel):
     def _load_model_sync(self):
         """同步加载模型"""
         model_name = self.config["model_name"]
+        model_path = self.config.get("model_path")
 
-        logger.info(f"下载并加载CLIP模型 {model_name} 到 {self.device}")
+        # 优先使用本地路径
+        if model_path and os.path.exists(model_path):
+            logger.info(f"✅ 使用本地CLIP模型路径: {model_path}")
+            model_name = model_path
+        elif model_path:
+            logger.warning(f"⚠️ 本地CLIP模型路径不存在，将使用网络下载: {model_path}")
+        else:
+            logger.info(f"🌐 使用网络CLIP模型: {model_name}")
+
+        logger.info(f"加载CLIP模型 {model_name} 到 {self.device}")
 
         # 加载CLIP模型和处理器
-        # 使用Chinese-CLIP模型和处理器
-        self.model = ChineseCLIPModel.from_pretrained(model_name)
-        self.processor = ChineseCLIPProcessor.from_pretrained(model_name)
+        self.model = ChineseCLIPModel.from_pretrained(model_name, local_files_only=bool(model_path and os.path.exists(model_path)))
+        self.processor = ChineseCLIPProcessor.from_pretrained(model_name, local_files_only=bool(model_path and os.path.exists(model_path)))
 
         # 移动模型到指定设备
         self.model.to(self.device)

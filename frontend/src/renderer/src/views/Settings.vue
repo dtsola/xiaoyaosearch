@@ -22,7 +22,6 @@
 
             <a-form-item label="模型版本">
               <a-select v-model:value="speechSettings.modelSize" style="width: 100%">
-                <a-select-option value="tiny">Tiny (最快)</a-select-option>
                 <a-select-option value="base">Base (快速)</a-select-option>
                 <a-select-option value="small">Small (平衡)</a-select-option>
                 <a-select-option value="medium">Medium (精确)</a-select-option>
@@ -39,8 +38,8 @@
         </div>
         <div class="settings-section">
           <a-space>
-            <a-button type="primary" @click="saveSpeechSettings">保存设置</a-button>
-            <a-button @click="testSpeechAvailability">检查可用性</a-button>
+            <a-button type="primary" @click="testSpeechAvailability">检查可用性</a-button>
+            <a-button @click="saveSpeechSettings">保存设置</a-button>
           </a-space>
         </div>
       </a-tab-pane>
@@ -96,8 +95,8 @@
 
             <a-form-item label="模型版本">
               <a-select v-model:value="visionSettings.clipModel" style="width: 100%">
-                <a-select-option value="OFA-Sys/chinese-clip-vit-base">ViT-Base (快速)</a-select-option>
-                <a-select-option value="OFA-Sys/chinese-clip-vit-large">ViT-Large (高精度)</a-select-option>
+                <a-select-option value="OFA-Sys/chinese-clip-vit-base-patch16">ViT-Base (快速)</a-select-option>
+                <a-select-option value="OFA-Sys/chinese-clip-vit-large-patch16">ViT-Large (高精度)</a-select-option>
               </a-select>
             </a-form-item>
             <a-form-item label="运行设备">
@@ -133,8 +132,8 @@
             <a-form-item label="模型版本">
               <a-select v-model:value="embeddingSettings.modelName" style="width: 100%">
                 <a-select-option value="BAAI/bge-m3">BGE-M3 (多语言)</a-select-option>
-                <a-select-option value="BAAI/bge-large-zh-v1.5">BGE-Large-zh</a-select-option>
-                <a-select-option value="BAAI/bge-small-zh-v1.5">BGE-Small-zh</a-select-option>
+                <a-select-option value="BAAI/bge-large-zh-v1.5">BGE-Large-zh (中文)</a-select-option>
+                <a-select-option value="BAAI/bge-small-zh-v1.5">BGE-Small-zh (中文)</a-select-option>
               </a-select>
             </a-form-item>
             <a-form-item label="运行设备">
@@ -202,7 +201,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { SettingsServiceMock } from '@/api/settings'
+import { SettingsService } from '@/api/settings'
 
 // 响应式数据
 const activeTab = ref('speech')
@@ -239,7 +238,7 @@ const llmSettings = reactive({
 
 // 视觉模型设置（从系统设置中提取）
 const visionSettings = reactive({
-  clipModel: 'OFA-Sys/chinese-clip-vit-base',
+  clipModel: 'OFA-Sys/chinese-clip-vit-base-patch16',
   device: 'cpu',
   enabled: true
 })
@@ -262,7 +261,7 @@ const generalSettings = reactive({
 const loadSystemSettings = async () => {
   isLoading.value = true
   try {
-    const response = await SettingsServiceMock.getSettings()
+    const response = await SettingsService.getSettings()
     if (response.success) {
       Object.assign(systemSettings, response.data)
       updateLocalSettingsFromSystem()
@@ -277,9 +276,9 @@ const loadSystemSettings = async () => {
 
 const loadAvailableModels = async () => {
   try {
-    const response = await SettingsServiceMock.getAvailableModels()
+    const response = await SettingsService.getAvailableModels()
     if (response.success) {
-      availableModels.value = response.data.models
+      availableModels.value = response.data.available_models
     }
   } catch (error) {
     console.error('加载可用模型失败:', error)
@@ -289,9 +288,10 @@ const loadAvailableModels = async () => {
 const updateLocalSettingsFromSystem = () => {
   // 从系统设置中更新本地设置状态
   if (systemSettings.search) {
-    generalSettings.defaultResults = systemSettings.search.default_results
-    generalSettings.threshold = systemSettings.search.similarity_threshold
-    generalSettings.maxFileSize = systemSettings.search.max_file_size
+    // 使用后端返回的标准键名格式
+    generalSettings.defaultResults = systemSettings.search.default_results || 20
+    generalSettings.threshold = systemSettings.search.similarity_threshold || 0.7
+    generalSettings.maxFileSize = systemSettings.search.max_file_size || 50
   }
 
   // 更新AI模型设置
@@ -312,7 +312,7 @@ const updateLocalSettingsFromSystem = () => {
 
     // 视觉模型
     if (systemSettings.ai_models.clip) {
-      visionSettings.clipModel = systemSettings.ai_models.clip.model_name || 'OFA-Sys/chinese-clip-vit-base'
+      visionSettings.clipModel = systemSettings.ai_models.clip.model_name || 'OFA-Sys/chinese-clip-vit-base-patch16'
       visionSettings.device = systemSettings.ai_models.clip.device || 'cpu'
       visionSettings.enabled = systemSettings.ai_models.clip.enabled !== false
     }
@@ -330,7 +330,7 @@ const updateLocalSettingsFromSystem = () => {
 const saveSpeechSettings = async () => {
   isLoading.value = true
   try {
-    const response = await SettingsServiceMock.updateAIModel('whisper', {
+    const response = await SettingsService.updateAIModelByType('whisper', {
       model_size: speechSettings.modelSize,
       device: speechSettings.device,
       enabled: speechSettings.enabled
@@ -352,13 +352,9 @@ const saveSpeechSettings = async () => {
 
 const testSpeechAvailability = async () => {
   try {
-    const response = await SettingsServiceMock.testAIModel('whisper')
+    const response = await SettingsService.testAIModelByType('whisper')
     if (response.success) {
-      if (response.data.available) {
-        message.success(`语音服务可用 - 版本: ${response.data.version || 'unknown'}, 状态: ${response.data.status}`)
-      } else {
-        message.error('语音服务不可用')
-      }
+      message.success(`语音服务可用 - ${response.data.test_message}`)
     } else {
       message.error(response.error?.message || '语音服务测试失败')
     }
@@ -371,7 +367,7 @@ const testSpeechAvailability = async () => {
 const saveGeneralSettings = async () => {
   isLoading.value = true
   try {
-    const response = await SettingsServiceMock.updateSystemSettings({
+    const response = await SettingsService.updateSettings({
       search: {
         default_results: generalSettings.defaultResults,
         similarity_threshold: generalSettings.threshold,
@@ -399,7 +395,7 @@ const resetSettings = () => {
     content: '确定要重置所有设置为默认值吗？',
     async onOk() {
       try {
-        const response = await SettingsServiceMock.resetSystemSettings()
+        const response = await SettingsService.resetSystemSettings()
         if (response.success) {
           message.success('设置已重置')
           await loadSystemSettings()
@@ -417,13 +413,9 @@ const resetSettings = () => {
 // 大语言模型方法
 const testLLM = async () => {
   try {
-    const response = await SettingsServiceMock.testAIModel('ollama')
+    const response = await SettingsService.testAIModelByType('ollama')
     if (response.success) {
-      if (response.data.available) {
-        message.success(`LLM服务可用 - 版本: ${response.data.version || 'unknown'}, 状态: ${response.data.status}`)
-      } else {
-        message.error('LLM服务不可用')
-      }
+      message.success(`LLM服务可用 - ${response.data.test_message}`)
     } else {
       message.error(response.error?.message || 'LLM连接测试失败')
     }
@@ -436,7 +428,7 @@ const testLLM = async () => {
 const saveLLMSettings = async () => {
   isLoading.value = true
   try {
-    const response = await SettingsServiceMock.updateAIModel('ollama', {
+    const response = await SettingsService.updateAIModelByType('ollama', {
       local_model: llmSettings.localModel,
       ollama_url: llmSettings.ollamaUrl,
       enabled: llmSettings.enabled
@@ -459,13 +451,9 @@ const saveLLMSettings = async () => {
 // 视觉模型方法
 const testVision = async () => {
   try {
-    const response = await SettingsServiceMock.testAIModel('clip')
+    const response = await SettingsService.testAIModelByType('clip')
     if (response.success) {
-      if (response.data.available) {
-        message.success(`视觉服务可用 - 版本: ${response.data.version || 'unknown'}, 状态: ${response.data.status}`)
-      } else {
-        message.error('视觉服务不可用')
-      }
+      message.success(`视觉服务可用 - ${response.data.test_message}`)
     } else {
       message.error(response.error?.message || '视觉服务测试失败')
     }
@@ -478,7 +466,7 @@ const testVision = async () => {
 const saveVisionSettings = async () => {
   isLoading.value = true
   try {
-    const response = await SettingsServiceMock.updateAIModel('clip', {
+    const response = await SettingsService.updateAIModelByType('clip', {
       model_name: visionSettings.clipModel,
       device: visionSettings.device,
       enabled: visionSettings.enabled
@@ -501,13 +489,9 @@ const saveVisionSettings = async () => {
 // 内嵌模型方法
 const testEmbedding = async () => {
   try {
-    const response = await SettingsServiceMock.testAIModel('bge')
+    const response = await SettingsService.testAIModelByType('bge')
     if (response.success) {
-      if (response.data.available) {
-        message.success(`BGE服务可用 - 版本: ${response.data.version || 'unknown'}, 状态: ${response.data.status}`)
-      } else {
-        message.error('BGE服务不可用')
-      }
+      message.success(`BGE服务可用 - ${response.data.test_message}`)
     } else {
       message.error(response.error?.message || 'BGE模型测试失败')
     }
@@ -520,7 +504,7 @@ const testEmbedding = async () => {
 const saveEmbeddingSettings = async () => {
   isLoading.value = true
   try {
-    const response = await SettingsServiceMock.updateAIModel('bge', {
+    const response = await SettingsService.updateAIModelByType('bge', {
       model_name: embeddingSettings.modelName,
       device: embeddingSettings.device,
       enabled: embeddingSettings.enabled

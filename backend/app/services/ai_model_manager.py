@@ -68,6 +68,14 @@ class AIModelService:
             # 创建数据库会话
             db = SessionLocal()
             try:
+                # 首先检查数据库中是否有模型配置
+                total_models = db.query(AIModelModel).count()
+
+                # 如果没有模型配置，先初始化默认配置
+                if total_models == 0:
+                    logger.info("数据库中没有AI模型配置，初始化默认配置")
+                    await self._initialize_default_configs_to_db(db)
+
                 # 查询所有活跃的模型配置
                 model_configs = db.query(AIModelModel).filter(AIModelModel.is_active == True).all()
 
@@ -145,6 +153,61 @@ class AIModelService:
                 }
             }
         }
+
+    async def _initialize_default_configs_to_db(self, db):
+        """
+        将默认模型配置初始化到数据库
+
+        Args:
+            db: 数据库会话
+        """
+        try:
+            import json
+            from app.models.ai_model import AIModelModel
+
+            logger.info("开始将默认AI模型配置初始化到数据库")
+
+            # 获取默认配置
+            default_configs = AIModelModel.get_default_configs()
+
+            # 创建默认模型配置记录
+            created_count = 0
+
+            for config_key, config_data in default_configs.items():
+                # 检查是否已存在相同的配置
+                existing_model = db.query(AIModelModel).filter(
+                    AIModelModel.model_type == config_data["model_type"],
+                    AIModelModel.provider == config_data["provider"],
+                    AIModelModel.model_name == config_data["model_name"]
+                ).first()
+
+                if not existing_model:
+                    # 创建新的模型配置
+                    new_model = AIModelModel(
+                        model_type=config_data["model_type"],
+                        provider=config_data["provider"],
+                        model_name=config_data["model_name"],
+                        config_json=json.dumps(config_data["config"], ensure_ascii=False),
+                        is_active=True
+                    )
+                    db.add(new_model)
+                    created_count += 1
+                    logger.info(f"创建默认AI模型配置: {config_data['model_type']} - {config_data['model_name']}")
+                else:
+                    logger.info(f"AI模型配置已存在，跳过: {config_data['model_type']} - {config_data['model_name']}")
+
+            # 提交所有更改
+            db.commit()
+
+            if created_count > 0:
+                logger.info(f"成功初始化 {created_count} 个默认AI模型配置到数据库")
+            else:
+                logger.info("所有默认AI模型配置都已存在于数据库中")
+
+        except Exception as e:
+            logger.error(f"初始化默认AI模型配置到数据库失败: {str(e)}")
+            db.rollback()
+            raise
 
     async def _create_default_models(self):
         """创建默认模型实例"""

@@ -64,6 +64,66 @@ class AIModelModel(Base):
         return ["local", "cloud"]
 
     @classmethod
+    def _get_optimal_device(cls) -> str:
+        """
+        获取最优设备配置
+
+        Returns:
+            str: 设备类型 ("cuda" 或 "cpu")
+        """
+        try:
+            # 尝试导入torch来检测CUDA
+            import torch
+
+            if torch.cuda.is_available():
+                # 检查CUDA设备数量
+                device_count = torch.cuda.device_count()
+                if device_count > 0:
+                    # 获取第一个CUDA设备的名称
+                    device_name = torch.cuda.get_device_name(0)
+                    cls._log_cuda_info(device_name, device_count)
+                    return "cuda"
+                else:
+                    print("CUDA可用但未找到设备，使用CPU")
+                    return "cpu"
+            else:
+                print("CUDA不可用，使用CPU")
+                return "cpu"
+
+        except ImportError:
+            print("PyTorch未安装，无法检测CUDA，使用CPU")
+            return "cpu"
+        except Exception as e:
+            print(f"检测CUDA时发生错误: {str(e)}，使用CPU")
+            return "cpu"
+
+    @classmethod
+    def _log_cuda_info(cls, device_name: str, device_count: int):
+        """
+        记录CUDA设备信息
+
+        Args:
+            device_name: CUDA设备名称
+            device_count: CUDA设备数量
+        """
+        try:
+            import torch
+
+            print(f"检测到CUDA设备:")
+            print(f"  - 设备数量: {device_count}")
+            print(f"  - 主设备: {device_name}")
+            print(f"  - CUDA版本: {torch.version.cuda}")
+
+            # 显示所有设备信息
+            for i in range(device_count):
+                props = torch.cuda.get_device_properties(i)
+                memory_gb = props.total_memory / 1024**3
+                print(f"  - 设备{i}: {props.name} ({memory_gb:.1f}GB)")
+
+        except Exception as e:
+            print(f"记录CUDA信息时发生错误: {str(e)}")
+
+    @classmethod
     def get_default_configs(cls) -> dict:
         """
         获取默认模型配置
@@ -71,6 +131,9 @@ class AIModelModel(Base):
         Returns:
             dict: 默认配置字典
         """
+        # 检测是否有CUDA可用
+        device = cls._get_optimal_device()
+
         return {
             "bge_m3_local": {
                 "model_type": "embedding",
@@ -78,7 +141,7 @@ class AIModelModel(Base):
                 "model_name": "BAAI/bge-m3",
                 "config": {
                     "model_path": "embedding/BAAI/bge-m3",
-                    "device": "cpu",
+                    "device": device,
                     "embedding_dim": 1024,
                     "max_length": 8192,
                     "normalize_embeddings": True
@@ -90,9 +153,9 @@ class AIModelModel(Base):
                 "model_name": "Systran/faster-whisper-base",
                 "config": {
                     "model_path": "faster-whisper/Systran/faster-whisper-base",
-                    "model_size": "base",
+                    "model_size": "Systran/faster-whisper-base",
                     "compute_type": "auto",
-                    "device": "cpu",
+                    "device": device,
                     "language": "zh"
                 }
             },
@@ -102,7 +165,7 @@ class AIModelModel(Base):
                 "model_name": "OFA-Sys/chinese-clip-vit-base-patch16",
                 "config": {
                     "model_path": "cn-clip/OFA-Sys/chinese-clip-vit-base-patch16",
-                    "device": "cpu"
+                    "device": device
                 }
             },
             "ollama_local": {

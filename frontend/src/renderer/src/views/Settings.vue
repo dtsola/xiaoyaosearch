@@ -22,10 +22,10 @@
 
             <a-form-item label="模型版本">
               <a-select v-model:value="speechSettings.modelSize" style="width: 100%">
-                <a-select-option value="base">Base (快速)</a-select-option>
-                <a-select-option value="small">Small (平衡)</a-select-option>
-                <a-select-option value="medium">Medium (精确)</a-select-option>
-                <a-select-option value="large">Large (高精度)</a-select-option>
+                <a-select-option value="Systran/faster-whisper-base">Base (快速)</a-select-option>
+                <a-select-option value="Systran/faster-whisper-small">Small (平衡)</a-select-option>
+                <a-select-option value="Systran/faster-whisper-medium">Medium (精确)</a-select-option>
+                <a-select-option value="Systran/faster-whisper-large">Large (高精度)</a-select-option>
               </a-select>
             </a-form-item>
             <a-form-item label="运行设备">
@@ -132,8 +132,8 @@
             <a-form-item label="模型版本">
               <a-select v-model:value="embeddingSettings.modelName" style="width: 100%">
                 <a-select-option value="BAAI/bge-m3">BGE-M3 (多语言)</a-select-option>
-                <a-select-option value="BAAI/bge-large-zh-v1.5">BGE-Large-zh (中文)</a-select-option>
-                <a-select-option value="BAAI/bge-small-zh-v1.5">BGE-Small-zh (中文)</a-select-option>
+                <a-select-option value="BAAI/bge-small-zh">BGE-Small-zh (中文)</a-select-option>
+                <a-select-option value="BAAI/bge-large-zh">BGE-Large-zh (中文)</a-select-option>
               </a-select>
             </a-form-item>
             <a-form-item label="运行设备">
@@ -179,7 +179,7 @@
               <a-input-number
                 v-model:value="generalSettings.maxFileSize"
                 :min="10"
-                :max="100"
+                :max="500"
                 addon-after="MB"
                 style="width: 200px"
               />
@@ -222,35 +222,35 @@ const systemSettings = reactive({
 // 可用的AI模型列表
 const availableModels = ref<any[]>([])
 
-// 语音设置（从系统设置中提取）
+// 语音设置
 const speechSettings = reactive({
   modelSize: 'small',
   device: 'cpu',
   enabled: true
 })
 
-// 大语言模型设置（从系统设置中提取）
+// 大语言模型设置
 const llmSettings = reactive({
   localModel: 'qwen2.5:1.5b',
   ollamaUrl: 'http://localhost:11434',
   enabled: true
 })
 
-// 视觉模型设置（从系统设置中提取）
+// 视觉模型设置
 const visionSettings = reactive({
   clipModel: 'OFA-Sys/chinese-clip-vit-base-patch16',
   device: 'cpu',
   enabled: true
 })
 
-// 内嵌模型设置（从系统设置中提取）
+// 内嵌模型设置
 const embeddingSettings = reactive({
   modelName: 'BAAI/bge-m3',
   device: 'cpu',
   enabled: true
 })
 
-// 通用设置（从系统设置中提取）
+// 通用设置
 const generalSettings = reactive({
   defaultResults: 20,
   threshold: 0.7,

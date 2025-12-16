@@ -41,7 +41,7 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: electronjs.org
+  maintainer: https://www.dtsola.com
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}

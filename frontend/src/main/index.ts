@@ -31,7 +31,7 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // 设置会话以允许跨域请求
+  // 设置会话以允许跨域请求和本地文件访问
   const session = mainWindow.webContents.session
   session.webRequest.onBeforeSendHeaders((details, callback) => {
     callback({
@@ -41,6 +41,11 @@ function createWindow(): void {
       }
     })
   })
+
+  // 开发环境下按需打开开发者工具（注释掉自动打开）
+  // if (is.dev) {
+  //   mainWindow.webContents.openDevTools()
+  // }
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.

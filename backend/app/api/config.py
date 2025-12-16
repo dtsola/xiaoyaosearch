@@ -219,11 +219,12 @@ async def test_ai_model(
                     speech_result = await ai_model_service.speech_to_text(test_audio)
                     if speech_result and "text" in speech_result:
                         test_passed = True
-                        recognized_text = speech_result.get("text", "")
-                        confidence = speech_result.get("avg_confidence", 0)
+                        # recognized_text = speech_result.get("text", "")
+                        # confidence = speech_result.get("avg_confidence", 0)
                         # 限制识别文本长度显示
-                        text_preview = recognized_text[:50] + "..." if len(recognized_text) > 50 else recognized_text
-                        test_message = f"语音识别模型测试成功，识别文本: '{text_preview}'，置信度: {confidence:.2f}"
+                        # text_preview = recognized_text[:50] + "..." if len(recognized_text) > 50 else recognized_text
+                        # test_message = f"语音识别模型测试成功，识别文本: '{text_preview}'，置信度: {confidence:.2f}"
+                        test_message = "语音识别模型测试成功"
                     else:
                         test_passed = False
                         test_message = "语音识别模型测试失败：无法识别音频"
@@ -242,9 +243,10 @@ async def test_ai_model(
                     vision_result = await ai_model_service.image_understanding(test_image_path, test_texts)
                     if vision_result and "best_match" in vision_result:
                         test_passed = True
-                        similarity = vision_result["best_match"].get("similarity", 0)
-                        best_text = vision_result["best_match"].get("text", "")
-                        test_message = f"图像理解模型测试成功，最佳匹配: '{best_text}'，相似度: {similarity:.4f}"
+                        # similarity = vision_result["best_match"].get("similarity", 0)
+                        # best_text = vision_result["best_match"].get("text", "")
+                        # test_message = f"图像理解模型测试成功，最佳匹配: '{best_text}'，相似度: {similarity:.4f}"
+                        test_message = "图像理解模型测试成功"
                     else:
                         test_passed = False
                         test_message = "图像理解模型测试失败：无法理解图像"
@@ -268,7 +270,8 @@ async def test_ai_model(
                     if generated_text:
                         test_passed = True
                         generated_text_preview = generated_text[:100]  # 只取前100字符
-                        test_message = f"大语言模型测试成功，生成内容: {generated_text_preview}..."
+                        # test_message = f"大语言模型测试成功，生成内容: {generated_text_preview}..."
+                        test_message = "大语言模型测试成功"
                     else:
                         test_passed = False
                         test_message = "大语言模型测试失败：无法生成文本"

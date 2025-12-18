@@ -266,9 +266,9 @@
             <div class="app-logo">
               <span class="logo-text">◤小遥搜索◢</span>
             </div>
-            <h3>XiaoyaoSearch v0.1</h3>
+            <img src="@/assets/images/icon.png" width="256" height="256" />
             <p class="app-description">
-              支持多模态AI智能搜索的本地桌面应用，通过语音、文本、图像多种输入方式，为知识工作者提供更智能的文件检索体验。
+              支持多模态AI智能搜索的跨平台本地桌面应用（Windows/MacOS/Linux），通过语音、文本、图像多种输入方式，为知识工作者提供更智能的文件检索体验。
             </p>
             <div class="tagline">
               <span class="highlight">本地优先 · AI增强 · 隐私安全</span>

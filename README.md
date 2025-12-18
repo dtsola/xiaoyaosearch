@@ -191,18 +191,28 @@ ollama模型：
 ollama pull qwen2.5:1.5b （根据情况自行选择）
 
 所有模型下载地址：（百度盘）
-TODO：
+链接: https://pan.baidu.com/s/1jRcTztvjf8aiExUh6oayVg?pwd=ycr5 提取码: ycr5 
 
 嵌入模型：
 - 模型根目录：data/models/embedding
 - 将下载的模型直接解压放入到根目录即可，以下是对应关系
   - data/models/embedding/BAAI/bge-m3
-  - data/models/embedding/BAAI/bge-m3
-  - data/models/embedding/BAAI/bge-m3
+  - data/models/embedding/BAAI/bge-small-zh
+  - data/models/embedding/BAAI/bge-large-zh
 
 语音识别模型：
+- 模型根目录：data/models/faster-whisper
+- 将下载的模型直接解压放入到根目录即可，以下是对应关系
+  - data/models/faster-whisper/Systran/faster-whisper-base
+  - data/models/faster-whisper/Systran/faster-whisper-small
+  - data/models/faster-whisper/Systran/faster-whisper-medium
+  - data/models/faster-whisper/Systran/faster-whisper-large-v3
 
 视觉模型：
+- 模型根目录：data/models/cn-clip
+- 将下载的模型直接解压放入到根目录即可，以下是对应关系
+  - data/models/cn-clip/OFA-Sys/chinese-clip-vit-base-patch16
+  - data/models/cn-clip/OFA-Sys/chinese-clip-vit-large-patch14
 
 
 

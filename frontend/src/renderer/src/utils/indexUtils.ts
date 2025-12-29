@@ -3,6 +3,8 @@
  * 处理文件类型转换、数据格式适配等功能
  */
 
+import i18n from '@/i18n/config'
+
 // 文件类型映射配置
 export const FILE_TYPE_MAPPING = {
   document: [
@@ -91,11 +93,12 @@ export function getFileType(filename: string): keyof typeof FILE_TYPE_MAPPING {
  * @returns 显示名称
  */
 export function getFileTypeDisplayName(type: string): string {
+  // 使用 i18n 获取文件类型翻译
   const displayNames: Record<string, string> = {
-    document: '文档',
-    audio: '音频',
-    video: '视频',
-    image: '图片'
+    document: i18n.global.t('fileType.document'),
+    audio: i18n.global.t('fileType.audio'),
+    video: i18n.global.t('fileType.video'),
+    image: i18n.global.t('fileType.image')
   }
   return displayNames[type] || type
 }
@@ -161,14 +164,14 @@ export function formatFileSize(bytes: number): string {
 }
 
 /**
- * 索引状态映射
+ * 索引状态映射（工厂函数，确保每次调用时获取最新的翻译）
  */
-export const INDEX_STATUS_MAPPING = {
-  pending: { label: '等待中', color: 'default', antdColor: 'default' },
-  processing: { label: '处理中', color: 'processing', antdColor: 'processing' },
-  completed: { label: '已完成', color: 'success', antdColor: 'success' },
-  failed: { label: '失败', color: 'error', antdColor: 'error' }
-}
+export const getIndexStatusMapping = () => ({
+  pending: { label: i18n.global.t('indexStatus.statusPending'), color: 'default', antdColor: 'default' },
+  processing: { label: i18n.global.t('indexStatus.statusProcessing'), color: 'processing', antdColor: 'processing' },
+  completed: { label: i18n.global.t('indexStatus.statusCompleted'), color: 'success', antdColor: 'success' },
+  failed: { label: i18n.global.t('indexStatus.statusFailed'), color: 'error', antdColor: 'error' }
+})
 
 /**
  * 获取索引状态信息
@@ -176,7 +179,8 @@ export const INDEX_STATUS_MAPPING = {
  * @returns 状态信息
  */
 export function getIndexStatusInfo(status: string) {
-  return INDEX_STATUS_MAPPING[status as keyof typeof INDEX_STATUS_MAPPING] || {
+  const statusMapping = getIndexStatusMapping()
+  return statusMapping[status as keyof typeof statusMapping] || {
     label: status,
     color: 'default',
     antdColor: 'default'

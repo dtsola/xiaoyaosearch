@@ -36,6 +36,7 @@
 - [ ] AI模型配置：支持云端API和本地Ollama模型切换
 
 ### P1功能（最好有）
+- [x] **国际化支持（i18n）**：中英文双语界面，语言切换器，720+翻译键全覆盖 ✅ 已完成
 - [ ] 语音识别模型配置：支持云端API和本地FastWhisper
 - [ ] 视觉模型配置：支持云端API和本地视觉模型
 - [ ] 索引管理：文件夹选择、索引重建、删除索引
@@ -90,7 +91,7 @@
 
 | 事件 | 触发时机 | 关键参数 |
 |------|---------|---------|
-| app_start | 应用启动 | app_version, platform |
+| app_start | 应用启动 | app_version, platform, current_lang, device_lang |
 | search_input | 用户输入搜索内容 | input_type(voice/text/image), input_length |
 | search_execute | 执行搜索 | ai_model, search_type |
 | search_result | 搜索结果返回 | result_count, response_time |
@@ -100,6 +101,8 @@
 | folder_index | 文件夹索引操作 | folder_path, action(create/update/delete) |
 | settings_change | 设置变更 | setting_type, old_value, new_value |
 | error_occurred | 错误发生 | error_type, error_message |
+| language_switch | 用户切换语言 | from_lang, to_lang |
+| language_init | 应用初始化语言 | current_lang, device_lang |
 
 ## 7. 非功能需求
 
@@ -123,7 +126,14 @@
 - 支持隐私模式（不记录搜索历史）
 
 ### 可用性要求
-- 支持中英文界面
+- **国际化支持（i18n）** ✅ 已完成
+  - 支持语言：简体中文（zh-CN）、英语（en-US）
+  - 翻译覆盖：720+ 翻译键，覆盖所有页面和组件
+  - 语言切换：顶部导航栏语言切换器，即时生效无需重启
+  - 语言持久化：LocalStorage 自动保存用户语言偏好
+  - UI组件国际化：Ant Design Vue 组件库语言同步切换
+  - 日期时间国际化：Day.js 支持相对时间和绝对时间格式
+  - 错误信息国际化：HTTP 错误信息支持前端翻译
 - 无障碍访问支持
 - 键盘快捷键支持
 - 深色/浅色主题切换

@@ -2,8 +2,8 @@
   <div class="home-container">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h1 class="page-title">小遥搜索</h1>
-      <p class="page-subtitle">多模态智能搜索，让文件触手可及</p>
+      <h1 class="page-title">{{ t('home.title') }}</h1>
+      <p class="page-subtitle">{{ t('home.subtitle') }}</p>
     </div>
 
     <!-- 搜索区域 -->
@@ -14,7 +14,7 @@
           class="multimodal-indicator"
           :class="{ active: inputMode === 'text' }"
           @click="setInputMode('text')"
-          title="文本输入"
+          :title="t('home.textInput')"
         >
           <FormOutlined />
           <span>•</span>
@@ -23,7 +23,7 @@
           class="multimodal-indicator"
           :class="{ active: inputMode === 'voice' }"
           @click="setInputMode('voice')"
-          title="语音输入"
+          :title="t('home.voiceInput')"
         >
           <AudioOutlined />
           <span>5</span>
@@ -32,7 +32,7 @@
           class="multimodal-indicator"
           :class="{ active: inputMode === 'image' }"
           @click="setInputMode('image')"
-          title="图片输入"
+          :title="t('home.imageInput')"
         >
           <PictureOutlined />
           <span>✗</span>
@@ -46,7 +46,7 @@
           <a-input
             v-if="inputMode === 'text'"
             v-model:value="searchQuery"
-            placeholder="输入搜索内容..."
+            :placeholder="t('home.searchPlaceholder')"
             size="large"
             class="search-input"
             @focus="isSearchFocused = true"
@@ -62,14 +62,14 @@
                 type="text"
                 size="small"
                 @click="showSearchOptions = !showSearchOptions"
-                title="搜索选项"
+                :title="t('search.options')"
               >
                 <SettingOutlined />
               </a-button>
             </template>
           </a-input>
 
-    
+
           <!-- 语音输入界面 -->
           <div v-if="inputMode === 'voice'" class="voice-input">
             <div class="voice-visualizer">
@@ -79,7 +79,7 @@
               <AudioOutlined v-else class="voice-icon" />
             </div>
             <div class="voice-text">
-              {{ isRecording ? '正在录音...' : '点击开始语音输入' }}
+              {{ isRecording ? t('home.recording') : t('home.clickToRecord') }}
             </div>
             <div class="voice-timer" v-if="isRecording">
               {{ formatTime(recordingTime) }}
@@ -92,7 +92,7 @@
               >
                 <VideoCameraOutlined v-if="isRecording" />
                 <AudioOutlined v-else />
-                {{ isRecording ? '停止录音' : '开始录音' }}
+                {{ isRecording ? t('home.stopRecording') : t('home.startRecording') }}
               </a-button>
             </div>
           </div>
@@ -108,21 +108,21 @@
               <p class="ant-upload-drag-icon">
                 <PictureOutlined />
               </p>
-              <p class="ant-upload-text">拖拽图片到此处，或点击选择</p>
+              <p class="ant-upload-text">{{ t('home.dragImageHere') }}</p>
               <p class="ant-upload-hint">
-                支持 JPG、JPEG、PNG 格式，最大 10MB
+                {{ t('home.supportImageFormats') }}
               </p>
             </a-upload-dragger>
             <div v-if="uploadedImage" class="uploaded-image">
-              <img :src="uploadedImage" alt="上传的图片" />
+              <img :src="uploadedImage" :alt="t('home.selectImageFirst')" />
               <div class="image-overlay">
                 <a-button type="primary" @click="analyzeImage">
                   <EyeOutlined />
-                  开始分析
+                  {{ t('home.startAnalyze') }}
                 </a-button>
                 <a-button @click="clearImage">
                   <DeleteOutlined />
-                  移除
+                  {{ t('home.remove') }}
                 </a-button>
               </div>
             </div>
@@ -133,36 +133,36 @@
         <div v-if="showSearchOptions && inputMode === 'text'" class="search-options">
           <a-row :gutter="16">
             <a-col :span="8">
-              <a-form-item label="搜索类型">
+              <a-form-item :label="t('search.searchType')">
                 <a-select v-model:value="searchOptions.searchType" style="width: 100%">
-                  <a-select value="semantic">语义搜索</a-select>
-                  <a-select value="fulltext">全文搜索</a-select>
-                  <a-select value="hybrid">混合搜索</a-select>
+                  <a-select value="semantic">{{ t('search.semantic') }}</a-select>
+                  <a-select value="fulltext">{{ t('search.fulltext') }}</a-select>
+                  <a-select value="hybrid">{{ t('search.hybrid') }}</a-select>
                 </a-select>
               </a-form-item>
             </a-col>
             <a-col :span="8">
-              <a-form-item label="文件类型">
+              <a-form-item :label="t('search.fileType')">
                 <a-select
                   v-model:value="searchOptions.fileTypes"
                   mode="multiple"
                   style="width: 100%"
                 >
-                  <a-select value="document">文档</a-select>
-                  <a-select value="audio">音频</a-select>
-                  <a-select value="video">视频</a-select>
-                  <a-select value="image">图片</a-select>
+                  <a-select value="document">{{ t('fileType.document') }}</a-select>
+                  <a-select value="audio">{{ t('fileType.audio') }}</a-select>
+                  <a-select value="video">{{ t('fileType.video') }}</a-select>
+                  <a-select value="image">{{ t('fileType.image') }}</a-select>
                 </a-select>
               </a-form-item>
             </a-col>
             <a-col :span="8">
-              <a-form-item label="相似度">
+              <a-form-item :label="t('search.threshold')">
                 <a-slider
                   v-model:value="searchOptions.threshold"
                   :min="0"
                   :max="1"
                   :step="0.1"
-                  :tooltip-formatter="(value) => `${(value * 100).toFixed(0)}%`"
+                  :tooltip-formatter="(value: number) => `${(value * 100).toFixed(0)}%`"
                 />
               </a-form-item>
             </a-col>
@@ -179,7 +179,7 @@
             :disabled="!canSearch"
           >
             <SearchOutlined />
-            开始搜索
+            {{ t('home.startSearch') }}
           </a-button>
           </div>
       </div>
@@ -189,13 +189,13 @@
     <!-- 搜索结果 -->
     <div class="results-section" v-if="searchResults.length > 0 || isSearching">
       <div class="results-header">
-        <h3 class="results-title">搜索结果</h3>
+        <h3 class="results-title">{{ t('search.results') }}</h3>
         <div class="results-stats">
           <span class="results-count">
-            找到 {{ searchStats.total }} 个结果
+            {{ t('search.resultsCount', { count: searchStats.total }) }}
           </span>
           <span class="results-time">
-            耗时 {{ searchStats.searchTime?.toFixed(2) }}s
+            {{ t('search.searchTime', { time: searchStats.searchTime?.toFixed(2) }) }}
           </span>
         </div>
       </div>
@@ -217,7 +217,7 @@
       <!-- 加载更多 -->
       <div class="results-footer" v-if="searchResults.length < searchStats.total">
         <a-button type="link" @click="loadMore" :loading="isLoadingMore">
-          加载更多结果
+          {{ t('search.loadMore') }}
         </a-button>
       </div>
     </div>
@@ -225,13 +225,13 @@
     <!-- 空状态 -->
     <div class="empty-state" v-else-if="!isSearching && hasSearched">
       <a-empty
-        description="没有找到相关文件"
+        :description="t('search.noResults')"
       >
         <template #image>
           <SearchOutlined style="font-size: 64px; color: var(--text-quaternary)" />
         </template>
         <a-button type="primary" @click="showAdvancedSearch">
-          高级搜索
+          {{ t('home.advancedSearch') }}
         </a-button>
       </a-empty>
     </div>
@@ -256,6 +256,10 @@ import {
   EyeOutlined,
   DeleteOutlined
 } from '@ant-design/icons-vue'
+import { useI18n } from 'vue-i18n'
+
+// 国际化
+const { t } = useI18n()
 
 // 响应式数据
 const inputMode = ref<'text' | 'voice' | 'image'>('text')
@@ -341,10 +345,10 @@ const handleSearch = async () => {
       searchStats.total = response.data.total
       searchStats.searchTime = response.data.search_time
 
-      message.success(`找到 ${response.data.total} 个相关文件`)
+      message.success(t('home.searchComplete', { count: response.data.total }))
     }
   } catch (error) {
-    message.error('搜索失败，请重试')
+    message.error(t('home.searchFailed'))
     console.error('Search error:', error)
   } finally {
     isSearching.value = false
@@ -361,13 +365,13 @@ const handleImageUpload = async (file: File) => {
   // 验证文件类型
   const validTypes = ['image/jpeg', 'image/jpg', 'image/png']
   if (!validTypes.includes(file.type)) {
-    message.error('请上传 JPG、JPEG 或 PNG 格式的图片')
+    message.error(t('home.imageFormatError'))
     return false // 阻止默认上传
   }
 
   // 验证文件大小（10MB）
   if (file.size > 10 * 1024 * 1024) {
-    message.error('图片大小不能超过10MB')
+    message.error(t('home.imageSizeError'))
     return false // 阻止默认上传
   }
 
@@ -385,7 +389,7 @@ const handleImageUpload = async (file: File) => {
 
 const analyzeImage = async () => {
   if (!uploadedImageFile.value) {
-    message.error('请先选择图片')
+    message.error(t('home.selectImageFirst'))
     return
   }
 
@@ -412,12 +416,12 @@ const analyzeImage = async () => {
       searchStats.total = response.data.search_results?.length || 0
       searchStats.searchTime = 0.95 // 图片搜索的固定时间
 
-      message.success(`图片分析完成，找到 ${response.data.search_results?.length || 0} 个相关文件`)
+      message.success(t('home.imageAnalyzeComplete', { count: response.data.search_results?.length || 0 }))
     } else {
-      message.error('图片分析失败')
+      message.error(t('home.imageAnalyzeFailed'))
     }
   } catch (error) {
-    message.error('图片分析失败，请重试')
+    message.error(t('home.imageAnalyzeFailed'))
     console.error('Image analysis error:', error)
   } finally {
     isSearching.value = false
@@ -505,15 +509,15 @@ const startRecording = async () => {
       recordingTime.value += 1
       if (recordingTime.value >= 30) {
         stopRecording()
-        message.warning('录音时长达到上限(30秒)')
+        message.warning(t('home.recordingTimeLimit'))
       }
     }, 1000)
 
-    message.info('开始录音...')
+    message.info(t('home.startRecordingSuccess'))
 
   } catch (error) {
     console.error('录音失败:', error)
-    message.error('无法访问麦克风，请检查权限设置')
+    message.error(t('error.microphoneAccessDenied'))
     isRecording.value = false
   }
 }
@@ -534,7 +538,7 @@ const stopRecording = () => {
 const processVoiceSearch = async (audioFile: File) => {
   isSearching.value = true
   try {
-    message.loading('正在识别语音...', 0)
+    message.loading(t('home.voiceRecognizing'), 0)
     const response = await SearchService.multimodalSearch(
       InputType.VOICE,
       audioFile,
@@ -557,13 +561,13 @@ const processVoiceSearch = async (audioFile: File) => {
       // 语音搜索没有返回search_time，使用默认值
       searchStats.searchTime = 1.2
 
-      message.success(`语音转文字完成，找到 ${response.data.search_results?.length || 0} 个相关文件`)
+      message.success(t('home.voiceRecognizeComplete', { count: response.data.search_results?.length || 0 }))
     } else {
-      message.error(`语音转文字失败: ${response.message || '未知错误'}`)
+      message.error(t('home.voiceRecognizeFailed'))
     }
   } catch (error) {
     message.destroy() // 关闭loading
-    message.error('语音转文字失败，请重试')
+    message.error(t('home.voiceRecognizeFailed'))
     console.error('Voice recognition error:', error)
 
     // 如果语音识别失败，可以选择保持在语音模式或切换到文本模式
@@ -584,20 +588,20 @@ const handleOpen = async (result: SearchResult) => {
       const response = await api.openFile(result.file_path)
 
       if (response.success) {
-        message.success(`已打开文件: ${result.file_name}`)
+        message.success(t('home.fileOpened', { filename: result.file_name }))
       } else {
-        message.error(`打开文件失败: ${response.error}`)
+        message.error(t('home.fileOpenFailed', { error: response.error }))
       }
     } else {
       // 备用方案：复制文件路径到剪贴板
       await navigator.clipboard.writeText(result.file_path)
-      message.info(`文件路径已复制到剪贴板: ${result.file_path}`)
+      message.info(t('home.filePathCopied', { path: result.file_path }))
     }
   } catch (error) {
     console.error('打开文件时出错:', error)
     // 备用方案：复制文件路径到剪贴板
     await navigator.clipboard.writeText(result.file_path)
-    message.info(`文件路径已复制到剪贴板: ${result.file_path}`)
+    message.info(t('home.filePathCopied', { path: result.file_path }))
   }
 }
 
@@ -609,7 +613,7 @@ const loadMore = async () => {
   try {
     await new Promise(resolve => setTimeout(resolve, 1000))
     // 模拟加载更多数据
-    message.info('没有更多结果了')
+    message.info(t('home.noMoreResults'))
   } finally {
     isLoadingMore.value = false
   }

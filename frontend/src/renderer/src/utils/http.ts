@@ -1,6 +1,12 @@
 // HTTP 客户端工具
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosRequestConfig } from 'axios'
 import { message } from 'ant-design-vue'
+import i18n from '@/i18n/config'
+
+// 获取翻译函数的辅助方法
+const t = (key: string, params?: Record<string, any>): string => {
+  return i18n.global.t(key, params)
+}
 
 // 创建 axios 实例
 const http: AxiosInstance = axios.create({
@@ -23,7 +29,7 @@ http.interceptors.request.use(
     return config
   },
   (error) => {
-    console.error('请求错误:', error)
+    console.error(t('http.requestError'), error)
     return Promise.reject(error)
   }
 )
@@ -35,7 +41,7 @@ http.interceptors.response.use(
     return response
   },
   (error) => {
-    console.error('响应错误:', error)
+    console.error(t('http.responseError'), error)
 
     // 处理不同类型的错误
     if (error.response) {
@@ -44,32 +50,32 @@ http.interceptors.response.use(
 
       switch (status) {
         case 400:
-          message.error(data.detail || '请求参数错误')
+          message.error(data.detail || t('http.badRequest'))
           break
         case 401:
-          message.error('未授权访问')
+          message.error(t('http.unauthorized'))
           break
         case 403:
-          message.error('禁止访问')
+          message.error(t('http.forbidden'))
           break
         case 404:
-          message.error('请求的资源不存在')
+          message.error(t('http.notFound'))
           break
         case 422:
-          message.error(data.detail || '数据验证失败')
+          message.error(data.detail || t('http.validationFailed'))
           break
         case 500:
-          message.error('服务器内部错误')
+          message.error(t('http.internalServerError'))
           break
         default:
-          message.error(`请求失败: ${status}`)
+          message.error(`${t('http.requestFailed')}: ${status}`)
       }
     } else if (error.request) {
       // 网络错误
-      message.error('网络连接失败，请检查后端服务是否运行')
+      message.error(t('http.networkError'))
     } else {
       // 其他错误
-      message.error('请求配置错误')
+      message.error(t('http.configError'))
     }
 
     return Promise.reject(error)

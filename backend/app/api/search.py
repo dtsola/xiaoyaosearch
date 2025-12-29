@@ -4,12 +4,13 @@
 """
 import time
 from typing import List, Optional
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Header
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.config import get_settings
 from app.core.logging_config import get_logger
+from app.core.i18n import i18n, get_locale_from_header
 from app.schemas.requests import SearchRequest, MultimodalRequest, SearchHistoryRequest
 from app.schemas.responses import (
     SearchResponse, MultimodalResponse, SearchHistoryInfo,
@@ -28,10 +29,16 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
+def get_locale(accept_language: Optional[str] = Header(None)) -> str:
+    """从请求头获取语言设置"""
+    return get_locale_from_header(accept_language)
+
+
 @router.post("/", response_model=SearchResponse, summary="文本搜索")
 async def search_files(
     request: SearchRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     执行文件搜索
@@ -69,9 +76,9 @@ async def search_files(
                     "query_used": request.query,
                     "input_processed": not is_text_input(request.input_type),
                     "ai_models_used": [],
-                    "error": "搜索服务未就绪，请先构建索引"
+                    "error": i18n.t('search.service_not_ready', locale)
                 },
-                message="搜索服务未就绪"
+                message=i18n.t('search.service_not_ready', locale)
             )
 
         # LLM查询增强
@@ -176,12 +183,12 @@ async def search_files(
                 "input_processed": not is_text_input(request.input_type),
                 "ai_models_used": ai_models_used
             },
-            message="搜索完成"
+            message=i18n.t('search.search_complete', locale)
         )
 
     except Exception as e:
         logger.error(f"搜索失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"搜索失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"{i18n.t('search.search_failed', locale)}: {str(e)}")
 
 
 @router.post("/multimodal", response_model=MultimodalResponse, summary="多模态搜索")
@@ -192,7 +199,8 @@ async def multimodal_search(
     limit: int = Form(settings.api.default_search_results),
     threshold: float = Form(settings.api.default_similarity_threshold),
     file_types: Optional[List[FileType]] = Form(None, description="文件类型过滤"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     多模态文件搜索
@@ -220,7 +228,11 @@ async def multimodal_search(
         file.file.seek(0)  # 重置文件指针
 
         if file_size > max_size:
-            raise HTTPException(status_code=400, detail=f"文件大小超过{max_size // (1024*1024)}MB限制")
+            size_limit_mb = max_size // (1024*1024)
+            raise HTTPException(
+                status_code=400,
+                detail=i18n.t('file.size_exceeds', locale, limit=f"{size_limit_mb}MB")
+            )
 
         # 读取文件内容
         file_content = await file.read()
@@ -464,14 +476,14 @@ async def multimodal_search(
                 "search_time": round(response_time, 2),
                 "ai_models_used": ai_models_used
             },
-            message="多模态搜索完成"
+            message=i18n.t('search.multimodal_complete', locale)
         )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"多模态搜索失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"多模态搜索失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"{i18n.t('search.multimodal_failed', locale)}: {str(e)}")
 
 
 @router.get("/history", response_model=SearchHistoryResponse, summary="搜索历史")
@@ -480,7 +492,8 @@ async def get_search_history(
     offset: int = 0,
     search_type: SearchType = None,
     input_type: InputType = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     获取搜索历史记录
@@ -536,18 +549,19 @@ async def get_search_history(
                 "limit": limit,
                 "offset": offset
             },
-            message="获取搜索历史成功"
+            message=i18n.t('search.history_found', locale)
         )
 
     except Exception as e:
         logger.error(f"获取搜索历史失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"获取搜索历史失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"{i18n.t('search.history_get_failed', locale)}: {str(e)}")
 
 
 @router.delete("/history/{history_id}", summary="删除单条搜索历史")
 async def delete_search_history(
     history_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     删除指定的搜索历史记录
@@ -563,7 +577,7 @@ async def delete_search_history(
         ).first()
 
         if not history_record:
-            raise HTTPException(status_code=404, detail="搜索历史记录不存在")
+            raise HTTPException(status_code=404, detail=i18n.t('search.history_not_found', locale))
 
         # 删除记录
         db.delete(history_record)
@@ -576,19 +590,20 @@ async def delete_search_history(
             "data": {
                 "deleted_id": history_id
             },
-            "message": "搜索历史记录删除成功"
+            "message": i18n.t('search.history_delete_success', locale)
         }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"删除搜索历史记录失败: ID={history_id}, 错误={str(e)}")
-        raise HTTPException(status_code=500, detail=f"删除搜索历史记录失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"{i18n.t('search.history_delete_failed', locale)}: {str(e)}")
 
 
 @router.delete("/history", summary="清除搜索历史")
 async def clear_search_history(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     清除所有搜索历史记录
@@ -608,19 +623,20 @@ async def clear_search_history(
             "data": {
                 "deleted_count": deleted_count
             },
-            "message": "搜索历史清除成功"
+            "message": i18n.t('search.history_clear_success', locale)
         }
 
     except Exception as e:
         logger.error(f"清除搜索历史失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"清除搜索历史失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"{i18n.t('search.history_clear_failed', locale)}: {str(e)}")
 
 
 @router.get("/suggestions", summary="搜索建议")
 async def get_search_suggestions(
     query: str,
     limit: int = settings.api.max_search_suggestions,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     获取搜索建议
@@ -768,4 +784,4 @@ async def get_search_suggestions(
 
     except Exception as e:
         logger.error(f"获取搜索建议失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"获取搜索建议失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"{i18n.t('search.suggestions_failed', locale)}: {str(e)}")

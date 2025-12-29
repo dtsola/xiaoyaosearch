@@ -6,13 +6,14 @@ import os
 import asyncio
 import threading
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.logging_config import get_logger
 from app.core.exceptions import ResourceNotFoundException, ValidationException
 from app.core.config import get_settings
+from app.core.i18n import i18n, get_locale_from_header
 from app.schemas.requests import IndexCreateRequest, IndexUpdateRequest
 from app.schemas.responses import (
     IndexJobInfo, IndexCreateResponse, IndexListResponse, SuccessResponse
@@ -29,6 +30,11 @@ settings = get_settings()
 
 # 全局文件索引服务实例（单例）
 _file_index_service: Optional[FileIndexService] = None
+
+
+def get_locale(accept_language: Optional[str] = Header(None)) -> str:
+    """从请求头获取语言设置"""
+    return get_locale_from_header(accept_language)
 
 
 def get_file_index_service() -> FileIndexService:
@@ -57,7 +63,8 @@ def get_file_index_service() -> FileIndexService:
 async def create_index(
     request: IndexCreateRequest,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     创建文件索引
@@ -73,10 +80,10 @@ async def create_index(
     try:
         # 验证文件夹路径
         if not os.path.exists(request.folder_path):
-            raise ValidationException(f"文件夹不存在: {request.folder_path}")
+            raise ValidationException(i18n.t('index.path_not_exist', locale, path=request.folder_path))
 
         if not os.path.isdir(request.folder_path):
-            raise ValidationException(f"路径不是文件夹: {request.folder_path}")
+            raise ValidationException(i18n.t('index.path_not_directory', locale, path=request.folder_path))
 
         # 检查是否有正在运行的索引任务
         existing_job = db.query(IndexJobModel).filter(
@@ -88,7 +95,7 @@ async def create_index(
             logger.info(f"文件夹已在索引中: {request.folder_path}")
             return IndexCreateResponse(
                 data=IndexJobInfo(**existing_job.to_dict()),
-                message="文件夹正在索引中"
+                message=i18n.t('index.folder_indexing', locale)
             )
 
         # 创建新的索引任务
@@ -114,21 +121,22 @@ async def create_index(
 
         return IndexCreateResponse(
             data=IndexJobInfo(**index_job.to_dict()),
-            message="索引任务已创建并开始执行"
+            message=i18n.t('index.task_created', locale)
         )
 
     except ValidationException:
         raise
     except Exception as e:
         logger.error(f"创建索引失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"创建索引失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.failed', locale) + f": {str(e)}")
 
 
 @router.post("/update", response_model=IndexCreateResponse, summary="更新索引")
 async def update_index(
     request: IndexUpdateRequest,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     增量更新文件索引
@@ -143,7 +151,7 @@ async def update_index(
     try:
         # 验证文件夹路径
         if not os.path.exists(request.folder_path):
-            raise ValidationException(f"文件夹不存在: {request.folder_path}")
+            raise ValidationException(i18n.t('index.path_not_exist', locale, path=request.folder_path))
 
         # 检查是否有正在运行的索引任务
         existing_job = db.query(IndexJobModel).filter(
@@ -155,7 +163,7 @@ async def update_index(
             logger.info(f"文件夹正在索引中: {request.folder_path}")
             return IndexCreateResponse(
                 data=IndexJobInfo(**existing_job.to_dict()),
-                message="文件夹正在索引中"
+                message=i18n.t('index.folder_indexing', locale)
             )
 
         # 创建更新任务
@@ -181,19 +189,20 @@ async def update_index(
 
         return IndexCreateResponse(
             data=IndexJobInfo(**index_job.to_dict()),
-            message="增量索引任务已创建并开始执行"
+            message=i18n.t('index.incremental_created', locale)
         )
 
     except ValidationException:
         raise
     except Exception as e:
         logger.error(f"创建增量索引失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"创建增量索引失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.incremental_failed', locale) + f": {str(e)}")
 
 
 @router.get("/status", summary="获取索引系统状态")
 async def get_system_status(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     获取索引系统的整体状态
@@ -245,18 +254,19 @@ async def get_system_status(
                     "scanner_workers": settings.index.scanner_max_workers
                 }
             },
-            "message": "获取索引系统状态成功"
+            "message": i18n.t('index.status_success', locale)
         }
 
     except Exception as e:
         logger.error(f"获取索引系统状态失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"获取索引系统状态失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.status_failed', locale) + f": {str(e)}")
 
 
 @router.get("/status/{index_id}", response_model=IndexCreateResponse, summary="查询索引状态")
 async def get_index_status(
     index_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     获取索引任务状态
@@ -272,7 +282,7 @@ async def get_index_status(
         ).first()
 
         if not index_job:
-            raise ResourceNotFoundException("索引任务", str(index_id))
+            raise ResourceNotFoundException(i18n.t('validation.resource_not_found', locale, resource="索引任务", id=index_id))
 
         # 获取模型字典并过滤只保留IndexJobInfo需要的字段
         model_dict = index_job.to_dict()
@@ -293,14 +303,14 @@ async def get_index_status(
 
         return IndexCreateResponse(
             data=IndexJobInfo(**job_dict),
-            message="索引状态查询成功"
+            message=i18n.t('index.query_success', locale)
         )
 
     except ResourceNotFoundException:
         raise
     except Exception as e:
         logger.error(f"查询索引状态失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"查询索引状态失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.query_failed', locale) + f": {str(e)}")
 
 
 @router.get("/list", response_model=IndexListResponse, summary="索引列表")
@@ -308,7 +318,8 @@ async def get_index_list(
     status: Optional[JobStatus] = None,
     limit: int = 10,
     offset: int = 0,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     获取索引任务列表
@@ -350,18 +361,19 @@ async def get_index_list(
                 "limit": limit,
                 "offset": offset
             },
-            message="获取索引列表成功"
+            message=i18n.t('index.list_success', locale)
         )
 
     except Exception as e:
         logger.error(f"获取索引列表失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"获取索引列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.list_failed', locale) + f": {str(e)}")
 
 
 @router.delete("/{index_id}", response_model=SuccessResponse, summary="删除索引")
 async def delete_index(
     index_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     删除索引任务和相关数据
@@ -377,13 +389,13 @@ async def delete_index(
         ).first()
 
         if not index_job:
-            raise ResourceNotFoundException("索引任务", str(index_id))
+            raise ResourceNotFoundException(i18n.t('validation.resource_not_found', locale, resource="索引任务", id=index_id))
 
         folder_path = index_job.folder_path
 
         # 如果任务正在运行，标记为失败
         if index_job.status == get_enum_value(JobStatus.PROCESSING):
-            index_job.fail_job("任务被手动删除")
+            index_job.fail_job(i18n.t('index.task_stopped_manually_delete', locale))
             logger.info(f"停止正在运行的索引任务: id={index_id}")
 
         # 删除相关的文件索引记录
@@ -437,20 +449,21 @@ async def delete_index(
                 "deleted_chunk_count": chunk_deleted,
                 "folder_path": folder_path
             },
-            message="索引删除成功"
+            message=i18n.t('index.delete_complete', locale)
         )
 
     except ResourceNotFoundException:
         raise
     except Exception as e:
         logger.error(f"删除索引失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"删除索引失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.delete_failed', locale) + f": {str(e)}")
 
 
 @router.post("/{index_id}/stop", response_model=SuccessResponse, summary="停止索引")
 async def stop_index(
     index_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     停止正在运行的索引任务
@@ -466,20 +479,20 @@ async def stop_index(
         ).first()
 
         if not index_job:
-            raise ResourceNotFoundException("索引任务", str(index_id))
+            raise ResourceNotFoundException(i18n.t('validation.resource_not_found', locale, resource="索引任务", id=index_id))
 
         if index_job.status != get_enum_value(JobStatus.PROCESSING):
-            raise ValidationException("只能停止正在运行的索引任务")
+            raise ValidationException(i18n.t('index.task_not_running', locale))
 
         # 调用索引服务的停止方法
         index_service = get_file_index_service()
         stop_result = index_service.stop_indexing(index_id)
 
         if not stop_result.get('success', False):
-            raise HTTPException(status_code=500, detail=stop_result.get('error', '停止索引任务失败'))
+            raise HTTPException(status_code=500, detail=stop_result.get('error', i18n.t('index.task_stop_failed', locale)))
 
         # 标记任务为失败
-        index_job.fail_job("任务被手动停止")
+        index_job.fail_job(i18n.t('index.task_stopped_manually', locale))
         db.commit()
 
         logger.info(f"索引任务已停止: id={index_id}")
@@ -490,20 +503,21 @@ async def stop_index(
                 "processed_files": index_job.processed_files,
                 "total_files": index_job.total_files
             },
-            message="索引任务已停止"
+            message=i18n.t('index.task_stopped', locale)
         )
 
     except (ResourceNotFoundException, ValidationException):
         raise
     except Exception as e:
         logger.error(f"停止索引任务失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"停止索引任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.task_stop_failed', locale) + f": {str(e)}")
 
 
 @router.post("/backup", response_model=SuccessResponse, summary="备份索引")
 async def backup_index(
     backup_name: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     备份当前索引
@@ -522,14 +536,14 @@ async def backup_index(
         if backup_result['success']:
             return SuccessResponse(
                 data=backup_result,
-                message="索引备份成功"
+                message=i18n.t('index.backup_success', locale)
             )
         else:
-            raise HTTPException(status_code=500, detail="索引备份失败")
+            raise HTTPException(status_code=500, detail=i18n.t('index.backup_failed', locale))
 
     except Exception as e:
         logger.error(f"备份索引失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"备份索引失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.backup_failed', locale) + f": {str(e)}")
 
 
 @router.get("/files", summary="已索引文件列表")
@@ -539,7 +553,8 @@ async def get_indexed_files(
     index_status: Optional[str] = None,
     limit: int = 20,
     offset: int = 0,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     获取已索引的文件列表
@@ -585,18 +600,19 @@ async def get_indexed_files(
                 "limit": limit,
                 "offset": offset
             },
-            "message": "获取已索引文件成功"
+            "message": i18n.t('index.files_list_success', locale)
         }
 
     except Exception as e:
         logger.error(f"获取已索引文件失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"获取已索引文件失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.files_list_failed', locale) + f": {str(e)}")
 
 
 @router.delete("/files/{file_id}", response_model=SuccessResponse, summary="删除文件索引")
 async def delete_file_index(
     file_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     从索引中删除单个文件
@@ -612,7 +628,7 @@ async def delete_file_index(
         ).first()
 
         if not file_model:
-            raise ResourceNotFoundException("文件", str(file_id))
+            raise ResourceNotFoundException(i18n.t('validation.resource_not_found', locale, resource="文件", id=file_id))
 
         # 从索引服务中删除
         index_service = get_file_index_service()
@@ -628,16 +644,16 @@ async def delete_file_index(
                     "deleted_file_id": file_id,
                     "file_path": file_model.file_path
                 },
-                message="文件索引删除成功"
+                message=i18n.t('index.file_delete_success', locale)
             )
         else:
-            raise HTTPException(status_code=500, detail="从索引中删除文件失败")
+            raise HTTPException(status_code=500, detail=i18n.t('file.delete_from_index_failed', locale))
 
     except ResourceNotFoundException:
         raise
     except Exception as e:
         logger.error(f"删除文件索引失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"删除文件索引失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('index.file_delete_failed', locale) + f": {str(e)}")
 
 
 async def run_full_index_task(

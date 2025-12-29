@@ -38,7 +38,7 @@
             <span class="score-text">{{ percent }}%</span>
           </template>
         </a-progress>
-        <div class="score-label">匹配度</div>
+        <div class="score-label">{{ t('searchResult.matchDegree') }}</div>
       </div>
     </div>
 
@@ -69,17 +69,18 @@
     <div class="card-actions">
       <a-button type="text" size="small" @click="$emit('open', result)">
         <FolderOpenOutlined />
-        打开
+        {{ t('searchResult.open') }}
       </a-button>
       <a-button type="text" size="small" @click="copyFilePath">
         <CopyOutlined />
-        复制路径
+        {{ t('searchResult.copyPath') }}
       </a-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import type { SearchResult } from '@/types/api'
 import {
@@ -95,6 +96,8 @@ import {
   HddOutlined,
   TagOutlined
 } from '@ant-design/icons-vue'
+
+const { t } = useI18n()
 
 // Props
 interface Props {
@@ -118,20 +121,19 @@ const getScoreColor = (score: number) => {
 
 const getMatchTypeLabel = (type: string) => {
   const typeMap: Record<string, string> = {
-    semantic: '语义匹配',
-    fulltext: '全文匹配',
-    hybrid: '混合匹配'
+    semantic: t('searchResult.semanticMatch'),
+    fulltext: t('searchResult.fulltextMatch'),
+    hybrid: t('searchResult.hybridMatch')
   }
   return typeMap[type] || type
 }
 
-
 const copyFilePath = async () => {
   try {
     await navigator.clipboard.writeText(props.result.file_path)
-    message.success('文件路径已复制到剪贴板')
+    message.success(t('searchResult.copySuccess'))
   } catch (error) {
-    message.error('复制失败，请手动复制')
+    message.error(t('searchResult.copyFailed'))
   }
 }
 
@@ -153,15 +155,15 @@ const formatDate = (dateString: string): string => {
     const hours = Math.floor(diff / (1000 * 60 * 60))
     if (hours === 0) {
       const minutes = Math.floor(diff / (1000 * 60))
-      return minutes <= 1 ? '刚刚' : `${minutes}分钟前`
+      return minutes <= 1 ? t('searchResult.justNow') : t('searchResult.minutesAgo', { minutes })
     }
-    return `${hours}小时前`
+    return t('searchResult.hoursAgo', { hours })
   } else if (days === 1) {
-    return '昨天'
+    return t('searchResult.yesterday')
   } else if (days < 7) {
-    return `${days}天前`
+    return t('searchResult.daysAgo', { days })
   } else {
-    return date.toLocaleDateString('zh-CN')
+    return date.toLocaleDateString(t('common.localeCode'))
   }
 }
 </script>

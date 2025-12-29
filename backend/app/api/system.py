@@ -4,20 +4,30 @@
 """
 import psutil
 from datetime import datetime
-from fastapi import APIRouter, Depends
+from typing import Optional
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.database import get_db, get_database_info
 from app.core.logging_config import get_logger
+from app.core.i18n import i18n, get_locale_from_header
 from app.schemas.responses import HealthResponse
 
 router = APIRouter(prefix="/api/system", tags=["系统管理"])
 logger = get_logger(__name__)
 
 
+def get_locale(accept_language: Optional[str] = Header(None)) -> str:
+    """从请求头获取语言设置"""
+    return get_locale_from_header(accept_language)
+
+
 @router.get("/health", response_model=HealthResponse, summary="系统健康检查")
-async def health_check(db: Session = Depends(get_db)):
+async def health_check(
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
+):
     """
     系统健康检查
 
@@ -44,10 +54,10 @@ async def health_check(db: Session = Depends(get_db)):
             logger.warning(f"无法获取AI模型状态: {str(e)}")
             # 提供默认状态
             ai_models_status = {
-                "error": f"AI模型服务不可用: {str(e)}",
-                "bge_m3": {"status": "unknown", "error": "模型服务不可用"},
-                "faster_whisper": {"status": "unknown", "error": "模型服务不可用"},
-                "cn_clip": {"status": "unknown", "error": "模型服务不可用"}
+                "error": i18n.t('system.model_service_unavailable', locale, error=str(e)),
+                "bge_m3": {"status": "unknown", "error": i18n.t('system.model_service_error', locale)},
+                "faster_whisper": {"status": "unknown", "error": i18n.t('system.model_service_error', locale)},
+                "cn_clip": {"status": "unknown", "error": i18n.t('system.model_service_error', locale)}
             }
 
         # 获取真实的索引状态
@@ -129,7 +139,7 @@ async def health_check(db: Session = Depends(get_db)):
 
         return HealthResponse(
             data=health_data,
-            message="系统健康检查完成"
+            message=i18n.t('system.health_check_complete', locale)
         )
 
     except Exception as e:
@@ -140,12 +150,15 @@ async def health_check(db: Session = Depends(get_db)):
                 "error": str(e),
                 "timestamp": datetime.now().isoformat()
             },
-            message="健康检查失败"
+            message=i18n.t('system.health_check_failed', locale)
         )
 
 
 @router.get("/running-status", summary="获取系统运行状态")
-async def get_running_status(db: Session = Depends(get_db)):
+async def get_running_status(
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
+):
     """
     获取系统运行状态
 
@@ -171,7 +184,7 @@ async def get_running_status(db: Session = Depends(get_db)):
         index_count = index_status.get('total_files_indexed', 0)
         data_size = index_status.get('index_size_bytes', 0)
 
-        
+
         # 获取今日搜索次数
         today_searches = 0
         try:
@@ -184,7 +197,7 @@ async def get_running_status(db: Session = Depends(get_db)):
                 func.date(SearchHistoryModel.created_at) == today
             ).count()
         except Exception as e:
-            logger.warning(f"获取今日搜索次数失败: {str(e)}")
+            logger.warning(i18n.t('system.today_searches_failed', locale, error=str(e)))
 
         # 获取最近索引任务完成时间
         last_update = datetime.now()
@@ -199,21 +212,21 @@ async def get_running_status(db: Session = Depends(get_db)):
             if last_completed_job and last_completed_job.completed_at:
                 last_update = last_completed_job.completed_at
         except Exception as e:
-            logger.warning(f"获取最后更新时间失败: {str(e)}")
+            logger.warning(i18n.t('system.last_update_failed', locale, error=str(e)))
 
         # 判断系统状态
-        system_status = "正常"
+        system_status = i18n.t('system.normal', locale)
         system_color = "green"
 
         # 检查数据库连接
         db_status = get_database_info()
         if db_status["status"] != "connected":
-            system_status = "异常"
+            system_status = i18n.t('system.abnormal', locale)
             system_color = "red"
 
         # 检查是否有索引
         if index_count == 0:
-            system_status = "待索引"
+            system_status = i18n.t('system.waiting_index', locale)
             system_color = "orange"
 
         response_data = {
@@ -238,7 +251,7 @@ async def get_running_status(db: Session = Depends(get_db)):
             "success": False,
             "error": {
                 "code": "SYSTEM_STATUS_ERROR",
-                "message": f"获取系统运行状态失败: {str(e)}",
+                "message": i18n.t('system.status_get_failed', locale, error=str(e)),
                 "type": "SystemError"
             }
         }

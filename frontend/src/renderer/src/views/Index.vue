@@ -1,11 +1,11 @@
 <template>
   <div class="index-container">
     <div class="index-header">
-      <h2>索引管理</h2>
-      <p>管理文件索引，监控索引任务状态</p>
+      <h2>{{ t('index.title') }}</h2>
+      <p>{{ t('index.subtitle') }}</p>
       <a-button type="primary" @click="showAddFolderModal = true">
         <PlusOutlined />
-        添加文件夹
+        {{ t('index.addPath') }}
       </a-button>
     </div>
 
@@ -15,17 +15,17 @@
         <a-col :span="6">
           <a-card class="stats-card">
             <a-statistic
-              title="已索引文件"
+              :title="t('index.indexed')"
               :value="stats.totalFiles"
               :precision="0"
-              suffix="个"
+              :suffix="t('status.count')"
             />
           </a-card>
         </a-col>
         <a-col :span="6">
           <a-card class="stats-card">
             <a-statistic
-              title="索引大小"
+              :title="t('index.totalSize')"
               :value="formattedIndexSize.value"
               :precision="2"
               :suffix="formattedIndexSize.unit"
@@ -35,17 +35,17 @@
         <a-col :span="6">
           <a-card class="stats-card">
             <a-statistic
-              title="活跃任务"
+              :title="t('index.activeTasks')"
               :value="stats.activeTasks"
               :precision="0"
-              suffix="个"
+              :suffix="t('status.count')"
             />
           </a-card>
         </a-col>
         <a-col :span="6">
           <a-card class="stats-card">
             <a-statistic
-              title="成功率"
+              :title="t('index.successRate')"
               :value="stats.successRate"
               :precision="1"
               suffix="%"
@@ -99,20 +99,20 @@
         <template #action="{ record }">
           <a-dropdown :trigger="['click']" placement="bottomRight">
             <a-button type="link" size="small">
-              操作 <DownOutlined />
+              {{ t('common.select') }} <DownOutlined />
             </a-button>
             <template #overlay>
               <a-menu>
                 <a-menu-item @click="viewIndexDetails(record)">
                   <EyeOutlined />
-                  详情
+                  {{ t('index.indexMetadata') }}
                 </a-menu-item>
                 <a-menu-item
                   v-if="record.status === 'completed'"
                   @click="smartUpdate(record)"
                 >
                   <SyncOutlined />
-                  智能更新
+                  {{ t('index.update') }}
                 </a-menu-item>
                 <a-menu-item
                   v-if="record.status === 'processing'"
@@ -120,7 +120,7 @@
                   danger
                 >
                   <StopOutlined />
-                  停止
+                  {{ t('index.pause') }}
                 </a-menu-item>
                 <a-menu-divider />
                 <a-menu-item
@@ -128,7 +128,7 @@
                   danger
                 >
                   <DeleteOutlined />
-                  删除
+                  {{ t('index.delete') }}
                 </a-menu-item>
               </a-menu>
             </template>
@@ -140,29 +140,29 @@
     <!-- 添加文件夹对话框 -->
     <a-modal
       v-model:open="showAddFolderModal"
-      title="添加索引文件夹"
+      :title="t('index.indexPaths')"
       width="600px"
       @ok="handleAddFolder"
     >
       <a-form layout="vertical">
-        <a-form-item label="选择文件夹">
+        <a-form-item :label="t('index.includePaths')">
           <a-input
             v-model:value="newFolder.path"
-            placeholder="点击浏览选择文件夹"
+            :placeholder="t('index.folder')"
             readonly
           >
             <template #suffix>
-              <a-button type="link" @click="browseFolder">浏览</a-button>
+              <a-button type="link" @click="browseFolder">{{ t('common.open') }}</a-button>
             </template>
           </a-input>
         </a-form-item>
 
-        <a-form-item label="文件类型">
+        <a-form-item :label="t('search.fileType')">
           <a-checkbox-group v-model:value="newFolder.fileTypes">
-            <a-checkbox value="document">文档 (txt, markdown, pdf, xls/xlsx, ppt/pptx, doc/docx)</a-checkbox>
-            <a-checkbox value="audio">音频 (mp3, wav)</a-checkbox>
-            <a-checkbox value="video">视频 (mp4, avi)</a-checkbox>
-            <a-checkbox value="image">图片 (png, jpg, jpeg)</a-checkbox>
+            <a-checkbox value="document">{{ t('fileType.document') }} (txt, markdown, pdf, xls/xlsx, ppt/pptx, doc/docx)</a-checkbox>
+            <a-checkbox value="audio">{{ t('fileType.audio') }} (mp3, wav)</a-checkbox>
+            <a-checkbox value="video">{{ t('fileType.video') }} (mp4, avi)</a-checkbox>
+            <a-checkbox value="image">{{ t('fileType.image') }} (png, jpg, jpeg)</a-checkbox>
           </a-checkbox-group>
         </a-form-item>
       </a-form>
@@ -171,43 +171,43 @@
     <!-- 索引详情对话框 -->
     <a-modal
       v-model:open="showDetailsModal"
-      title="索引详情"
+      :title="t('index.indexMetadata')"
       width="800px"
       :footer="null"
     >
       <div v-if="selectedIndex" class="index-details">
         <a-descriptions :column="2" bordered>
-          <a-descriptions-item label="文件夹路径">
+          <a-descriptions-item :label="t('index.folder')">
             {{ selectedIndex.folder_path }}
           </a-descriptions-item>
-          <a-descriptions-item label="状态">
+          <a-descriptions-item :label="t('index.status')">
             <a-tag :color="getStatusColor(selectedIndex.status)">
               {{ getStatusLabel(selectedIndex.status) }}
             </a-tag>
           </a-descriptions-item>
-          <a-descriptions-item label="总文件数">
+          <a-descriptions-item :label="t('index.fileCount')">
             {{ selectedIndex.total_files || 0 }}
           </a-descriptions-item>
-          <a-descriptions-item label="已处理文件">
+          <a-descriptions-item :label="t('index.indexed')">
             {{ selectedIndex.processed_files || 0 }}
           </a-descriptions-item>
-          <a-descriptions-item label="错误数量">
+          <a-descriptions-item label="Error Count">
             {{ selectedIndex.error_count || 0 }}
           </a-descriptions-item>
-          <a-descriptions-item label="创建时间">
+          <a-descriptions-item :label="t('index.createdAt')">
             {{ selectedIndex.started_at ? formatDate(selectedIndex.started_at) : '-' }}
           </a-descriptions-item>
-          <a-descriptions-item label="完成时间">
+          <a-descriptions-item :label="t('index.lastIndexed')">
             {{ selectedIndex.completed_at ? formatDate(selectedIndex.completed_at) : '-' }}
           </a-descriptions-item>
-          <a-descriptions-item label="处理时间">
+          <a-descriptions-item :label="t('index.processingTime')">
             {{ selectedIndex.completed_at && selectedIndex.started_at ? calculateDuration(selectedIndex.started_at, selectedIndex.completed_at) : '-' }}
           </a-descriptions-item>
         </a-descriptions>
 
         <!-- 错误信息 -->
         <div v-if="selectedIndex.error_message" class="error-section">
-          <h4>错误信息</h4>
+          <h4>{{ t('message.error') }}</h4>
           <a-alert
             :message="selectedIndex.error_message"
             type="error"
@@ -233,6 +233,10 @@ import {
 } from '@ant-design/icons-vue'
 import { IndexService } from '@/api/index'
 import { getIndexStatusInfo, formatIndexSize } from '@/utils/indexUtils'
+import { useI18n } from 'vue-i18n'
+
+// 国际化
+const { t } = useI18n()
 
 // 存储 electronAPI 引用，避免生命周期问题
 let electronAPI: any = null
@@ -276,48 +280,48 @@ const loading = ref(false)
 
 
 // 表格配置
-const indexColumns = [
+const indexColumns = computed(() => [
   {
-    title: '文件夹路径',
+    title: t('index.folder'),
     dataIndex: 'folder_path',
     key: 'folder_path',
     ellipsis: true,
     slots: { customRender: 'folder_path' }
   },
   {
-    title: '状态',
+    title: t('index.status'),
     dataIndex: 'status',
     key: 'status',
     slots: { customRender: 'status' }
   },
   {
-    title: '进度',
+    title: t('index.progress'),
     dataIndex: 'progress',
     key: 'progress',
     slots: { customRender: 'progress' }
   },
   {
-    title: '文件数',
+    title: t('index.fileCount'),
     dataIndex: 'total_files',
     key: 'total_files'
   },
   {
-    title: '错误数',
+    title: 'Error Count',
     dataIndex: 'error_count',
     key: 'error_count'
   },
   {
-    title: '创建时间',
+    title: t('index.createdAt'),
     dataIndex: 'started_at',
     key: 'started_at',
     customRender: ({ text }) => text ? formatDate(text) : '-'
   },
   {
-    title: '操作',
+    title: t('common.select'),
     key: 'action',
     slots: { customRender: 'action' }
   }
-]
+])
 
 const pagination = reactive({
   current: 1,
@@ -327,7 +331,7 @@ const pagination = reactive({
   showQuickJumper: true,
   pageSizeOptions: ['5', '10', '20', '50'],
   showTotal: (total: number, range: [number, number]) =>
-    `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
+    `${t('search.results')} ${range[0]}-${range[1]}，${t('index.total')} ${total}`
 })
 
 // 方法
@@ -351,7 +355,7 @@ const calculateDuration = (start: string, end: string) => {
   const duration = Math.floor((endTime - startTime) / 1000)
   const minutes = Math.floor(duration / 60)
   const seconds = duration % 60
-  return `${minutes}分${seconds}秒`
+  return t('index.durationMinutes', { minutes, seconds })
 }
 
 // 数据加载方法
@@ -380,7 +384,7 @@ const loadIndexList = async () => {
     }
   } catch (error) {
     console.error('加载索引列表失败:', error)
-    message.error('加载索引列表失败')
+    message.error(t('error.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -401,7 +405,7 @@ const browseFolder = async () => {
 
     // 检查是否在 Electron 环境中
     if (!api || typeof api.selectFolder !== 'function') {
-      message.warning('请在桌面应用中使用文件夹选择功能')
+      message.warning(t('index.indexPaths'))
       // 降级到默认路径
       newFolder.path = 'D:\\Work\\Documents'
       return
@@ -412,16 +416,16 @@ const browseFolder = async () => {
 
     if (result.success && result.folderPath) {
       newFolder.path = result.folderPath
-      message.success(`已选择文件夹: ${result.folderPath}`)
+      message.success(`${t('index.folder')}: ${result.folderPath}`)
     } else if (result.canceled) {
       // 用户取消选择，不显示错误信息
-      console.log('用户取消了文件夹选择')
+      console.log('User cancelled folder selection')
     } else {
-      message.error(result.error || '选择文件夹失败')
+      message.error(result.error || t('error.loadFailed'))
     }
   } catch (error) {
     console.error('调用文件夹选择失败:', error)
-    message.error('文件夹选择功能不可用')
+    message.error(t('error.operationFailed'))
     // 降级到默认路径
     newFolder.path = 'D:\\Work\\Documents'
   }
@@ -429,7 +433,7 @@ const browseFolder = async () => {
 
 const handleAddFolder = async () => {
   if (!newFolder.path) {
-    message.error('请选择文件夹路径')
+    message.error(t('validation.required'))
     return
   }
 
@@ -442,7 +446,7 @@ const handleAddFolder = async () => {
 
     if (response.success) {
       showAddFolderModal.value = false
-      message.success('索引任务已创建')
+      message.success(t('index.indexCreated'))
 
       // 刷新系统状态和索引列表
       await refreshData()
@@ -451,11 +455,11 @@ const handleAddFolder = async () => {
       newFolder.path = ''
       newFolder.fileTypes = ['document', 'audio', 'video', 'image']
     } else {
-      message.error(response.message || '创建索引失败')
+      message.error(response.message || t('error.indexFailed'))
     }
   } catch (error) {
     console.error('创建索引失败:', error)
-    message.error('创建索引失败，请重试')
+    message.error(t('error.indexFailed'))
   }
 }
 
@@ -473,14 +477,14 @@ const smartUpdate = async (record: any) => {
     })
 
     if (response.success) {
-      message.success('索引更新任务已创建')
+      message.success(t('index.indexUpdated'))
       await refreshData() // 刷新系统状态和索引列表
     } else {
-      message.error(response.message || '更新索引失败')
+      message.error(response.message || t('error.updateFailed'))
     }
   } catch (error) {
     console.error('更新索引失败:', error)
-    message.error('更新索引失败，请重试')
+    message.error(t('error.updateFailed'))
   }
 }
 
@@ -489,24 +493,24 @@ const stopIndex = async (record: any) => {
     const response = await IndexService.stopIndex(record.index_id || record.id)
 
     if (response.success) {
-      message.success('索引任务已停止')
+      message.success(t('index.indexPaused'))
       await refreshData() // 刷新系统状态和索引列表
     } else {
-      message.error(response.message || '停止索引失败')
+      message.error(response.message || t('error.operationFailed'))
     }
   } catch (error) {
     console.error('停止索引失败:', error)
-    message.error('停止索引失败，请重试')
+    message.error(t('error.operationFailed'))
   }
 }
 
 const confirmDelete = (record: any) => {
   Modal.confirm({
-    title: '确定要删除这个索引吗？',
-    content: `删除索引"${record.folder_path}"后，需要重新创建才能搜索该文件夹的内容。`,
-    okText: '删除',
+    title: t('message.confirmDelete'),
+    content: `${t('index.confirmDelete')} "${record.folder_path}"`,
+    okText: t('common.delete'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     onOk() {
       deleteIndex(record)
     }
@@ -518,7 +522,7 @@ const deleteIndex = async (record: any) => {
     const response = await IndexService.deleteIndex(record.index_id || record.id)
 
     if (response.success) {
-      message.success('索引已删除')
+      message.success(t('index.indexDeleted'))
       await refreshData() // 刷新系统状态和索引列表
 
       // 如果删除后当前页没有数据了，返回第一页
@@ -527,11 +531,11 @@ const deleteIndex = async (record: any) => {
         await loadIndexList()
       }
     } else {
-      message.error(response.message || '删除索引失败')
+      message.error(response.message || t('error.deleteFailed'))
     }
   } catch (error) {
     console.error('删除索引失败:', error)
-    message.error('删除索引失败，请重试')
+    message.error(t('error.deleteFailed'))
   }
 }
 

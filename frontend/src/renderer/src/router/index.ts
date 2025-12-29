@@ -9,7 +9,7 @@ const router = createRouter({
       name: 'Home',
       component: Home,
       meta: {
-        title: '小遥搜索 XiaoyaoSearch'
+        titleKey: 'app.title'
       }
     },
     {
@@ -17,7 +17,7 @@ const router = createRouter({
       name: 'Settings',
       component: () => import('@/views/Settings.vue'),
       meta: {
-        title: '设置 - 小遥搜索'
+        titleKey: 'settings.title'
       }
     },
     {
@@ -25,7 +25,7 @@ const router = createRouter({
       name: 'Index',
       component: () => import('@/views/Index.vue'),
       meta: {
-        title: '索引管理 - 小遥搜索'
+        titleKey: 'index.title'
       }
     },
     {
@@ -33,7 +33,7 @@ const router = createRouter({
       name: 'Help',
       component: () => import('@/views/Help.vue'),
       meta: {
-        title: '帮助 - 小遥搜索'
+        titleKey: 'help.title'
       }
     },
     {
@@ -41,7 +41,7 @@ const router = createRouter({
       name: 'About',
       component: () => import('@/views/About.vue'),
       meta: {
-        title: '关于作者 - 小遥搜索'
+        titleKey: 'about.title'
       }
     }
   ]
@@ -50,9 +50,8 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   // 设置页面标题
-  if (to.meta?.title) {
-    document.title = to.meta.title as string
-  }
+  // 注意：由于路由守卫在i18n初始化之前执行，这里暂时使用硬编码
+  // 实际标题更新会在i18n初始化后通过watch监听路由变化来更新
   next()
 })
 

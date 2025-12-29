@@ -1,44 +1,44 @@
 <template>
   <div class="help-container">
     <div class="help-header">
-      <h2>帮助与关于</h2>
-      <p>了解如何使用小遥搜索，解决常见问题</p>
+      <h2>{{ t('help.title') }}</h2>
+      <p>{{ t('help.subtitle') }}</p>
     </div>
 
     <a-tabs v-model:activeKey="activeTab" type="card" class="help-tabs">
       <!-- 快速入门 -->
-      <a-tab-pane key="guide" tab="快速入门">
+      <a-tab-pane key="guide" :tab="t('help.tabGuide')">
         <div class="guide-section">
           <div class="guide-step">
             <div class="step-number">1</div>
             <div class="step-content">
-              <h3>配置AI模型</h3>
-              <p>进入设置页面配置本地AI模型服务，确保所有服务正常运行</p>
-              <a-button type="primary">前往设置</a-button>
+              <h3>{{ t('help.guide.step1.title') }}</h3>
+              <p>{{ t('help.guide.step1.description') }}</p>
+              <a-button type="primary">{{ t('help.guide.step1.button') }}</a-button>
             </div>
           </div>
 
           <div class="guide-step">
             <div class="step-number">2</div>
             <div class="step-content">
-              <h3>添加索引文件夹</h3>
-              <p>进入索引管理页面，添加需要搜索的文件夹并创建文件索引</p>
-              <a-button type="primary">前往索引</a-button>
+              <h3>{{ t('help.guide.step2.title') }}</h3>
+              <p>{{ t('help.guide.step2.description') }}</p>
+              <a-button type="primary">{{ t('help.guide.step2.button') }}</a-button>
             </div>
           </div>
 
           <div class="guide-step">
             <div class="step-number">3</div>
             <div class="step-content">
-              <h3>开始多模态搜索</h3>
-              <p>在主页面使用语音、文本、图片多种方式进行智能搜索</p>
-              <a-button type="primary">开始搜索</a-button>
+              <h3>{{ t('help.guide.step3.title') }}</h3>
+              <p>{{ t('help.guide.step3.description') }}</p>
+              <a-button type="primary">{{ t('help.guide.step3.button') }}</a-button>
             </div>
           </div>
         </div>
 
         <div class="feature-highlights">
-          <h3>核心功能介绍</h3>
+          <h3>{{ t('help.features.title') }}</h3>
           <a-row :gutter="16">
             <a-col :span="8">
               <a-card class="feature-card">
@@ -47,7 +47,7 @@
                     <AudioOutlined />
                   </div>
                 </template>
-                <a-card-meta title="语音搜索" description="支持最长30秒的语音输入，FastWhisper本地识别" />
+                <a-card-meta :title="t('help.features.voice.title')" :description="t('help.features.voice.description')" />
               </a-card>
             </a-col>
             <a-col :span="8">
@@ -57,7 +57,7 @@
                     <PictureOutlined />
                   </div>
                 </template>
-                <a-card-meta title="图片搜索" description="上传PNG/JPG图片，CN-CLIP模型理解内容" />
+                <a-card-meta :title="t('help.features.image.title')" :description="t('help.features.image.description')" />
               </a-card>
             </a-col>
             <a-col :span="8">
@@ -67,7 +67,7 @@
                     <RobotOutlined />
                   </div>
                 </template>
-                <a-card-meta title="语义理解" description="BGE-M3向量嵌入 + Ollama大语言模型理解" />
+                <a-card-meta :title="t('help.features.semantic.title')" :description="t('help.features.semantic.description')" />
               </a-card>
             </a-col>
           </a-row>
@@ -75,81 +75,81 @@
       </a-tab-pane>
 
       <!-- 使用教程 -->
-      <a-tab-pane key="tutorial" tab="使用教程">
+      <a-tab-pane key="tutorial" :tab="t('help.tabTutorial')">
         <div class="tutorial-section">
           <a-collapse v-model:activeKey="tutorialActiveKeys" :bordered="false">
-            <a-collapse-panel key="1" header="如何配置本地AI模型？">
+            <a-collapse-panel key="1" :header="t('help.tutorial.panel1.header')">
               <div class="tutorial-content">
-                <h4>本地模型配置步骤：</h4>
+                <h4>{{ t('help.tutorial.panel1.content.stepsTitle') }}</h4>
                 <ol>
-                  <li><strong>语音识别模型</strong>：设置 → 语音设置 → 选择FastWhisper模型版本</li>
-                  <li><strong>大语言模型</strong>：设置 → 大语言模型 → 配置Ollama服务地址</li>
-                  <li><strong>视觉理解模型</strong>：设置 → 视觉模型 → 选择CN-CLIP模型</li>
-                  <li><strong>文本内嵌模型</strong>：设置 → 内嵌模型 → 选择BGE-M3模型</li>
-                  <li><strong>设备选择</strong>：根据硬件选择CPU或CUDA加速</li>
+                  <li><strong>{{ t('help.tutorial.panel1.content.step1.label') }}</strong>{{ t('help.tutorial.panel1.content.step1.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel1.content.step2.label') }}</strong>{{ t('help.tutorial.panel1.content.step2.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel1.content.step3.label') }}</strong>{{ t('help.tutorial.panel1.content.step3.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel1.content.step4.label') }}</strong>{{ t('help.tutorial.panel1.content.step4.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel1.content.step5.label') }}</strong>{{ t('help.tutorial.panel1.content.step5.text') }}</li>
                 </ol>
                 <div class="tip-box">
                   <BulbOutlined />
-                  <span>建议：首次使用时建议先用CPU模式，确保功能正常后再启用GPU加速</span>
+                  <span>{{ t('help.tutorial.panel1.content.tip') }}</span>
                 </div>
               </div>
             </a-collapse-panel>
 
-            <a-collapse-panel key="2" header="如何进行多模态搜索？">
+            <a-collapse-panel key="2" :header="t('help.tutorial.panel2.header')">
               <div class="tutorial-content">
-                <h4>多模态搜索方式：</h4>
+                <h4>{{ t('help.tutorial.panel2.content.modesTitle') }}</h4>
                 <ul>
-                  <li><strong>文本搜索</strong>：直接在搜索框输入关键词，支持自然语言</li>
-                  <li><strong>语音搜索</strong>：点击麦克风按钮，说出搜索内容（30秒内）</li>
-                  <li><strong>图片搜索</strong>：上传PNG/JPG图片，AI理解图片内容后搜索相关图片</li>
+                  <li><strong>{{ t('help.tutorial.panel2.content.mode1.label') }}</strong>{{ t('help.tutorial.panel2.content.mode1.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel2.content.mode2.label') }}</strong>{{ t('help.tutorial.panel2.content.mode2.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel2.content.mode3.label') }}</strong>{{ t('help.tutorial.panel2.content.mode3.text') }}</li>
                 </ul>
-                <h4>支持的文件类型：</h4>
+                <h4>{{ t('help.tutorial.panel2.content.fileTypesTitle') }}</h4>
                 <ul>
-                  <li><strong>文档</strong>：txt, markdown, pdf, xls/xlsx, ppt/pptx, doc/docx</li>
-                  <li><strong>音频</strong>：mp3, wav</li>
-                  <li><strong>视频</strong>：mp4, avi</li>
-                  <li><strong>图片</strong>：png, jpg, jpeg</li>
+                  <li><strong>{{ t('help.tutorial.panel2.content.fileType1.label') }}</strong>{{ t('help.tutorial.panel2.content.fileType1.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel2.content.fileType2.label') }}</strong>{{ t('help.tutorial.panel2.content.fileType2.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel2.content.fileType3.label') }}</strong>{{ t('help.tutorial.panel2.content.fileType3.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel2.content.fileType4.label') }}</strong>{{ t('help.tutorial.panel2.content.fileType4.text') }}</li>
                 </ul>
               </div>
               <div class="tip-box">
                   <BulbOutlined />
-                  <span>注意：当前版本，图片搜索仅支持图搜图</span>
+                  <span>{{ t('help.tutorial.panel2.content.note') }}</span>
                 </div>
             </a-collapse-panel>
 
-            <a-collapse-panel key="3" header="如何管理文件索引？">
+            <a-collapse-panel key="3" :header="t('help.tutorial.panel3.header')">
               <div class="tutorial-content">
-                <h4>索引管理指南：</h4>
+                <h4>{{ t('help.tutorial.panel3.content.guideTitle') }}</h4>
                 <ul>
-                  <li><strong>添加文件夹</strong>：索引管理 → 添加文件夹 → 选择文件类型</li>
-                  <li><strong>监控进度</strong>：查看索引状态、进度、错误信息</li>
-                  <li><strong>智能更新</strong>：自动判断是否需要增量更新或完全重建</li>
-                  <li><strong>查看详情</strong>：了解索引统计信息、处理时间、错误日志</li>
+                  <li><strong>{{ t('help.tutorial.panel3.content.guide1.label') }}</strong>{{ t('help.tutorial.panel3.content.guide1.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel3.content.guide2.label') }}</strong>{{ t('help.tutorial.panel3.content.guide2.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel3.content.guide3.label') }}</strong>{{ t('help.tutorial.panel3.content.guide3.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel3.content.guide4.label') }}</strong>{{ t('help.tutorial.panel3.content.guide4.text') }}</li>
                 </ul>
-                <h4>索引状态说明：</h4>
+                <h4>{{ t('help.tutorial.panel3.content.statusTitle') }}</h4>
                 <ul>
-                  <li><strong>等待中</strong>：索引任务已创建，等待处理</li>
-                  <li><strong>处理中</strong>：正在扫描文件和建立索引</li>
-                  <li><strong>已完成</strong>：索引构建完成，可以搜索</li>
-                  <li><strong>失败</strong>：索引过程中出现错误</li>
+                  <li><strong>{{ t('help.tutorial.panel3.content.status1.label') }}</strong>{{ t('help.tutorial.panel3.content.status1.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel3.content.status2.label') }}</strong>{{ t('help.tutorial.panel3.content.status2.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel3.content.status3.label') }}</strong>{{ t('help.tutorial.panel3.content.status3.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel3.content.status4.label') }}</strong>{{ t('help.tutorial.panel3.content.status4.text') }}</li>
                 </ul>
               </div>
             </a-collapse-panel>
 
-            <a-collapse-panel key="4" header="搜索技巧与优化">
+            <a-collapse-panel key="4" :header="t('help.tutorial.panel4.header')">
               <div class="tutorial-content">
-                <h4>搜索优化技巧：</h4>
+                <h4>{{ t('help.tutorial.panel4.content.tipsTitle') }}</h4>
                 <ul>
-                  <li><strong>自然语言</strong>：使用日常语言描述要搜索的内容</li>
-                  <li><strong>关键词组合</strong>：使用多个相关关键词提高准确性</li>
-                  <li><strong>文件类型过滤</strong>：指定特定文件类型缩小搜索范围</li>
-                  <li><strong>相似度调节</strong>：设置 → 通用设置 → 调整相似度阈值</li>
+                  <li><strong>{{ t('help.tutorial.panel4.content.tip1.label') }}</strong>{{ t('help.tutorial.panel4.content.tip1.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel4.content.tip2.label') }}</strong>{{ t('help.tutorial.panel4.content.tip2.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel4.content.tip3.label') }}</strong>{{ t('help.tutorial.panel4.content.tip3.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel4.content.tip4.label') }}</strong>{{ t('help.tutorial.panel4.content.tip4.text') }}</li>
                 </ul>
-                <h4>结果理解：</h4>
+                <h4>{{ t('help.tutorial.panel4.content.resultsTitle') }}</h4>
                 <ul>
-                  <li><strong>相关度分数</strong>：显示文件与查询的匹配程度</li>
-                  <li><strong>内容摘要</strong>：展示文件中的相关内容片段</li>
-                  <li><strong>文件路径</strong>：显示文件完整路径便于定位</li>
+                  <li><strong>{{ t('help.tutorial.panel4.content.result1.label') }}</strong>{{ t('help.tutorial.panel4.content.result1.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel4.content.result2.label') }}</strong>{{ t('help.tutorial.panel4.content.result2.text') }}</li>
+                  <li><strong>{{ t('help.tutorial.panel4.content.result3.label') }}</strong>{{ t('help.tutorial.panel4.content.result3.text') }}</li>
                 </ul>
               </div>
             </a-collapse-panel>
@@ -158,99 +158,99 @@
       </a-tab-pane>
 
       <!-- 常见问题 -->
-      <a-tab-pane key="faq" tab="常见问题">
+      <a-tab-pane key="faq" :tab="t('help.tabFaq')">
         <div class="faq-section">
           <a-collapse v-model:activeKey="faqActiveKeys" :bordered="false">
-            <a-collapse-panel key="1" header="语音识别不工作怎么办？">
+            <a-collapse-panel key="1" :header="t('help.faq.panel1.header')">
               <div class="faq-content">
-                <p><strong>可能的原因：</strong></p>
+                <p><strong>{{ t('help.faq.panel1.content.causesTitle') }}</strong></p>
                 <ul>
-                  <li>FastWhisper模型未正确安装或配置</li>
-                  <li>麦克风权限未授予应用</li>
-                  <li>环境噪音过大影响识别</li>
-                  <li>模型版本与设备不兼容</li>
+                  <li>{{ t('help.faq.panel1.content.cause1') }}</li>
+                  <li>{{ t('help.faq.panel1.content.cause2') }}</li>
+                  <li>{{ t('help.faq.panel1.content.cause3') }}</li>
+                  <li>{{ t('help.faq.panel1.content.cause4') }}</li>
                 </ul>
-                <p><strong>解决方法：</strong></p>
+                <p><strong>{{ t('help.faq.panel1.content.solutionsTitle') }}</strong></p>
                 <ul>
-                  <li>设置 → 语音设置 → 检查可用性</li>
-                  <li>尝试不同的模型版本（tiny/base/small）</li>
-                  <li>在安静环境下进行语音输入</li>
-                  <li>检查系统麦克风权限设置</li>
+                  <li>{{ t('help.faq.panel1.content.solution1') }}</li>
+                  <li>{{ t('help.faq.panel1.content.solution2') }}</li>
+                  <li>{{ t('help.faq.panel1.content.solution3') }}</li>
+                  <li>{{ t('help.faq.panel1.content.solution4') }}</li>
                 </ul>
               </div>
             </a-collapse-panel>
 
-            <a-collapse-panel key="2" header="Ollama连接失败？">
+            <a-collapse-panel key="2" :header="t('help.faq.panel2.header')">
               <div class="faq-content">
-                <p><strong>检查步骤：</strong></p>
+                <p><strong>{{ t('help.faq.panel2.content.checkTitle') }}</strong></p>
                 <ul>
-                  <li>确认Ollama服务已启动：http://localhost:11434</li>
-                  <li>检查模型是否已安装：ollama list</li>
-                  <li>验证服务地址配置是否正确</li>
-                  <li>测试网络连接和防火墙设置</li>
+                  <li>{{ t('help.faq.panel2.content.check1') }}</li>
+                  <li>{{ t('help.faq.panel2.content.check2') }}</li>
+                  <li>{{ t('help.faq.panel2.content.check3') }}</li>
+                  <li>{{ t('help.faq.panel2.content.check4') }}</li>
                 </ul>
-                <p><strong>常用命令：</strong></p>
+                <p><strong>{{ t('help.faq.panel2.content.commandsTitle') }}</strong></p>
                 <ul>
-                  <li>安装模型：<code>ollama pull qwen2.5:1.5b</code></li>
-                  <li>查看模型：<code>ollama list</code></li>
-                  <li>运行模型：<code>ollama run qwen2.5:1.5b</code></li>
+                  <li>{{ t('help.faq.panel2.content.command1') }}<code>ollama pull qwen2.5:1.5b</code></li>
+                  <li>{{ t('help.faq.panel2.content.command2') }}<code>ollama list</code></li>
+                  <li>{{ t('help.faq.panel2.content.command3') }}<code>ollama run qwen2.5:1.5b</code></li>
                 </ul>
               </div>
             </a-collapse-panel>
 
-            <a-collapse-panel key="3" header="图片搜索无结果？">
+            <a-collapse-panel key="3" :header="t('help.faq.panel3.header')">
               <div class="faq-content">
-                <p><strong>可能原因：</strong></p>
+                <p><strong>{{ t('help.faq.panel3.content.reasonsTitle') }}</strong></p>
                 <ul>
-                  <li>CN-CLIP模型未正确加载</li>
-                  <li>图片格式不支持（仅支持PNG/JPG）</li>
-                  <li>图片内容过于复杂或不清晰</li>
-                  <li>索引中没有相关内容的文件</li>
+                  <li>{{ t('help.faq.panel3.content.reason1') }}</li>
+                  <li>{{ t('help.faq.panel3.content.reason2') }}</li>
+                  <li>{{ t('help.faq.panel3.content.reason3') }}</li>
+                  <li>{{ t('help.faq.panel3.content.reason4') }}</li>
                 </ul>
-                <p><strong>优化建议：</strong></p>
+                <p><strong>{{ t('help.faq.panel3.content.tipsTitle') }}</strong></p>
                 <ul>
-                  <li>设置 → 视觉模型 → 检测可用性</li>
-                  <li>使用清晰、内容明确的图片</li>
-                  <li>尝试包含文字或明显特征的图片</li>
-                  <li>确保已索引相关类型的文件</li>
+                  <li>{{ t('help.faq.panel3.content.tip1') }}</li>
+                  <li>{{ t('help.faq.panel3.content.tip2') }}</li>
+                  <li>{{ t('help.faq.panel3.content.tip3') }}</li>
+                  <li>{{ t('help.faq.panel3.content.tip4') }}</li>
                 </ul>
               </div>
             </a-collapse-panel>
 
-            <a-collapse-panel key="4" header="索引构建速度慢？">
+            <a-collapse-panel key="4" :header="t('help.faq.panel4.header')">
               <div class="faq-content">
-                <p><strong>影响因素：</strong></p>
+                <p><strong>{{ t('help.faq.panel4.content.factorsTitle') }}</strong></p>
                 <ul>
-                  <li>文件数量和大小</li>
-                  <li>选择的文件类型</li>
-                  <li>硬件性能（CPU/GPU）</li>
-                  <li>模型加载时间</li>
+                  <li>{{ t('help.faq.panel4.content.factor1') }}</li>
+                  <li>{{ t('help.faq.panel4.content.factor2') }}</li>
+                  <li>{{ t('help.faq.panel4.content.factor3') }}</li>
+                  <li>{{ t('help.faq.panel4.content.factor4') }}</li>
                 </ul>
-                <p><strong>优化方法：</strong></p>
+                <p><strong>{{ t('help.faq.panel4.content.methodsTitle') }}</strong></p>
                 <ul>
-                  <li>分批建立索引，避免一次处理过多文件</li>
-                  <li>选择必要的文件类型，减少处理负担</li>
-                  <li>启用GPU加速（如果有）</li>
-                  <li>在系统空闲时进行大量文件索引</li>
+                  <li>{{ t('help.faq.panel4.content.method1') }}</li>
+                  <li>{{ t('help.faq.panel4.content.method2') }}</li>
+                  <li>{{ t('help.faq.panel4.content.method3') }}</li>
+                  <li>{{ t('help.faq.panel4.content.method4') }}</li>
                 </ul>
               </div>
             </a-collapse-panel>
 
-            <a-collapse-panel key="5" header="搜索结果不准确？">
+            <a-collapse-panel key="5" :header="t('help.faq.panel5.header')">
               <div class="faq-content">
-                <p><strong>改进方法：</strong></p>
+                <p><strong>{{ t('help.faq.panel5.content.improvementsTitle') }}</strong></p>
                 <ul>
-                  <li>使用更具体、更详细的描述</li>
-                  <li>尝试不同的表达方式</li>
-                  <li>调整相似度阈值（设置 → 通用设置）</li>
-                  <li>确保相关文件已正确索引</li>
-                  <li>检查BGE-M3模型是否正常工作</li>
+                  <li>{{ t('help.faq.panel5.content.improvement1') }}</li>
+                  <li>{{ t('help.faq.panel5.content.improvement2') }}</li>
+                  <li>{{ t('help.faq.panel5.content.improvement3') }}</li>
+                  <li>{{ t('help.faq.panel5.content.improvement4') }}</li>
+                  <li>{{ t('help.faq.panel5.content.improvement5') }}</li>
                 </ul>
-                <p><strong>进阶技巧：</strong></p>
+                <p><strong>{{ t('help.faq.panel5.content.advancedTitle') }}</strong></p>
                 <ul>
-                  <li>结合多种模态输入（如语音+文字）</li>
-                  <li>使用同义词或相关概念</li>
-                  <li>针对文件类型优化搜索词</li>
+                  <li>{{ t('help.faq.panel5.content.advanced1') }}</li>
+                  <li>{{ t('help.faq.panel5.content.advanced2') }}</li>
+                  <li>{{ t('help.faq.panel5.content.advanced3') }}</li>
                 </ul>
               </div>
             </a-collapse-panel>
@@ -259,19 +259,19 @@
       </a-tab-pane>
 
       <!-- 关于 -->
-      <a-tab-pane key="about" tab="关于">
+      <a-tab-pane key="about" :tab="t('help.tabAbout')">
         <div class="about-section">
           <!-- 应用介绍 -->
           <div class="about-header">
             <div class="app-logo">
-              <span class="logo-text">◤小遥搜索◢</span>
+              <span class="logo-text">{{ t('app.name') }}</span>
             </div>
             <img src="@/assets/images/icon.png" width="256" height="256" />
             <p class="app-description">
-              支持多模态AI智能搜索的跨平台本地桌面应用（Windows/MacOS/Linux），通过语音、文本、图像多种输入方式，为知识工作者提供更智能的文件检索体验。
+              {{ t('help.about.appDescription') }}
             </p>
             <div class="tagline">
-              <span class="highlight">本地优先 · AI增强 · 隐私安全</span>
+              <span class="highlight">{{ t('help.about.tagline') }}</span>
             </div>
           </div>
 
@@ -283,8 +283,8 @@
                   <div class="feature-icon">
                     <AudioOutlined />
                   </div>
-                  <h4>语音搜索</h4>
-                  <p>30秒语音输入，FastWhisper本地识别</p>
+                  <h4>{{ t('help.about.features.voice.title') }}</h4>
+                  <p>{{ t('help.about.features.voice.description') }}</p>
                 </div>
               </a-col>
               <a-col :span="8">
@@ -292,8 +292,8 @@
                   <div class="feature-icon">
                     <PictureOutlined />
                   </div>
-                  <h4>图像理解</h4>
-                  <p>上传图片，CN-CLIP智能分析内容</p>
+                  <h4>{{ t('help.about.features.image.title') }}</h4>
+                  <p>{{ t('help.about.features.image.description') }}</p>
                 </div>
               </a-col>
               <a-col :span="8">
@@ -301,8 +301,8 @@
                   <div class="feature-icon">
                     <RobotOutlined />
                   </div>
-                  <h4>语义搜索</h4>
-                  <p>BGE-M3向量嵌入，理解查询意图</p>
+                  <h4>{{ t('help.about.features.semantic.title') }}</h4>
+                  <p>{{ t('help.about.features.semantic.description') }}</p>
                 </div>
               </a-col>
             </a-row>
@@ -311,8 +311,8 @@
           <!-- 技术特色 -->
           <div class="tech-highlight">
             <a-card class="highlight-card">
-              <h4>完全本地化，隐私无忧</h4>
-              <p>所有AI模型均本地部署，您的数据永远不会离开您的设备。支持离线使用，确保信息安全和隐私保护。</p>
+              <h4>{{ t('help.about.techHighlight.title') }}</h4>
+              <p>{{ t('help.about.techHighlight.description') }}</p>
               <div class="tech-tags">
                 <a-tag color="blue">FastWhisper</a-tag>
                 <a-tag color="green">Ollama</a-tag>
@@ -336,6 +336,10 @@ import {
   RobotOutlined,
   BulbOutlined
 } from '@ant-design/icons-vue'
+import { useI18n } from 'vue-i18n'
+
+// 国际化
+const { t } = useI18n()
 
 // 响应式数据
 const activeTab = ref('guide')

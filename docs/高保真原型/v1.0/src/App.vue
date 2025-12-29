@@ -1,11 +1,12 @@
 <template>
-  <a-layout class="app-layout">
+  <a-config-provider :locale="antdLocale">
+    <a-layout class="app-layout">
     <!-- 顶部导航 -->
     <a-layout-header class="app-header">
       <div class="header-content">
         <div class="logo">
-          <span class="logo-text">◤小遥搜索◢</span>
-          <span class="version">v2.0</span>
+          <span class="logo-text">{{ t('app.name') === '小遥搜索' ? '◤小遥搜索◢' : 'XiaoyaoSearch' }}</span>
+          <span class="version">{{ t('app.version') }}</span>
         </div>
 
         <a-menu
@@ -16,33 +17,51 @@
         >
           <a-menu-item key="home">
             <HomeOutlined />
-            首页
+            {{ t('nav.home') }}
           </a-menu-item>
           <a-menu-item key="settings">
             <SettingOutlined />
-            设置
+            {{ t('nav.settings') }}
           </a-menu-item>
           <a-menu-item key="index">
             <DatabaseOutlined />
-            索引
+            {{ t('nav.index') }}
           </a-menu-item>
           <a-menu-item key="help">
             <QuestionCircleOutlined />
-            帮助
+            {{ t('nav.help') }}
           </a-menu-item>
         </a-menu>
 
         <div class="header-actions">
+          <!-- 语言切换器 -->
+          <a-dropdown>
+            <a-button type="text" class="header-btn">
+              <GlobalOutlined />
+              <span class="btn-text">{{ locale === 'zh-CN' ? '中文' : 'English' }}</span>
+            </a-button>
+            <template #overlay>
+              <a-menu @click="handleLanguageChange">
+                <a-menu-item key="zh-CN">
+                  <span>中文</span>
+                </a-menu-item>
+                <a-menu-item key="en-US">
+                  <span>English</span>
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
+
           <!-- 关于作者 -->
           <a-button type="text" class="header-btn" @click="goToAbout">
             <InfoCircleOutlined />
-            <span class="btn-text">关于作者</span>
+            <span class="btn-text">{{ t('nav.about') }}</span>
           </a-button>
 
           <!-- 用户信息 -->
           <a-button type="text" class="header-btn user-btn">
             <UserOutlined />
-            <span class="user-name">小遥用户</span>
+            <span class="user-name">{{ locale === 'zh-CN' ? '小遥用户' : 'Xiaoyao User' }}</span>
           </a-button>
         </div>
       </div>
@@ -65,34 +84,36 @@
         <div class="status-info">
           <span class="status-item">
             <DatabaseOutlined />
-            索引: {{ indexCount.toLocaleString() }}文件
+            {{ t('footer.index') }}: {{ indexCount.toLocaleString() }}{{ t('footer.files') }}
           </span>
           <span class="status-item">
             <HddOutlined />
-            数据: {{ formatFileSize(dataSize) }}
+            {{ t('footer.data') }}: {{ formatFileSize(dataSize) }}
           </span>
           <span class="status-item">
             <SearchOutlined />
-            今日: {{ searchCount }}次搜索
+            {{ t('footer.today') }}: {{ searchCount }}{{ t('footer.searchCount') }}
           </span>
         </div>
         <div class="system-status">
           <a-tag color="green" class="status-tag">
             <CheckCircleOutlined />
-            系统正常
+            {{ t('footer.systemNormal') }}
           </a-tag>
           <span class="last-update">
-            最后更新: {{ formatTime(lastUpdate) }}
+            {{ t('footer.lastUpdate') }}: {{ formatTime(lastUpdate) }}
           </span>
         </div>
       </div>
     </a-layout-footer>
-  </a-layout>
+    </a-layout>
+  </a-config-provider>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import {
   HomeOutlined,
@@ -103,11 +124,24 @@ import {
   UserOutlined,
   CheckCircleOutlined,
   HddOutlined,
-  SearchOutlined
+  SearchOutlined,
+  GlobalOutlined
 } from '@ant-design/icons-vue'
+import { setLocale } from '@/i18n/setup'
 
 const router = useRouter()
 const route = useRoute()
+const { locale, t } = useI18n()
+
+// Ant Design locale 状态
+const antdLocale = ref(setLocale(locale.value))
+
+// 监听语言切换
+watch(locale, (newLocale) => {
+  antdLocale.value = setLocale(newLocale)
+  localStorage.setItem('locale', newLocale)
+  message.success(t('common.languageChanged'))
+})
 
 // 响应式数据
 const indexCount = ref(1234)
@@ -140,6 +174,11 @@ const handleMenuClick = ({ key }: { key: string }) => {
   }
 }
 
+// 语言切换处理
+const handleLanguageChange = ({ key }: { key: string }) => {
+  locale.value = key
+}
+
 // 跳转到关于作者页面
 const goToAbout = () => {
   router.push('/about')
@@ -156,7 +195,7 @@ const formatFileSize = (bytes: number): string => {
 
 // 格式化时间
 const formatTime = (date: Date): string => {
-  return date.toLocaleString('zh-CN', {
+  return date.toLocaleString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit'
   })

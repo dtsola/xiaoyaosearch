@@ -1,5 +1,7 @@
 # 小遥搜索 XiaoyaoSearch
 
+[English Version](README_EN.md) | 简体中文
+
 ![小遥搜索](docs/文档图片/小遥搜索.png)
 
 ## 📖 项目简介
@@ -115,8 +117,10 @@ xiaoyaosearch/
 │   ├── models/                   # 模型文件
 │   └── logs/                   # 日志文件
 ├── .claude/                       # Claude助手配置
-├── LICENSE                        # 软件授权协议
-└── README.md                      # 项目说明
+├── LICENSE                        # 软件授权协议（中文版）
+├── LICENSE_EN                     # 软件授权协议（英文版）
+├── README.md                      # 项目说明（中文版）
+└── README_EN.md                   # 项目说明（英文版）
 ```
 
 ## 🚀 快速开始

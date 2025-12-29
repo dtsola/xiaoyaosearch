@@ -1,37 +1,37 @@
 <template>
   <div class="settings-container">
     <div class="settings-header">
-      <h2>设置</h2>
-      <p>配置小遥搜索的基本参数</p>
+      <h2>{{ t('settings.title') }}</h2>
+      <p>{{ t('settings.subtitle') }}</p>
     </div>
 
     <a-tabs type="card" class="settings-tabs">
       <!-- 语音设置 -->
-      <a-tab-pane key="speech" tab="语音设置">
+      <a-tab-pane key="speech" :tab="t('settingsSpeech.title')">
         <div class="settings-section">
-          <h3>语音识别设置</h3>
+          <h3>{{ t('settingsSpeech.voiceRecognitionSettings') }}</h3>
           <a-form layout="vertical">
-            <a-form-item label="语音识别">
+            <a-form-item :label="t('settingsSpeech.voiceRecognition')">
               <a-alert
-                message="本地FastWhisper服务"
-                description="使用本地部署的FastWhisper模型进行语音识别"
+                :message="t('settingsSpeech.localFastWhisperService')"
+                :description="t('settingsSpeech.localFastWhisperDesc')"
                 type="info"
                 show-icon
               />
             </a-form-item>
 
-            <a-form-item label="模型版本">
+            <a-form-item :label="t('settingsSpeech.modelVersion')">
               <a-select v-model:value="speechConfig.model_name" style="width: 100%">
-                <a-select-option value="Systran/faster-whisper-base">Base (快速)</a-select-option>
-                <a-select-option value="Systran/faster-whisper-small">Small (平衡)</a-select-option>
-                <a-select-option value="Systran/faster-whisper-medium">Medium (精确)</a-select-option>
-                <a-select-option value="Systran/faster-whisper-large-v3">Large (高精度)</a-select-option>
+                <a-select-option value="Systran/faster-whisper-base">{{ t('settingsSpeech.modelBase') }}</a-select-option>
+                <a-select-option value="Systran/faster-whisper-small">{{ t('settingsSpeech.modelSmall') }}</a-select-option>
+                <a-select-option value="Systran/faster-whisper-medium">{{ t('settingsSpeech.modelMedium') }}</a-select-option>
+                <a-select-option value="Systran/faster-whisper-large-v3">{{ t('settingsSpeech.modelLarge') }}</a-select-option>
               </a-select>
             </a-form-item>
-            <a-form-item label="运行设备">
+            <a-form-item :label="t('settingsSpeech.runningDevice')">
               <a-select v-model:value="speechConfig.device" style="width: 200px">
-                <a-select-option value="cpu">CPU</a-select-option>
-                <a-select-option value="cuda">CUDA (GPU)</a-select-option>
+                <a-select-option value="cpu">{{ t('settingsSpeech.deviceCpu') }}</a-select-option>
+                <a-select-option value="cuda">{{ t('settingsSpeech.deviceCuda') }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-form>
@@ -43,42 +43,42 @@
               :loading="speechConfig.isTesting"
               @click="testSpeechModel"
             >
-              检查可用性
+              {{ t('settingsSpeech.checkAvailability') }}
             </a-button>
             <a-button
               :loading="speechConfig.isLoading"
               @click="saveSpeechConfig"
             >
-              保存设置
+              {{ t('settingsSpeech.saveSettings') }}
             </a-button>
           </a-space>
         </div>
       </a-tab-pane>
 
       <!-- 大语言模型设置 -->
-      <a-tab-pane key="llm" tab="大语言模型">
+      <a-tab-pane key="llm" :tab="t('settingsLLM.title')">
         <div class="settings-section">
-          <h3>大语言模型配置</h3>
+          <h3>{{ t('settingsLLM.title') }}</h3>
           <a-form layout="vertical">
-            <a-form-item label="LLM服务">
+            <a-form-item :label="t('settingsLLM.llmService')">
               <a-alert
-                message="本地Ollama服务"
-                description="使用本地部署的Ollama服务运行大语言模型"
+                :message="t('settingsLLM.localOllamaService')"
+                :description="t('settingsLLM.localOllamaDesc')"
                 type="info"
                 show-icon
               />
             </a-form-item>
 
-            <a-form-item label="模型名称">
+            <a-form-item :label="t('settingsLLM.modelName')">
               <a-input
                 v-model:value="llmConfig.model_name"
-                placeholder="例如: qwen2.5:1.5b"
+                :placeholder="t('settingsLLM.modelNamePlaceholder')"
                 style="width: 100%"
               />
-              <div class="form-help">输入已安装的Ollama模型名称，支持任何格式</div>
+              <div class="form-help">{{ t('settingsLLM.modelNameHelp') }}</div>
             </a-form-item>
-            <a-form-item label="服务地址">
-              <a-input v-model:value="llmConfig.service_url" placeholder="http://localhost:11434" />
+            <a-form-item :label="t('settingsLLM.serviceUrl')">
+              <a-input v-model:value="llmConfig.service_url" :placeholder="t('settingsLLM.serviceUrlPlaceholder')" />
             </a-form-item>
           </a-form>
         </div>
@@ -89,42 +89,42 @@
               :loading="llmConfig.isTesting"
               @click="testLLMModel"
             >
-              测试连接
+              {{ t('settingsLLM.testConnection') }}
             </a-button>
             <a-button
               :loading="llmConfig.isLoading"
               @click="saveLLMConfig"
             >
-              保存设置
+              {{ t('settingsSpeech.saveSettings') }}
             </a-button>
           </a-space>
         </div>
       </a-tab-pane>
 
       <!-- 视觉模型设置 -->
-      <a-tab-pane key="vision" tab="视觉模型">
+      <a-tab-pane key="vision" :tab="t('settingsVision.title')">
         <div class="settings-section">
-          <h3>视觉理解模型配置</h3>
+          <h3>{{ t('settingsVision.title') }}</h3>
           <a-form layout="vertical">
-            <a-form-item label="视觉模型">
+            <a-form-item :label="t('settingsVision.visionModel')">
               <a-alert
-                message="本地CN-CLIP模型"
-                description="使用本地部署的中文CLIP模型进行图像理解"
+                :message="t('settingsVision.localCNClipService')"
+                :description="t('settingsVision.localCNClipDesc')"
                 type="info"
                 show-icon
               />
             </a-form-item>
 
-            <a-form-item label="模型版本">
+            <a-form-item :label="t('settingsVision.modelVersion')">
               <a-select v-model:value="visionConfig.model_name" style="width: 100%">
-                <a-select-option value="OFA-Sys/chinese-clip-vit-base-patch16">ViT-Base (快速)</a-select-option>
-                <a-select-option value="OFA-Sys/chinese-clip-vit-large-patch14">ViT-Large (高精度)</a-select-option>
+                <a-select-option value="OFA-Sys/chinese-clip-vit-base-patch16">ViT-Base ({{ t('settingsSpeech.modelBase') }})</a-select-option>
+                <a-select-option value="OFA-Sys/chinese-clip-vit-large-patch14">ViT-Large ({{ t('settingsSpeech.modelLarge') }})</a-select-option>
               </a-select>
             </a-form-item>
-            <a-form-item label="运行设备">
+            <a-form-item :label="t('settingsVision.runningDevice')">
               <a-select v-model:value="visionConfig.device" style="width: 200px">
-                <a-select-option value="cpu">CPU</a-select-option>
-                <a-select-option value="cuda">CUDA (GPU)</a-select-option>
+                <a-select-option value="cpu">{{ t('settingsVision.deviceCpu') }}</a-select-option>
+                <a-select-option value="cuda">{{ t('settingsVision.deviceCuda') }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-form>
@@ -136,43 +136,43 @@
               :loading="visionConfig.isTesting"
               @click="testVisionModel"
             >
-              检测可用性
+              {{ t('settingsVision.testConnection') }}
             </a-button>
             <a-button
               :loading="visionConfig.isLoading"
               @click="saveVisionConfig"
             >
-              保存设置
+              {{ t('settingsSpeech.saveSettings') }}
             </a-button>
           </a-space>
         </div>
       </a-tab-pane>
 
       <!-- 内嵌模型设置 -->
-      <a-tab-pane key="embedding" tab="内嵌模型">
+      <a-tab-pane key="embedding" :tab="t('settingsEmbedding.title')">
         <div class="settings-section">
-          <h3>文本内嵌模型配置</h3>
+          <h3>{{ t('settingsEmbedding.title') }}</h3>
           <a-form layout="vertical">
-            <a-form-item label="文本内嵌模型">
+            <a-form-item :label="t('settingsEmbedding.textEmbeddingModel')">
               <a-alert
-                message="本地BGE-M3模型"
-                description="使用本地部署的BGE-M3模型生成文本向量嵌入"
+                :message="t('settingsEmbedding.localBgeM3Service')"
+                :description="t('settingsEmbedding.localBgeM3Desc')"
                 type="info"
                 show-icon
               />
             </a-form-item>
 
-            <a-form-item label="模型版本">
+            <a-form-item :label="t('settingsEmbedding.modelVersion')">
               <a-select v-model:value="embeddingConfig.model_name" style="width: 100%">
-                <a-select-option value="BAAI/bge-m3">BGE-M3 (多语言)</a-select-option>
-                <a-select-option value="BAAI/bge-small-zh">BGE-Small-zh (中文)</a-select-option>
-                <a-select-option value="BAAI/bge-large-zh">BGE-Large-zh (中文)</a-select-option>
+                <a-select-option value="BAAI/bge-m3">{{ t('settingsEmbedding.modelBgeM3') }}</a-select-option>
+                <a-select-option value="BAAI/bge-small-zh">BGE-Small-zh ({{ t('fileType.text') }})</a-select-option>
+                <a-select-option value="BAAI/bge-large-zh">BGE-Large-zh ({{ t('fileType.text') }})</a-select-option>
               </a-select>
             </a-form-item>
-            <a-form-item label="运行设备">
+            <a-form-item :label="t('settingsEmbedding.runningDevice')">
               <a-select v-model:value="embeddingConfig.device" style="width: 200px">
-                <a-select-option value="cpu">CPU</a-select-option>
-                <a-select-option value="cuda">CUDA (GPU)</a-select-option>
+                <a-select-option value="cpu">{{ t('settingsEmbedding.deviceCpu') }}</a-select-option>
+                <a-select-option value="cuda">{{ t('settingsEmbedding.deviceCuda') }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-form>
@@ -184,13 +184,13 @@
               :loading="embeddingConfig.isTesting"
               @click="testEmbeddingModel"
             >
-              检测可用性
+              {{ t('settingsEmbedding.testConnection') }}
             </a-button>
             <a-button
               :loading="embeddingConfig.isLoading"
               @click="saveEmbeddingConfig"
             >
-              保存设置
+              {{ t('settingsSpeech.saveSettings') }}
             </a-button>
           </a-space>
         </div>
@@ -247,6 +247,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { AIModelConfigService } from '@/api/config'
 import type { AIModelInfo, AIModelTestResult } from '@/types/api'
+import { useI18n } from 'vue-i18n'
+
+// 国际化
+const { t } = useI18n()
 
 // 各类型模型的配置状态
 const speechConfig = reactive({
@@ -313,7 +317,7 @@ const loadAIModels = async () => {
     }
   } catch (error) {
     console.error('加载AI模型配置失败:', error)
-    message.error('加载AI模型配置失败')
+    message.error(t('error.configLoadFailed'))
   }
 }
 
@@ -331,15 +335,15 @@ const saveSpeechConfig = async () => {
     })
 
     if (response.success) {
-      message.success('语音识别配置保存成功，重启应用后生效')
+      message.success(t('settingsSpeech.saveSuccessRestart'))
       // 重新加载模型配置
       await loadAIModels()
     } else {
-      message.error('保存语音识别配置失败')
+      message.error(t('error.speechConfigSaveFailed'))
     }
   } catch (error) {
     console.error('保存语音识别配置失败:', error)
-    message.error('保存语音识别配置失败')
+    message.error(t('error.speechConfigSaveFailed'))
   } finally {
     speechConfig.isLoading = false
   }
@@ -349,7 +353,7 @@ const saveSpeechConfig = async () => {
 const testSpeechModel = async () => {
   const speechModel = aiModels.value.find(m => m.model_type === 'speech')
   if (!speechModel) {
-    message.warning('请先保存语音识别配置')
+    message.warning(t('settingsSpeech.pleaseSaveFirst'))
     return
   }
 
@@ -359,14 +363,14 @@ const testSpeechModel = async () => {
     if (response.success) {
       const result = response.data
       if (result.test_passed) {
-        message.success(`语音识别模型测试成功，响应时间: ${result.response_time}秒`)
+        message.success(t('aiModel.testSuccess'))
       } else {
-        message.error(`语音识别模型测试失败: ${result.test_message}`)
+        message.error(t('error.speechModelTestFailed') + `: ${result.test_message}`)
       }
     }
   } catch (error) {
     console.error('测试语音识别模型失败:', error)
-    message.error('测试语音识别模型失败')
+    message.error(t('error.speechModelTestFailed'))
   } finally {
     speechConfig.isTesting = false
   }
@@ -386,15 +390,15 @@ const saveLLMConfig = async () => {
     })
 
     if (response.success) {
-      message.success('大语言模型配置保存成功，重启应用后生效')
+      message.success(t('settingsLLM.saveSuccessRestart'))
       // 重新加载模型配置
       await loadAIModels()
     } else {
-      message.error('保存大语言模型配置失败')
+      message.error(t('error.llmConfigSaveFailed'))
     }
   } catch (error) {
     console.error('保存大语言模型配置失败:', error)
-    message.error('保存大语言模型配置失败')
+    message.error(t('error.llmConfigSaveFailed'))
   } finally {
     llmConfig.isLoading = false
   }
@@ -404,26 +408,26 @@ const saveLLMConfig = async () => {
 const testLLMModel = async () => {
   const llmModel = aiModels.value.find(m => m.model_type === 'llm')
   if (!llmModel) {
-    message.warning('请先保存大语言模型配置')
+    message.warning(t('settingsLLM.pleaseSaveFirst'))
     return
   }
 
   llmConfig.isTesting = true
   try {
     const response = await AIModelConfigService.testAIModel(llmModel.id, {
-      test_data: '你好，请介绍一下你自己'
+      test_data: t('settingsLLM.testData')
     })
     if (response.success) {
       const result = response.data
       if (result.test_passed) {
-        message.success(`大语言模型测试成功，响应时间: ${result.response_time}秒`)
+        message.success(t('aiModel.testSuccess'))
       } else {
-        message.error(`大语言模型测试失败: ${result.test_message}`)
+        message.error(t('error.llmModelTestFailed') + `: ${result.test_message}`)
       }
     }
   } catch (error) {
     console.error('测试大语言模型失败:', error)
-    message.error('测试大语言模型失败')
+    message.error(t('error.llmModelTestFailed'))
   } finally {
     llmConfig.isTesting = false
   }
@@ -443,15 +447,15 @@ const saveVisionConfig = async () => {
     })
 
     if (response.success) {
-      message.success('视觉模型配置保存成功，重启应用后生效')
+      message.success(t('settingsVision.saveSuccessRestart'))
       // 重新加载模型配置
       await loadAIModels()
     } else {
-      message.error('保存视觉模型配置失败')
+      message.error(t('error.visionConfigSaveFailed'))
     }
   } catch (error) {
     console.error('保存视觉模型配置失败:', error)
-    message.error('保存视觉模型配置失败')
+    message.error(t('error.visionConfigSaveFailed'))
   } finally {
     visionConfig.isLoading = false
   }
@@ -461,7 +465,7 @@ const saveVisionConfig = async () => {
 const testVisionModel = async () => {
   const visionModel = aiModels.value.find(m => m.model_type === 'vision')
   if (!visionModel) {
-    message.warning('请先保存视觉模型配置')
+    message.warning(t('settingsVision.pleaseSaveFirst'))
     return
   }
 
@@ -471,14 +475,14 @@ const testVisionModel = async () => {
     if (response.success) {
       const result = response.data
       if (result.test_passed) {
-        message.success(`视觉模型测试成功，响应时间: ${result.response_time}秒`)
+        message.success(t('aiModel.testSuccess'))
       } else {
-        message.error(`视觉模型测试失败: ${result.test_message}`)
+        message.error(t('error.visionModelTestFailed') + `: ${result.test_message}`)
       }
     }
   } catch (error) {
     console.error('测试视觉模型失败:', error)
-    message.error('测试视觉模型失败')
+    message.error(t('error.visionModelTestFailed'))
   } finally {
     visionConfig.isTesting = false
   }
@@ -498,15 +502,15 @@ const saveEmbeddingConfig = async () => {
     })
 
     if (response.success) {
-      message.success('内嵌模型配置保存成功，重启应用后生效')
+      message.success(t('settingsEmbedding.saveSuccessRestart'))
       // 重新加载模型配置
       await loadAIModels()
     } else {
-      message.error('保存内嵌模型配置失败')
+      message.error(t('error.embeddingConfigSaveFailed'))
     }
   } catch (error) {
     console.error('保存内嵌模型配置失败:', error)
-    message.error('保存内嵌模型配置失败')
+    message.error(t('error.embeddingConfigSaveFailed'))
   } finally {
     embeddingConfig.isLoading = false
   }
@@ -516,26 +520,26 @@ const saveEmbeddingConfig = async () => {
 const testEmbeddingModel = async () => {
   const embeddingModel = aiModels.value.find(m => m.model_type === 'embedding')
   if (!embeddingModel) {
-    message.warning('请先保存内嵌模型配置')
+    message.warning(t('settingsEmbedding.pleaseSaveFirst'))
     return
   }
 
   embeddingConfig.isTesting = true
   try {
     const response = await AIModelConfigService.testAIModel(embeddingModel.id, {
-      test_data: '这是一个测试文本，用于验证文本嵌入模型的功能。'
+      test_data: t('settingsEmbedding.testData')
     })
     if (response.success) {
       const result = response.data
       if (result.test_passed) {
-        message.success(`内嵌模型测试成功，响应时间: ${result.response_time}秒`)
+        message.success(t('aiModel.testSuccess'))
       } else {
-        message.error(`内嵌模型测试失败: ${result.test_message}`)
+        message.error(t('error.embeddingModelTestFailed') + `: ${result.test_message}`)
       }
     }
   } catch (error) {
     console.error('测试内嵌模型失败:', error)
-    message.error('测试内嵌模型失败')
+    message.error(t('error.embeddingModelTestFailed'))
   } finally {
     embeddingConfig.isTesting = false
   }

@@ -2,18 +2,18 @@
   <div class="about-container">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h1 class="page-title">关于作者</h1>
-      <p class="page-subtitle">小遥搜索开发者信息</p>
+      <h1 class="page-title">{{ t('about.title') }}</h1>
+      <p class="page-subtitle">{{ t('about.subtitle') }}</p>
     </div>
 
     <!-- 作者信息 -->
     <div class="author-section">
-      <a-card title="关于作者" class="author-card">
+      <a-card :title="t('about.author.cardTitle')" class="author-card">
         <div class="author-content">
           <div class="author-avatar">
             <img
               src="@/assets/images/author-avatar.jpg"
-              alt="作者头像"
+              :alt="t('about.author.avatarAlt')"
               class="avatar-image"
               @error="handleImageError"
               data-fallback="👨‍💻"
@@ -21,17 +21,14 @@
           </div>
           <div class="author-info">
             <h4>dtsola</h4>
-            <p>
-              IT解决方案架构师 | 一人公司实践者。专注于AI驱动的生产力工具开发，致力于为知识工作者打造更智能、更安全的本地搜索解决方案。
-              倡导数据主权和隐私保护，相信优秀的工具应该赋能个人而非监控用户。
-            </p>
+            <p>{{ t('about.author.description') }}</p>
             <div class="author-vision">
-              <strong>开发理念：</strong>
-              <span>简约而不简单，智能而不 invasive</span>
+              <strong>{{ t('about.author.visionLabel') }}</strong>
+              <span>{{ t('about.author.visionText') }}</span>
             </div>
             <div class="brand-mission">
-              <strong>品牌使命：</strong>
-              <span>打造真正为个人用户服务的AI工具，让技术赋能而非监控，守护您的数据主权</span>
+              <strong>{{ t('about.author.missionLabel') }}</strong>
+              <span>{{ t('about.author.missionText') }}</span>
             </div>
           </div>
         </div>
@@ -42,19 +39,19 @@
               <div class="contact-info">
                 <WechatOutlined class="contact-icon" />
                 <div class="contact-text">
-                  <h5>微信公众号</h5>
-                  <p>小遥搜索</p>
+                  <h5>{{ t('about.author.wechatPublicAccount') }}</h5>
+                  <p>{{ t('about.author.wechatAccountName') }}</p>
                 </div>
               </div>
               <div class="qr-code">
                 <img
                   src="@/assets/images/wechat-qr.png"
-                  alt="微信公众号二维码"
+                  :alt="t('about.author.wechatQrAlt')"
                   class="qr-image"
                   @error="handleImageError"
                   data-fallback="📱 公众号"
                 />
-                <p class="qr-hint">扫码关注</p>
+                <p class="qr-hint">{{ t('about.author.scanToFollow') }}</p>
               </div>
             </div>
 
@@ -62,19 +59,19 @@
               <div class="contact-info">
                 <UserOutlined class="contact-icon" />
                 <div class="contact-text">
-                  <h5>添加作者微信</h5>
-                  <p>交流产品体验</p>
+                  <h5>{{ t('about.author.addWechatTitle') }}</h5>
+                  <p>{{ t('about.author.addWechatDesc') }}</p>
                 </div>
               </div>
               <div class="qr-code">
                 <img
                   src="@/assets/images/author-wechat-qr.png"
-                  alt="作者微信二维码"
+                  :alt="t('about.author.authorWechatQrAlt')"
                   class="qr-image"
                   @error="handleImageError"
                   data-fallback="👤 微信"
                 />
-                <p class="qr-hint">扫码添加</p>
+                <p class="qr-hint">{{ t('about.author.scanToAdd') }}</p>
               </div>
             </div>
           </div>
@@ -85,6 +82,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import {
   AudioOutlined,
   PictureOutlined,
@@ -92,6 +90,8 @@ import {
   WechatOutlined,
   UserOutlined
 } from '@ant-design/icons-vue'
+
+const { t } = useI18n()
 
 // 图片错误处理
 const handleImageError = (event: Event) => {
@@ -104,7 +104,7 @@ const handleImageError = (event: Event) => {
   placeholder.innerHTML = `
     <div class="qr-placeholder-content">
       <div class="qr-placeholder-icon">${fallback}</div>
-      <div class="qr-placeholder-text">二维码准备中</div>
+      <div class="qr-placeholder-text">${t('about.author.qrPreparing')}</div>
     </div>
   `
 

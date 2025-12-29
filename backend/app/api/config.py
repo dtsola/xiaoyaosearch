@@ -4,12 +4,13 @@ AI模型配置API路由
 """
 import json
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.logging_config import get_logger
 from app.core.exceptions import ResourceNotFoundException, ValidationException
+from app.core.i18n import i18n, get_locale_from_header
 from app.schemas.requests import AIModelConfigRequest, AIModelTestRequest
 from app.schemas.responses import (
     AIModelInfo, AIModelsResponse, AIModelTestResponse, SuccessResponse
@@ -22,10 +23,16 @@ router = APIRouter(prefix="/api/config", tags=["AI模型配置"])
 logger = get_logger(__name__)
 
 
+def get_locale(accept_language: Optional[str] = Header(None)) -> str:
+    """从请求头获取语言设置"""
+    return get_locale_from_header(accept_language)
+
+
 @router.post("/ai-model", response_model=SuccessResponse, summary="更新AI模型配置")
 async def update_ai_model_config(
     request: AIModelConfigRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     更新AI模型配置
@@ -152,7 +159,7 @@ async def update_ai_model_config(
             "model_name": request.model_name
         }
 
-        message = "AI模型配置更新成功，重启应用后生效"
+        message = i18n.t('model.config_update_success', locale)
 
         return SuccessResponse(
             data=response_data,
@@ -163,14 +170,15 @@ async def update_ai_model_config(
         raise
     except Exception as e:
         logger.error(f"更新AI模型配置失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"更新AI模型配置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('model.config_update_failed', locale))
 
 
 @router.get("/ai-models", response_model=AIModelsResponse, summary="获取所有AI模型配置")
 async def get_ai_models(
     model_type: Optional[ModelType] = None,
     provider: Optional[ProviderType] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     获取所有AI模型配置
@@ -220,19 +228,20 @@ async def get_ai_models(
 
         return AIModelsResponse(
             data=model_list,
-            message="获取AI模型配置成功"
+            message=i18n.t('model.get_success', locale)
         )
 
     except Exception as e:
         logger.error(f"获取AI模型配置失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"获取AI模型配置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('model.get_failed', locale))
 
 
 @router.post("/ai-model/{model_id}/test", response_model=AIModelTestResponse, summary="测试AI模型")
 async def test_ai_model(
     model_id: int,
     request: AIModelTestRequest = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     测试AI模型连通性
@@ -262,7 +271,7 @@ async def test_ai_model(
         start_time = time.time()
 
         test_passed = False
-        test_message = f"开始测试{model_config.model_name}模型..."
+        test_message = i18n.t('model.test_start', locale, model_name=model_config.model_name)
 
         try:
             # 导入AI模型服务
@@ -284,10 +293,10 @@ async def test_ai_model(
                         dimension = 'unknown'
 
                     test_passed = True
-                    test_message = f"文本嵌入模型测试成功，向量维度: {dimension}，响应正常"
+                    test_message = i18n.t('model.text_embedding_success', locale, dimension=dimension)
                 else:
                     test_passed = False
-                    test_message = "文本嵌入模型测试失败：无法生成嵌入向量"
+                    test_message = i18n.t('model.text_embedding_failed', locale)
 
             elif is_speech_model(model_config.model_type):
                 # 测试语音识别模型（使用真实音频文件）
@@ -300,21 +309,16 @@ async def test_ai_model(
                     speech_result = await ai_model_service.speech_to_text(test_audio)
                     if speech_result and "text" in speech_result:
                         test_passed = True
-                        # recognized_text = speech_result.get("text", "")
-                        # confidence = speech_result.get("avg_confidence", 0)
-                        # 限制识别文本长度显示
-                        # text_preview = recognized_text[:50] + "..." if len(recognized_text) > 50 else recognized_text
-                        # test_message = f"语音识别模型测试成功，识别文本: '{text_preview}'，置信度: {confidence:.2f}"
-                        test_message = "语音识别模型测试成功"
+                        test_message = i18n.t('model.speech_success', locale)
                     else:
                         test_passed = False
-                        test_message = "语音识别模型测试失败：无法识别音频"
+                        test_message = i18n.t('model.speech_failed', locale)
                 except FileNotFoundError:
                     test_passed = False
-                    test_message = f"语音识别模型测试失败：音频文件不存在 {test_audio_path}"
+                    test_message = i18n.t('model.speech_file_not_found', locale, path=test_audio_path)
                 except Exception as e:
                     test_passed = False
-                    test_message = f"语音识别模型测试失败：{str(e)}"
+                    test_message = i18n.t('model.speech_test_error', locale, error=str(e))
 
             elif is_vision_model(model_config.model_type):
                 # 测试图像理解模型（使用真实图片文件）
@@ -324,16 +328,13 @@ async def test_ai_model(
                     vision_result = await ai_model_service.image_understanding(test_image_path, test_texts)
                     if vision_result and "best_match" in vision_result:
                         test_passed = True
-                        # similarity = vision_result["best_match"].get("similarity", 0)
-                        # best_text = vision_result["best_match"].get("text", "")
-                        # test_message = f"图像理解模型测试成功，最佳匹配: '{best_text}'，相似度: {similarity:.4f}"
-                        test_message = "图像理解模型测试成功"
+                        test_message = i18n.t('model.vision_success', locale)
                     else:
                         test_passed = False
-                        test_message = "图像理解模型测试失败：无法理解图像"
+                        test_message = i18n.t('model.vision_failed', locale)
                 except Exception as e:
                     test_passed = False
-                    test_message = f"图像理解模型测试失败：{str(e)}"
+                    test_message = i18n.t('model.vision_test_error', locale, error=str(e))
 
             elif is_llm_model(model_config.model_type):
                 # 测试大语言模型
@@ -351,25 +352,24 @@ async def test_ai_model(
                     if generated_text:
                         test_passed = True
                         generated_text_preview = generated_text[:100]  # 只取前100字符
-                        # test_message = f"大语言模型测试成功，生成内容: {generated_text_preview}..."
-                        test_message = "大语言模型测试成功"
+                        test_message = i18n.t('model.llm_success', locale)
                     else:
                         test_passed = False
-                        test_message = "大语言模型测试失败：无法生成文本"
+                        test_message = i18n.t('model.llm_failed', locale)
                 except Exception as e:
                     test_passed = False
-                    test_message = f"大语言模型测试失败：{str(e)}"
+                    test_message = i18n.t('model.llm_test_error', locale, error=str(e))
 
             else:
                 test_passed = False
-                test_message = f"未知模型类型: {model_config.model_type}"
+                test_message = i18n.t('model.unknown_type', locale, type=model_config.model_type)
 
         except ImportError:
             test_passed = False
-            test_message = "AI模型服务不可用，无法执行测试"
+            test_message = i18n.t('model.service_unavailable', locale)
         except Exception as e:
             test_passed = False
-            test_message = f"模型测试失败: {str(e)}"
+            test_message = i18n.t('model.test_failed_with_error', locale, error=str(e))
 
         response_time = time.time() - start_time
 
@@ -384,20 +384,21 @@ async def test_ai_model(
                 "test_data": request.test_data if request else None,
                 "config_used": config
             },
-            message="AI模型测试完成"
+            message=i18n.t('model.test_complete', locale)
         )
 
     except ResourceNotFoundException:
         raise
     except Exception as e:
         logger.error(f"测试AI模型失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"测试AI模型失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('model.test_failed', locale))
 
 
 @router.put("/ai-model/{model_id}/toggle", response_model=SuccessResponse, summary="启用/禁用AI模型")
 async def toggle_ai_model(
     model_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     启用或禁用AI模型
@@ -420,7 +421,7 @@ async def toggle_ai_model(
         model_config.is_active = not model_config.is_active
         db.commit()
 
-        status_text = "启用" if model_config.is_active else "禁用"
+        status_text = i18n.t('model.enabled', locale) if model_config.is_active else i18n.t('model.disabled', locale)
         logger.info(f"AI模型状态已切换: id={model_id}, {old_status} -> {model_config.is_active}")
 
         return SuccessResponse(
@@ -429,20 +430,21 @@ async def toggle_ai_model(
                 "is_active": model_config.is_active,
                 "old_status": old_status
             },
-            message=f"AI模型已{status_text}"
+            message=i18n.t('model.toggle_success', locale, status=status_text)
         )
 
     except ResourceNotFoundException:
         raise
     except Exception as e:
         logger.error(f"切换AI模型状态失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"切换AI模型状态失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('model.toggle_failed', locale))
 
 
 @router.delete("/ai-model/{model_id}", response_model=SuccessResponse, summary="删除AI模型配置")
 async def delete_ai_model_config(
     model_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
 ):
     """
     删除AI模型配置
@@ -472,18 +474,21 @@ async def delete_ai_model_config(
                 "model_name": model_config.model_name,
                 "model_type": model_config.model_type
             },
-            message="AI模型配置删除成功"
+            message=i18n.t('model.delete_success', locale)
         )
 
     except ResourceNotFoundException:
         raise
     except Exception as e:
         logger.error(f"删除AI模型配置失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"删除AI模型配置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('model.delete_failed', locale))
 
 
 @router.get("/ai-models/default", response_model=AIModelsResponse, summary="获取默认AI模型配置")
-async def get_default_ai_models(db: Session = Depends(get_db)):
+async def get_default_ai_models(
+    db: Session = Depends(get_db),
+    locale: str = Depends(get_locale)
+):
     """
     获取系统默认的AI模型配置
     """
@@ -519,12 +524,12 @@ async def get_default_ai_models(db: Session = Depends(get_db)):
 
         return AIModelsResponse(
             data=existing_models,
-            message="获取默认AI模型配置成功"
+            message=i18n.t('model.get_default_success', locale)
         )
 
     except Exception as e:
         logger.error(f"获取默认AI模型配置失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"获取默认AI模型配置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=i18n.t('model.get_default_failed', locale))
 
 
 async def _initialize_default_ai_models(db: Session):
@@ -582,5 +587,4 @@ async def _initialize_default_ai_models(db: Session):
 
 # 添加缺失的导入
 from datetime import datetime
-from typing import Optional
 import asyncio

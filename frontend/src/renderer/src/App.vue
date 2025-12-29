@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { SystemService } from '@/api/system'
@@ -14,11 +14,37 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   HddOutlined,
-  SearchOutlined
+  SearchOutlined,
+  GlobalOutlined
 } from '@ant-design/icons-vue'
+
+// 国际化支持
+import { useI18n } from 'vue-i18n'
+import { setLocale } from './i18n/setup'
 
 const router = useRouter()
 const route = useRoute()
+const { locale, t } = useI18n()
+
+// Ant Design Vue 语言状态
+const antdLocale = ref(setLocale(locale.value))
+
+// 监听语言切换，同步更新 Ant Design 和 Day.js 语言
+watch(locale, (newLocale) => {
+  antdLocale.value = setLocale(newLocale)
+  localStorage.setItem('locale', newLocale)
+})
+
+// 监听路由变化，更新页面标题
+watch(
+  () => route.meta.titleKey,
+  (titleKey) => {
+    if (titleKey) {
+      document.title = t(titleKey as string)
+    }
+  },
+  { immediate: true }
+)
 
 // 响应式数据
 const indexCount = ref(0)
@@ -135,7 +161,7 @@ const fetchSystemStatus = async () => {
     }
   } catch (error) {
     console.error('获取系统状态失败:', error)
-    message.warning('系统状态更新失败，使用缓存数据')
+    message.warning(t('status.statusUpdateFailed'))
 
     // 设置降级状态
     systemStatus.value = '未知'
@@ -148,6 +174,12 @@ const fetchSystemStatus = async () => {
 // 手动刷新状态
 const refreshStatus = () => {
   fetchSystemStatus()
+}
+
+// 语言切换处理
+const handleLanguageChange = (lang: string) => {
+  locale.value = lang
+  message.success(t('common.languageChanged'))
 }
 
 // 组件挂载
@@ -175,12 +207,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <a-layout class="app-layout">
-    <!-- 顶部导航 -->
-    <a-layout-header class="app-header">
+  <a-config-provider :locale="antdLocale">
+    <a-layout class="app-layout">
+      <!-- 顶部导航 -->
+      <a-layout-header class="app-header">
       <div class="header-content">
         <div class="logo">
-          <span class="logo-text">◤小遥搜索◢</span>
+          <span class="logo-text">{{ t('app.name') }}</span>
           <span class="version">v1.0</span>
         </div>
 
@@ -192,33 +225,51 @@ onUnmounted(() => {
         >
           <a-menu-item key="home">
             <HomeOutlined />
-            首页
+            {{ t('nav.home') }}
           </a-menu-item>
           <a-menu-item key="settings">
             <SettingOutlined />
-            设置
+            {{ t('nav.settings') }}
           </a-menu-item>
           <a-menu-item key="index">
             <DatabaseOutlined />
-            索引
+            {{ t('nav.index') }}
           </a-menu-item>
           <a-menu-item key="help">
             <QuestionCircleOutlined />
-            帮助
+            {{ t('nav.help') }}
           </a-menu-item>
         </a-menu>
 
         <div class="header-actions">
+          <!-- 语言切换 -->
+          <a-dropdown>
+            <a-button type="text" class="header-btn">
+              <GlobalOutlined />
+              <span class="btn-text">{{ locale === 'zh-CN' ? '中文' : 'English' }}</span>
+            </a-button>
+            <template #overlay>
+              <a-menu @click="({ key }) => handleLanguageChange(key)">
+                <a-menu-item key="zh-CN">
+                  <span>中文</span>
+                </a-menu-item>
+                <a-menu-item key="en-US">
+                  <span>English</span>
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
+
           <!-- 关于作者 -->
           <a-button type="text" class="header-btn" @click="goToAbout">
             <InfoCircleOutlined />
-            <span class="btn-text">关于作者</span>
+            <span class="btn-text">{{ t('user.aboutAuthor') }}</span>
           </a-button>
 
           <!-- 用户信息 -->
           <a-button type="text" class="header-btn user-btn">
             <UserOutlined />
-            <span class="user-name">小遥用户</span>
+            <span class="user-name">{{ t('user.name') }}</span>
           </a-button>
         </div>
       </div>
@@ -241,30 +292,31 @@ onUnmounted(() => {
         <div class="status-info">
           <span class="status-item">
             <DatabaseOutlined />
-            已索引文件：{{ indexCount.toLocaleString() }} 个
+            {{ t('status.indexedFiles') }}：{{ indexCount.toLocaleString() }} {{ t('status.count') }}
           </span>
           <span class="status-item">
             <HddOutlined />
-            索引大小：{{ formattedDataSize.value.toFixed(2) }} {{ formattedDataSize.unit }}
+            {{ t('status.indexSize') }}：{{ formattedDataSize.value.toFixed(2) }} {{ formattedDataSize.unit }}
           </span>
           <span class="status-item">
             <SearchOutlined />
-            今日搜索：{{ searchCount }} 次
+            {{ t('status.todaySearches') }}：{{ searchCount }} {{ t('status.times') }}
           </span>
         </div>
         <div class="system-status">
           <a-tag :color="statusColor" class="status-tag">
             <CheckCircleOutlined v-if="systemStatus === '正常'" />
             <ExclamationCircleOutlined v-else />
-            系统{{ systemStatus }}
+            {{ t('status.system') }}{{ systemStatus === '正常' ? t('status.normal') : systemStatus === '异常' ? t('status.abnormal') : t('status.unknown') }}
           </a-tag>
           <span class="last-update">
-            最后更新: {{ formatTime(lastUpdate) }}
+            {{ t('status.lastUpdate') }}: {{ formatTime(lastUpdate) }}
           </span>
         </div>
       </div>
     </a-layout-footer>
   </a-layout>
+  </a-config-provider>
 </template>
 
 <style scoped>

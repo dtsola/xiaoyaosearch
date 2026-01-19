@@ -2,25 +2,25 @@
 
 English | [简体中文](README.md)
 
-![XiaoyaoSearch](docs/文档图片/小遥搜索.png)
+![XiaoyaoSearch](docs/产品文档/应用截图/小遥搜索.png)
 
 ## 📖 Project Introduction
 
-![XiaoyaoSearch](docs/文档图片/logo_256x256.png)
+![XiaoyaoSearch](docs/产品文档/logo/logo_256x256.png)
 
 XiaoyaoSearch is a cross-platform local desktop application (Windows/MacOS/Linux) designed for knowledge workers, content creators, and technical developers. Through integrated AI models, it supports multiple input methods including voice input (within 30 seconds), text input, and image input, converting user queries into semantic meaning for intelligent search and deep retrieval of local files.
 
 ## ⭐️ Important Notes
 - This project is completely free for personal use but cannot be modified and redistributed; commercial use requires authorization. See [XiaoyaoSearch Software License Agreement](LICENSE_EN) for details
 - This project is entirely implemented through Vibe Coding, providing all source code and development documentation (context) for everyone to learn and exchange
-  ![Development Documentation](docs/文档图片/开发文档.png)
+  ![Development Documentation](docs/产品文档/应用截图/开发文档.png)
 
 ## Author Introduction
 - dtsola [IT Solution Architect | One-Person Company Practitioner]
 - Website: https://www.dtsola.com
 - Bilibili: https://space.bilibili.com/736015
 - WeChat: dtsola (please state your purpose when contacting)
-![dtsola](docs/文档图片/个人二维码.png)
+![dtsola](docs/产品文档/应用截图/个人二维码.png)
 
 ### ✨ Core Features
 
@@ -36,28 +36,28 @@ XiaoyaoSearch is a cross-platform local desktop application (Windows/MacOS/Linux
 ### Search Interface
 
 #### Main Interface
-![Search Interface](docs/文档图片/搜索界面-主界面.png)
+![Search Interface](docs/产品文档/应用截图/搜索界面-主界面.png)
 
 #### Text Search
-![Text Search](docs/文档图片/搜索界面-文本搜索.png)
+![Text Search](docs/产品文档/应用截图/搜索界面-文本搜索.png)
 
 #### Voice Search
-![Voice Search](docs/文档图片/搜索界面-语音搜索.png)
+![Voice Search](docs/产品文档/应用截图/搜索界面-语音搜索.png)
 
 #### Image Search
-![Image Search](docs/文档图片/搜索界面-图片搜索.png)
+![Image Search](docs/产品文档/应用截图/搜索界面-图片搜索.png)
 
 ### Index Management Interface
-![Index Management Interface](docs/文档图片/索引管理界面.png)
+![Index Management Interface](docs/产品文档/应用截图/索引管理界面.png)
 
 ### Settings Interface
-![Settings Interface](docs/文档图片/设置界面.png)
+![Settings Interface](docs/产品文档/应用截图/设置界面.png)
 
 ## 🏗️ Technical Architecture
 
 ### System Architecture Diagram
 
-![System Architecture](docs/文档图片/系统架构.png)
+![System Architecture](docs/产品文档/应用截图/系统架构.png)
 
 ### Tech Stack
 

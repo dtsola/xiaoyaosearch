@@ -148,7 +148,7 @@
         <a-form-item :label="t('index.includePaths')">
           <a-input
             v-model:value="newFolder.path"
-            :placeholder="t('index.folder')"
+            :placeholder="t('common.folder')"
             readonly
           >
             <template #suffix>
@@ -177,7 +177,7 @@
     >
       <div v-if="selectedIndex" class="index-details">
         <a-descriptions :column="2" bordered>
-          <a-descriptions-item :label="t('index.folder')">
+          <a-descriptions-item :label="t('common.folder')">
             {{ selectedIndex.folder_path }}
           </a-descriptions-item>
           <a-descriptions-item :label="t('index.status')">
@@ -191,7 +191,7 @@
           <a-descriptions-item :label="t('index.indexed')">
             {{ selectedIndex.processed_files || 0 }}
           </a-descriptions-item>
-          <a-descriptions-item label="Error Count">
+          <a-descriptions-item :label="t('index.errorCount')">
             {{ selectedIndex.error_count || 0 }}
           </a-descriptions-item>
           <a-descriptions-item :label="t('index.createdAt')">
@@ -282,7 +282,7 @@ const loading = ref(false)
 // 表格配置
 const indexColumns = computed(() => [
   {
-    title: t('index.folder'),
+    title: t('common.folder'),
     dataIndex: 'folder_path',
     key: 'folder_path',
     ellipsis: true,
@@ -306,7 +306,7 @@ const indexColumns = computed(() => [
     key: 'total_files'
   },
   {
-    title: 'Error Count',
+    title: t('index.errorCount'),
     dataIndex: 'error_count',
     key: 'error_count'
   },
@@ -416,7 +416,7 @@ const browseFolder = async () => {
 
     if (result.success && result.folderPath) {
       newFolder.path = result.folderPath
-      message.success(`${t('index.folder')}: ${result.folderPath}`)
+      message.success(`${t('common.folder')}: ${result.folderPath}`)
     } else if (result.canceled) {
       // 用户取消选择，不显示错误信息
       console.log('User cancelled folder selection')

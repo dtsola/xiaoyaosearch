@@ -28,7 +28,7 @@ class YuqueDataSource(DataSourcePlugin):
     """
 
     def __init__(self):
-        self._config: Dict[str, Any] = {}
+        super().__init__()
         self._yuque_dl_path: Optional[str] = None
         self._plugin_dir: Optional[Path] = None
         self._repos: List[Dict[str, Any]] = []

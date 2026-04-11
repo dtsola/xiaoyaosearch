@@ -37,7 +37,7 @@ class FeishuDataSource(DataSourcePlugin):
     ]
 
     def __init__(self):
-        self._config: Dict[str, Any] = {}
+        super().__init__()
         self._plugin_dir: Path = None
 
     @classmethod
@@ -63,11 +63,18 @@ class FeishuDataSource(DataSourcePlugin):
         try:
             self._config = config
             self._plugin_dir = Path(__file__).parent
+            self._set_ready()
             logger.info("飞书数据源插件初始化成功")
             return True
         except Exception as e:
             logger.error(f"飞书数据源插件初始化失败: {e}")
+            self._set_error(str(e))
             return False
+
+    @classmethod
+    def requires_config(cls) -> bool:
+        """飞书插件为零配置插件。"""
+        return False
 
     async def sync(self) -> bool:
         """

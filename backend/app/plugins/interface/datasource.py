@@ -82,6 +82,15 @@ class DataSourcePlugin(BasePlugin):
         """
         pass
 
+    @classmethod
+    def requires_config(cls) -> bool:
+        """是否要求提供 config.yaml
+
+        默认返回 True, 保持对需要敏感配置的数据源插件兼容。
+        零配置插件可重写为 False。
+        """
+        return True
+
     def get_file_source_info(self, file_path: str, content: str) -> Dict[str, Any]:
         """获取文件的数据源信息（索引时调用）
 

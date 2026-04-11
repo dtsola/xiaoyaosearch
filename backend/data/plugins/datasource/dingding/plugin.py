@@ -48,7 +48,7 @@ class DingdingDataSource(DataSourcePlugin):
     METADATA_FILE_EXT = '.xyddjson'
 
     def __init__(self):
-        self._config: Dict[str, Any] = {}
+        super().__init__()
         self._plugin_dir: Optional[Path] = None
 
     @classmethod
@@ -74,11 +74,18 @@ class DingdingDataSource(DataSourcePlugin):
         try:
             self._config = config
             self._plugin_dir = Path(__file__).parent
+            self._set_ready()
             logger.info("钉钉数据源插件初始化成功")
             return True
         except Exception as e:
             logger.error(f"钉钉数据源插件初始化失败: {e}")
+            self._set_error(str(e))
             return False
+
+    @classmethod
+    def requires_config(cls) -> bool:
+        """钉钉插件为零配置插件。"""
+        return False
 
     async def sync(self) -> bool:
         """

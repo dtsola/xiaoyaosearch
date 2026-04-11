@@ -162,32 +162,6 @@ class PluginLoader:
             logger.warning(f"插件 {plugin_id} 缺少 {PLUGIN_FILE}")
             return
 
-        if not config_file.exists():
-            self._load_errors[plugin_id] = f"缺少 {CONFIG_FILE} 文件"
-            logger.warning(f"插件 {plugin_id} 缺少 {CONFIG_FILE}")
-            return
-
-        # 加载配置
-        try:
-            config = self._load_config(config_file)
-            self._plugin_configs[plugin_id] = config
-
-            # 检查插件是否启用
-            plugin_config = config.get("plugin", {})
-            if not plugin_config.get("enabled", False):
-                logger.info(f"插件 {plugin_id} 已禁用，跳过加载")
-                return
-
-            # 验证配置
-            datasource_config = config.get("datasource", {})
-            if plugin_type == PluginType.AI_MODEL:
-                datasource_config = config.get("ai_model", {})
-
-        except Exception as e:
-            self._load_errors[plugin_id] = f"配置加载失败: {str(e)}"
-            logger.error(f"加载插件配置失败 {plugin_id}: {e}")
-            return
-
         # 动态导入插件模块
         try:
             plugin_instance = await self._import_plugin_module(
@@ -195,6 +169,41 @@ class PluginLoader:
             )
 
             if plugin_instance:
+                requires_config = True
+                if hasattr(plugin_instance, "requires_config"):
+                    requires_config = plugin_instance.requires_config()
+
+                # 加载配置。零配置插件允许缺少 config.yaml。
+                if requires_config:
+                    if not config_file.exists():
+                        self._load_errors[plugin_id] = f"缺少 {CONFIG_FILE} 文件"
+                        logger.warning(f"插件 {plugin_id} 缺少 {CONFIG_FILE}")
+                        return
+                    config = self._load_config(config_file)
+                else:
+                    if config_file.exists():
+                        config = self._load_config(config_file)
+                    else:
+                        config = {
+                            "plugin": {
+                                "id": plugin_id,
+                                "enabled": True,
+                            },
+                            plugin_type.value: {},
+                        }
+                        logger.info(f"插件 {plugin_id} 无需配置，使用默认配置启动")
+
+                self._plugin_configs[plugin_id] = config
+
+                plugin_config = config.get("plugin", {})
+                if not plugin_config.get("enabled", False):
+                    logger.info(f"插件 {plugin_id} 已禁用，跳过加载")
+                    return
+
+                datasource_config = config.get("datasource", {})
+                if plugin_type == PluginType.AI_MODEL:
+                    datasource_config = config.get("ai_model", {})
+
                 # 初始化插件
                 if await self._initialize_plugin(plugin_instance, datasource_config, plugin_id):
                     self._loaded_plugins[plugin_id] = plugin_instance

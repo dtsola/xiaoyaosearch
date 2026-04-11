@@ -378,6 +378,8 @@ class ChunkSearchService:
             from whoosh import index as whoosh_index
             from whoosh.qparser import QueryParser, MultifieldParser, OrGroup
             from whoosh.query import And, Or, Term
+            from app.core.database import SessionLocal
+            from app.models.file import FileModel
 
             # 打开分块索引
             ix = whoosh_index.open_dir(self.chunk_whoosh_index_path)
@@ -420,7 +422,28 @@ class ChunkSearchService:
 
                 logger.info(f"全文搜索找到 {len(hits)} 个结果")
 
-                # 处理结果 - 直接使用索引数据，不再查询数据库
+                # 收集所有 file_id，批量从数据库读取 source_type 和 source_url
+                file_ids = set()
+                for hit in hits:
+                    file_id = hit.get('file_id')
+                    if file_id:
+                        file_ids.add(int(file_id))
+
+                # 批量查询数据库获取数据源信息
+                file_source_info = {}
+                if file_ids:
+                    db = SessionLocal()
+                    try:
+                        files = db.query(FileModel).filter(FileModel.id.in_(file_ids)).all()
+                        for file in files:
+                            file_source_info[file.id] = {
+                                'source_type': file.source_type,
+                                'source_url': file.source_url
+                            }
+                    finally:
+                        db.close()
+
+                # 处理结果
                 results = []
                 for hit in hits:
                     # 获取实际存储的内容
@@ -442,7 +465,11 @@ class ChunkSearchService:
                             logger.debug(f"文件 {file_name} 被过滤: 原始类型={file_type}, 映射类型={mapped_file_type}, 过滤条件={filter_types}")
                             continue  # 跳过不符合过滤条件的文件
 
-                    # 直接从索引获取完整信息
+                    # 获取文件ID用于查询数据源信息
+                    file_id = int(hit.get('file_id', 0))
+                    source_info = file_source_info.get(file_id, {'source_type': None, 'source_url': None})
+
+                    # 从索引获取基本信息，从数据库获取数据源信息
                     chunk_info = {
                         'id': str(hit.get('file_id', '')),
                         'chunk_id': str(hit.get('chunk_id', '')),
@@ -460,9 +487,9 @@ class ChunkSearchService:
                         'modified_time': hit.get('modified_time'),
                         'relevance_score': min(float(hit.score or 0.0), 1.0),
                         'match_type': 'fulltext',
-                        # 数据源信息（插件系统）
-                        'source_type': hit.get('source_type'),
-                        'source_url': hit.get('source_url')
+                        # 数据源信息（从数据库读取，保持与语义搜索一致）
+                        'source_type': source_info['source_type'],
+                        'source_url': source_info['source_url']
                     }
 
                     # 生成预览文本和高亮

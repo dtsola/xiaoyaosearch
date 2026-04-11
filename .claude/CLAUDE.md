@@ -51,7 +51,7 @@
 - **[i18n PRD](docs/特性开发/i18n/i18n-01-prd.md)** - 国际化需求
 - **[i18n 技术方案](docs/特性开发/i18n/i18n-03-技术方案.md)** - 国际化技术实现
 
-### OpenAI兼容大模型服务 🚧
+### OpenAI兼容大模型服务 ✅ 已完成
 - **[OpenAI PRD](docs/特性开发/openai/openai-01-prd.md)** - OpenAI兼容大模型服务产品需求（672行）
 - **[OpenAI原型](docs/特性开发/openai/openai-02-原型.md)** - 原型设计和UI规范（857行）
 - **[OpenAI技术方案](docs/特性开发/openai/openai-03-技术方案.md)** - aiohttp + Pydantic技术实现（1145行）
@@ -60,7 +60,7 @@
 - **[OpenAI增量接口文档](docs/特性开发/openai/openai-增量-接口文档.md)** - API接口增量设计
 - **[OpenAI增量数据库设计](docs/特性开发/openai/openai-增量-数据库设计文档.md)** - 数据库表结构增量设计
 
-### 云端嵌入模型调用能力 🔥 开发中（第一优先级）
+### 云端嵌入模型调用能力 ✅ 已完成
 - **[云端嵌入PRD](docs/特性开发/embedding-openai/embedding-openai-01-prd.md)** - 云端嵌入模型调用能力产品需求（774行）
 - **[云端嵌入原型](docs/特性开发/embedding-openai/embedding-openai-02-原型.md)** - 原型设计和UI规范
 - **[云端嵌入技术方案](docs/特性开发/embedding-openai/embedding-openai-03-技术方案.md)** - aiohttp + OpenAI API技术实现
@@ -70,7 +70,7 @@
 - **[云端嵌入增量接口文档](docs/特性开发/embedding-openai/embedding-openai-增量-接口文档.md)** - API接口增量设计
 - **[云端嵌入增量数据库设计](docs/特性开发/embedding-openai/embedding-openai-增量-数据库设计文档.md)** - 数据库表结构增量设计
 
-### 插件化架构与数据源扩展（语雀+飞书+钉钉）
+### 插件化架构与数据源扩展（语雀+飞书+钉钉） ✅ 已完成
 - **[插件化PRD](docs/特性开发/plugins+yuque/plugins+yuque-01-prd.md)** - 插件化架构与语雀数据源产品需求（663行）
 - **[插件化原型](docs/特性开发/plugins+yuque/plugins+yuque-02-原型.md)** - 原型设计和UI规范
 - **[插件化技术方案](docs/特性开发/plugins+yuque/plugins+yuque-03-技术方案.md)** - Python ABC + importlib插件架构实现
@@ -84,12 +84,12 @@
 - **[钉钉数据源任务清单](docs/特性开发/plugins+dingding/plugins+dingding-04-开发任务清单.md)** - 钉钉数据源开发任务清单
 - **[钉钉元数据导出方案](docs/特性开发/plugins+dingding/元数据导出方案.md)** - 钉钉导出工具元数据格式规范
 
-### Agent Skill：小遥搜索 MCP 能力 🚧 规划中
+### Agent Skill：小遥搜索 MCP 能力 ✅ 已完成
 - **[Agent Skill PRD](docs/特性开发/agent-skills/agent-skills-01-prd.md)** - Agent Skill 产品需求
 - **[Agent Skill 技术方案](docs/特性开发/agent-skills/agent-skills-03-技术方案.md)** - Agent Skill 技术实现
 - **[Agent Skill 实施步骤](docs/特性开发/agent-skills/agent-skills-06-实施步骤.md)** - 开发任务分解
 
-### MCP 服务器支持
+### MCP 服务器支持 ✅ 已完成
 - **[MCP PRD](docs/特性开发/mcp/mcp-01-prd.md)** - MCP服务器支持产品需求（925行）
 - **[MCP技术方案](docs/特性开发/mcp/mcp-03-技术方案.md)** - FastAPI集成 + SSE端点技术实现（1270行）
 - **[MCP任务清单](docs/特性开发/mcp/mcp-04-开发任务清单.md)** - 开发任务分解（622行）
@@ -101,6 +101,14 @@
 - **[视频搜索技术方案](docs/特性开发/videosearch/videosearch-03-技术方案.md)** - FFmpeg关键帧提取技术实现
 - **[视频搜索任务清单](docs/特性开发/videosearch/videosearch-04-开发任务清单.md)** - 开发任务分解
 - **[视频搜索排期表](docs/特性开发/videosearch/videosearch-05-开发排期表.md)** - 时间规划和里程碑
+
+### 专业术语库系统 🚧 规划中
+- **[专业术语库PRD](docs/特性开发/search-optimization-glossary/search-optimization-glossary-01-prd.md)** - 专业术语库系统产品需求（1068行）
+- **[专业术语库原型](docs/特性开发/search-optimization-glossary/search-optimization-glossary-02-原型.md)** - 原型设计和UI规范（817行）
+- **[专业术语库技术方案](docs/特性开发/search-optimization-glossary/search-optimization-glossary-03-技术方案.md)** - SQLAlchemy + FastAPI技术实现（758行）
+- **[专业术语库任务清单](docs/特性开发/search-optimization-glossary/search-optimization-glossary-04-开发任务清单.md)** - 开发任务分解（298行）
+- **[专业术语库增量接口文档](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-接口文档.md)** - API接口增量设计（946行）
+- **[专业术语库增量数据库设计](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-数据库设计文档.md)** - 数据库表结构增量设计（1207行）
 
 ### 测试文档
 - **[配置接口测试](docs/测试文档/测试用例/test-data-config.md)** - AI模型配置接口测试
@@ -174,7 +182,7 @@ npm run dev
 - **i18n国际化**：✅ 已完成
 - **API接口**：36个接口全部实现
 - **OpenAI兼容大模型服务**：✅ 已完成
-- **插件化架构与数据源扩展（语雀+飞书+钉钉）**：🔥 开发中，钉钉数据源插件开发中（20%）
+- **插件化架构与数据源扩展（语雀+飞书+钉钉）**：✅ 已完成
 - **视频画面搜索**：⏸️ 已暂停，优先开发插件化架构与数据源扩展
 - **MCP服务器支持**：✅ 已完成
 - **云端嵌入模型调用能力**：✅ 已完成
@@ -254,6 +262,12 @@ npm run dev
 | **MCP服务器支持PRD** | **[MCP PRD](docs/特性开发/mcp/mcp-01-prd.md)** |
 | **MCP服务器支持技术方案** | **[MCP技术方案](docs/特性开发/mcp/mcp-03-技术方案.md)** |
 | **MCP服务器支持任务清单** | **[MCP任务清单](docs/特性开发/mcp/mcp-04-开发任务清单.md)** |
+| **专业术语库PRD** | **[专业术语库系统PRD](docs/特性开发/search-optimization-glossary/search-optimization-glossary-01-prd.md)** |
+| **专业术语库原型** | **[专业术语库系统原型](docs/特性开发/search-optimization-glossary/search-optimization-glossary-02-原型.md)** |
+| **专业术语库技术方案** | **[专业术语库系统技术方案](docs/特性开发/search-optimization-glossary/search-optimization-glossary-03-技术方案.md)** |
+| **专业术语库任务清单** | **[专业术语库系统任务清单](docs/特性开发/search-optimization-glossary/search-optimization-glossary-04-开发任务清单.md)** |
+| **专业术语库接口文档** | **[专业术语库系统增量接口文档](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-接口文档.md)** |
+| **专业术语库数据库设计** | **[专业术语库系统增量数据库设计](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-数据库设计文档.md)** |
 | API测试 | [测试文档目录](docs/测试文档/测试用例/) |
 
 ### 快速链接
@@ -284,17 +298,23 @@ npm run dev
 - ✅ MCP服务器支持PRD → [MCP服务器支持PRD](docs/特性开发/mcp/mcp-01-prd.md)
 - ⚙️ MCP服务器支持技术方案 → [MCP服务器支持技术方案](docs/特性开发/mcp/mcp-03-技术方案.md)
 - 📋 MCP服务器支持任务清单 → [MCP服务器支持任务清单](docs/特性开发/mcp/mcp-04-开发任务清单.md)
+- 🔍 专业术语库系统PRD → [专业术语库系统PRD](docs/特性开发/search-optimization-glossary/search-optimization-glossary-01-prd.md)
+- 🎨 专业术语库系统原型 → [专业术语库系统原型](docs/特性开发/search-optimization-glossary/search-optimization-glossary-02-原型.md)
+- ⚙️ 专业术语库系统技术方案 → [专业术语库系统技术方案](docs/特性开发/search-optimization-glossary/search-optimization-glossary-03-技术方案.md)
+- 📋 专业术语库系统任务清单 → [专业术语库系统任务清单](docs/特性开发/search-optimization-glossary/search-optimization-glossary-04-开发任务清单.md)
+- 🔌 专业术语库系统接口文档 → [专业术语库系统增量接口文档](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-接口文档.md)
+- 🗄️ 专业术语库系统数据库设计 → [专业术语库系统增量数据库设计](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-数据库设计文档.md)
 
 ---
 
-**文档版本**：v16.0 (钉钉数据源插件开发版)
+**文档版本**：v17.0 (专业术语库系统规划版)
 **维护者**：AI助手
 **重要提醒**：所有AI回复、文档编写、代码注释必须使用中文
 
 **当前开发重点**：🔥 插件化架构与数据源扩展（钉钉数据源插件）
 
 **特性开发说明**：
-- 🔌 **插件化架构与数据源扩展（语雀+飞书+钉钉）** 🔥 开发中（第一优先级）
+- 🔌 **插件化架构与数据源扩展（语雀+飞书+钉钉）** ✅ 已完成
   - **技术栈**：Python ABC + importlib + Pydantic + JSON
   - **核心能力**：插件化框架、数据源抽象、热插拔、API管理
   - **数据源支持**：语雀知识库、飞书文档、钉钉文档
@@ -305,7 +325,7 @@ npm run dev
     - 插件化：PRD、原型、技术方案、任务清单、排期表
     - 飞书：PRD（567行）、技术方案（671行）、任务清单（467行）
     - 钉钉：PRD（897行）、技术方案（924行）、任务清单、元数据导出方案
-- 🤖 **OpenAI兼容大模型服务** 🚧 规划中
+- 🤖 **OpenAI兼容大模型服务** ✅ 已完成
   - **技术栈**：aiohttp + Pydantic + OpenAI API标准
   - **核心能力**：云端大模型集成、动态表单、API密钥加密
   - **配置参数**：provider（local/cloud）、api_key、endpoint、model
@@ -329,13 +349,21 @@ npm run dev
   - **全局文档**：已同步到PRD、原型、技术方案、技术选型、代码架构、数据库设计、索引构建逻辑
   - **特性文档**：PRD、原型、技术方案、任务清单、排期表
 
-- 🔥 **Agent Skill：小遥搜索 MCP 能力** 🔥 开发中（第一优先级）
+- 🔥 **Agent Skill：小遥搜索 MCP 能力** ✅ 已完成
   - **技术栈**：MCP 协议 + Claude Agent Skills 规范 + SKILL.md
   - **核心能力**：为 Claude Code 提供 MCP 工具调用能力、5个搜索工具（语义/全文/语音/图像/混合）
   - **配置参数**：MCP SSE 端点 `http://127.0.0.1:8000/mcp`
   - **开发状态**：需求分析和设计完成
   - **全局文档**：待同步
   - **特性文档**：PRD、技术方案、实施步骤
+
+- 🔍 **专业术语库系统** 🚧 规划中
+  - **技术栈**：SQLAlchemy + FastAPI + Vue 3 + Ant Design Vue + JSON
+  - **核心能力**：多术语库集合管理、术语同义词扩展、查询扩展、CSV导入导出、预置术语库
+  - **配置参数**：default_glossary_collections、术语库启用状态
+  - **开发状态**：需求分析、原型设计和技术方案完成，PRD文档完成（1068行），原型文档完成（817行），技术方案完成（758行），任务清单完成（298行），增量接口文档完成（946行），增量数据库设计完成（1207行）
+  - **全局文档**：待同步
+  - **特性文档**：PRD、原型、技术方案、任务清单、增量接口文档、增量数据库设计文档
 
 ---
 

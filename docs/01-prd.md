@@ -37,6 +37,7 @@
 
 ### P1功能（最好有）
 - [x] **国际化支持（i18n）**：中英文双语界面，语言切换器，720+翻译键全覆盖 ✅ 已完成
+- [ ] **专业术语库系统** 🚧 规划中 - 建立多术语库集合系统，支持用户自定义领域术语库（医疗、法律、IT等），实现精准查询扩展，解决搜索"PRD"无法返回"产品需求文档"等问题（详见[特性PRD](特性开发/search-optimization-glossary/search-optimization-glossary-01-prd.md)）
 - [ ] **云端嵌入模型调用能力** 🚧 规划中 - 支持OpenAI兼容的云端嵌入模型服务，用户可选择使用云端嵌入模型（如OpenAI、DeepSeek、阿里云通义千问、Moonshot等）替代本地BGE-M3模型，两者互斥，切换时需要重建索引（详见[特性PRD](特性开发/embedding-openai/embedding-openai-01-prd.md)）
 - [ ] **OpenAI兼容大模型服务** 🚧 规划中 - 支持OpenAI兼容的云端大语言模型服务，用户可选择使用云端大模型（如阿里云通义千问、DeepSeek、Moonshot等）替代或补充本地Ollama模型（详见[特性PRD](特性开发/openai/openai-01-prd.md)）
 - [ ] **插件化架构与数据源扩展（语雀+飞书+钉钉）** 🚧 规划中 - 建立插件化框架支持多数据源扩展，优先实现语雀知识库数据源、飞书文档数据源和钉钉文档数据源（详见[语雀PRD](特性开发/plugins+yuque/plugins+yuque-01-prd.md) | [飞书PRD](特性开发/plugins+feishu/plugins+feishu-01-prd.md) | [钉钉PRD](特性开发/plugins+dingding/plugins+dingding-01-prd.md)）
@@ -94,6 +95,13 @@
   - 钉钉数据源：本地文件路径配置，支持钉钉导出工具生成的 .xyddjson 元数据文件自动识别
   - 同步状态：同步进度、文档数量统计
   - 多源配置：支持同时启用多个数据源
+- **术语库配置** 🚧 规划中
+  - 术语库管理：创建、编辑、删除术语库（如"医疗术语库"、"IT术语库"）
+  - 术语管理：在术语库中添加、编辑、删除术语
+  - 查询扩展：根据选择的术语库扩展查询词
+  - 术语库选择：选择默认使用的术语库组合
+  - CSV导入/导出：支持导入外部术语库（CSV格式）
+  - 详见：[专业术语库系统PRD](特性开发/search-optimization-glossary/search-optimization-glossary-01-prd.md)
 
 ### 索引管理页面
 - 文件夹选择器
@@ -148,6 +156,18 @@
 | datasource_sync_completed | 同步完成时 | source_type, item_count, duration | 监控同步性能 |
 | datasource_search_triggered | 搜索数据源时 | source_type | 了解数据源使用率 |
 
+### 6.4 专业术语库增量埋点
+
+| 事件 | 触发时机 | 关键参数 | 业务价值 |
+|------|---------|---------|---------|
+| glossary_view | 查看术语详情 | term_id, term_name | 了解术语使用情况 |
+| glossary_add | 添加术语 | term, category | 统计术语增长 |
+| glossary_search | 搜索术语 | query, results_count | 了解术语查询需求 |
+| term_match | 术语匹配 | query, matched_term, is_expanded | 评估术语匹配效果 |
+| term_expanded_search | 使用扩展搜索 | query, expanded_terms, results_count | 评估扩展效果 |
+
+详见：[专业术语库PRD](特性开发/search-optimization-glossary/search-optimization-glossary-01-prd.md)
+
 ## 7. 非功能需求
 
 ### 性能要求
@@ -158,6 +178,9 @@
 - 插件加载时间 < 500ms（插件化架构）
 - 数据源同步速度 > 30篇/秒（语雀数据源）
 - 多数据源搜索延迟 < 200ms（插件化架构）
+- 术语匹配响应时间 < 50ms（专业术语库）
+- 术语扩展搜索时间 < 1.2倍原时间（专业术语库）
+- 术语列表加载 < 500ms（专业术语库）
 - 云端嵌入API响应时间 < 2s（单次）（云端嵌入模型）
 - 批量嵌入吞吐量 > 100 texts/min（云端嵌入模型）
 - 索引重建速度 > 10 files/min（云端嵌入模型）
@@ -176,6 +199,7 @@
 - 支持隐私模式（不记录搜索历史）
 - API Token加密存储（使用系统密钥库）（插件化架构）
 - API密钥加密存储（云端嵌入模型）（云端嵌入模型）
+- 术语管理权限控制（管理员/普通用户）（专业术语库）
 - 插件代码沙箱隔离（限制文件系统访问）（插件化架构）
 - 插件上传包验证（文件类型、大小限制）（插件化架构）
 - API调用频率限制（防止滥用）（插件化架构）
@@ -215,6 +239,13 @@
   - 多源搜索：统一索引服务，支持跨数据源语义搜索
   - 插件安全：沙箱隔离、API Token加密存储、插件包验证
   - 详见：[插件化架构PRD](特性开发/plugins+yuque/plugins+yuque-01-prd.md) | [飞书数据源PRD](特性开发/plugins+feishu/plugins+feishu-01-prd.md) | [钉钉数据源PRD](特性开发/plugins+dingding/plugins+dingding-01-prd.md)
+- **专业术语库系统** 🚧 规划中
+  - 核心能力：建立多术语库集合系统，支持用户自定义领域术语库（医疗、法律、IT等），实现精准查询扩展
+  - 技术基础：SQLite术语库存储 + Faiss术语匹配 + 术语扩展服务
+  - 主要功能：术语库集合管理、术语管理、查询扩展、术语库选择、CSV导入/导出、预置术语库
+  - 用户价值：解决搜索"PRD"无法返回"产品需求文档"等问题，支持领域隔离避免术语混淆
+  - 配置管理：搜索设置中选择默认使用的术语库组合，支持快速启用/禁用
+  - 详见：[专业术语库系统PRD](特性开发/search-optimization-glossary/search-optimization-glossary-01-prd.md)
 - **MCP服务器支持** 🚧 规划中
   - 核心能力：为小遥搜索添加 Model Context Protocol (MCP) 服务器能力，使 Claude Desktop 等 AI 应用能够连接小遥搜索进行本地文件智能搜索
   - 技术基础：mcp-python-sdk + FastAPI SSE 端点 + 适配器模式

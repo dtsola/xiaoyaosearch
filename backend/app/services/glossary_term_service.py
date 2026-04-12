@@ -19,6 +19,7 @@ from app.schemas.glossary import (
     GlossaryTermCreate,
     GlossaryTermUpdate,
     GlossaryTermResponse,
+    GlossaryTermListData,
     GlossaryTermListResponse,
     GlossaryImportResponse
 )
@@ -92,7 +93,7 @@ class GlossaryTermService:
                 (page - 1) * page_size
             ).limit(page_size).all()
 
-            return GlossaryTermListResponse(
+            data = GlossaryTermListData(
                 collection_id=collection_id,
                 collection_name=collection.name,
                 items=[GlossaryTermResponse.model_validate(item) for item in items],
@@ -100,6 +101,7 @@ class GlossaryTermService:
                 page=page,
                 page_size=page_size
             )
+            return GlossaryTermListResponse(success=True, data=data)
         except HTTPException:
             raise
         except Exception as e:

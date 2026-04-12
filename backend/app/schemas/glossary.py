@@ -118,14 +118,20 @@ class GlossaryTermResponse(GlossaryTermBase):
         from_attributes = True
 
 
-class GlossaryTermListResponse(BaseModel):
-    """术语列表响应模式"""
+class GlossaryTermListData(BaseModel):
+    """术语列表数据"""
     collection_id: int
     collection_name: str
     items: List[GlossaryTermResponse]
     total: int
     page: int
     page_size: int
+
+
+class GlossaryTermListResponse(BaseModel):
+    """术语列表响应模式"""
+    success: bool = True
+    data: GlossaryTermListData
 
 
 # ==================== 查询扩展Schema ====================

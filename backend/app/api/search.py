@@ -81,46 +81,99 @@ async def search_files(
                 message=i18n.t('search.service_not_ready', locale)
             )
 
-        # LLM查询增强
-        enhanced_query = request.query
+        # ========== 第一步：术语扩展（在LLM之前，基于原始输入） ==========
+        original_query = request.query
+        glossary_expansion_result = None
+        glossary_expansion_queries = []
+
+        if search_service.enable_glossary_expansion and is_text_input(request.input_type):
+            try:
+                logger.info(f"开始术语扩展: query='{original_query}', collection_ids={search_service.glossary_collection_ids}")
+                glossary_expansion_result = search_service.glossary_service.expand_query(
+                    original_query,
+                    search_service.glossary_collection_ids
+                )
+                logger.info(f"术语扩展结果: matched_terms={len(glossary_expansion_result.matched_terms) if glossary_expansion_result else 0}")
+
+                if glossary_expansion_result and glossary_expansion_result.matched_terms:
+                    # 准备术语扩展词列表（限制数量）
+                    glossary_expansion_queries = [original_query]  # 原始查询始终包含
+                    for exp_query in glossary_expansion_result.expanded_queries[1:]:
+                        if exp_query != original_query and len(glossary_expansion_queries) < search_service.max_expansion_terms:
+                            glossary_expansion_queries.append(exp_query)
+                    logger.info(f"术语扩展词列表: {glossary_expansion_queries}")
+            except Exception as e:
+                logger.warning(f"术语扩展失败: {str(e)}")
+
+        # ========== 第二步：LLM查询增强（基于原始输入） ==========
+        llm_enhanced_query = original_query
         query_enhancer = get_llm_query_enhancer()
 
         if is_text_input(request.input_type):
             try:
-                # 使用LLM增强查询
-                enhancement_result = await query_enhancer.enhance_query(request.query)
-                logger.info(f"增强结果： {enhancement_result} ")
+                # 使用LLM增强原始查询（不是术语扩展后的）
+                enhancement_result = await query_enhancer.enhance_query(original_query)
+                logger.info(f"LLM增强结果: {enhancement_result}")
                 if enhancement_result.get('success', False) and enhancement_result.get('enhanced', False):
                     # 根据搜索类型选择最佳查询
                     if is_semantic_search(request.search_type):
-                        # 语义搜索使用扩展查询（包含同义词，有助于向量匹配）
-                        enhanced_query = enhancement_result.get('expanded_query', request.query)
+                        llm_enhanced_query = enhancement_result.get('expanded_query', original_query)
                     elif request.search_type == SearchType.FULLTEXT:
-                        # 全文搜索使用扩展查询（关键词形式），而不是重写后的问句
-                        enhanced_query = enhancement_result.get('expanded_query', request.query)
+                        llm_enhanced_query = enhancement_result.get('expanded_query', original_query)
                     else:  # HYBRID
-                        # 混合搜索使用扩展查询
-                        enhanced_query = enhancement_result.get('expanded_query', request.query)
+                        llm_enhanced_query = enhancement_result.get('expanded_query', original_query)
 
-                    logger.info(f"LLM查询增强: '{request.query}' -> '{enhanced_query}'")
+                    logger.info(f"LLM查询增强: '{original_query}' -> '{llm_enhanced_query}'")
             except Exception as e:
                 logger.warning(f"LLM查询增强失败，使用原始查询: {str(e)}")
-                enhanced_query = request.query
-                
-        # 执行分块搜索
+                llm_enhanced_query = original_query
+
+        # ========== 第三步：合并扩展词并去重 ==========
+        all_queries = [original_query]  # 始终包含原始查询
+
+        # 添加术语库扩展词
+        if glossary_expansion_queries:
+            all_queries.extend(glossary_expansion_queries)
+
+        # 添加LLM扩展词（分词后去重）
+        if llm_enhanced_query != original_query:
+            llm_expanded_words = llm_enhanced_query.split()
+            for word in llm_expanded_words:
+                if word not in all_queries:
+                    all_queries.append(word)
+
+        # 去重
+        all_queries = list(set(all_queries))
+        logger.info(f"最终查询词列表: {all_queries}")
+
+        # ========== 第四步：执行搜索 ==========
         # 构建过滤器字典
         filters = {}
         if request.file_types:
             filters['file_types'] = request.file_types
 
-        search_result_data = await search_service.search(
-            query=enhanced_query,
-            search_type=request.search_type,  # 直接使用SearchType枚举
-            limit=request.limit,
-            offset=0,
-            threshold=request.threshold,
-            filters=filters
-        )
+        # 如果有多个查询词（术语扩展或LLM增强），使用新的方法
+        if len(all_queries) > 1:
+            logger.info(f"使用多查询词并发搜索: {len(all_queries)} 个查询词")
+            search_result_data = await search_service.search_with_expansion(
+                original_query=original_query,
+                expanded_queries=all_queries,
+                search_type=request.search_type,
+                limit=request.limit,
+                threshold=request.threshold,
+                filters=filters,
+                glossary_expansion_result=glossary_expansion_result
+            )
+        else:
+            # 单查询词搜索
+            search_result_data = await search_service.search(
+                query=original_query,
+                search_type=request.search_type,
+                limit=request.limit,
+                offset=0,
+                threshold=request.threshold,
+                filters=filters
+            )
 
         # 处理搜索结果数据格式
         search_result = search_result_data.get('data', {})
@@ -149,7 +202,7 @@ async def search_files(
         ai_models_used = []
 
         # 记录LLM查询增强
-        if enhanced_query != request.query:
+        if len(all_queries) > 1:
             llm_model = await ai_model_service.get_model("llm")
             llm_model_name = llm_model.model_name if llm_model else "qwen2.5:1.5b"
             ai_models_used.append(f"{llm_model_name}(LLM增强)")

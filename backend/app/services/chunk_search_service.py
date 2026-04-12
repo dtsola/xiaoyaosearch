@@ -5,6 +5,7 @@
 import os
 import pickle
 import time
+import asyncio
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 
@@ -57,6 +58,12 @@ class ChunkSearchService:
         self.enable_glossary_expansion = enable_glossary_expansion
         self.glossary_collection_ids = glossary_collection_ids
         self.max_expansion_terms = max(1, min(max_expansion_terms, 20))  # 限制在1-20之间
+
+        # 计算最大并发搜索数（CPU核心数 x 2）
+        import os as os_module
+        cpu_count = os_module.cpu_count() or 4
+        self.max_concurrent_searches = cpu_count * 2
+        logger.info(f"搜索并发控制: CPU核心数={cpu_count}, 最大并发数={self.max_concurrent_searches}")
 
         self.chunk_faiss_index_path = chunk_faiss_index_path
         self.chunk_whoosh_index_path = chunk_whoosh_index_path
@@ -258,6 +265,96 @@ class ChunkSearchService:
             logger.error(f"透明搜索失败: {str(e)}")
             # 返回错误响应（兼容格式）
             return self._format_error_response(query, search_type, str(e))
+
+    async def search_with_expansion(
+        self,
+        original_query: str,
+        expanded_queries: List[str],
+        search_type: SearchType = SearchType.HYBRID,
+        limit: int = 20,
+        threshold: float = 0.7,
+        filters: Optional[Dict[str, Any]] = None,
+        glossary_expansion_result: Any = None
+    ) -> Dict[str, Any]:
+        """使用预扩展的查询词列表进行并发搜索
+
+        Args:
+            original_query: 原始用户查询
+            expanded_queries: 预扩展的查询词列表（包含术语扩展和LLM扩展）
+            search_type: 搜索类型
+            limit: 返回结果数量
+            threshold: 相似度阈值
+            filters: 过滤条件
+            glossary_expansion_result: 术语扩展结果对象
+
+        Returns:
+            Dict[str, Any]: 搜索结果（与现有API完全兼容）
+        """
+        start_time = time.time()
+        queries_used = expanded_queries
+
+        try:
+            logger.info(f"执行扩展并发搜索: {len(expanded_queries)} 个查询词, 最大并发数={self.max_concurrent_searches}")
+            logger.info(f"查询词列表: {expanded_queries}")
+
+            # 并发搜索所有查询词（使用信号量限制并发数）
+            should_use_chunk = self._should_use_chunk_search()
+            if should_use_chunk:
+                # 创建信号量限制并发数
+                semaphore = asyncio.Semaphore(self.max_concurrent_searches)
+
+                async def limited_search(query: str) -> List[Dict[str, Any]]:
+                    async with semaphore:
+                        return await self._chunk_search(query, search_type, limit, threshold, filters)
+
+                search_tasks = [
+                    limited_search(q)
+                    for q in expanded_queries
+                ]
+                all_results = await asyncio.gather(*search_tasks)
+
+                # 合并结果
+                final_results = self._merge_expansion_search_results(all_results)
+                logger.info(f"扩展并发搜索完成，合并后结果数量: {len(final_results)}")
+            else:
+                logger.error("分块搜索服务不可用")
+                final_results = []
+
+            # 计算响应时间
+            response_time = time.time() - start_time
+
+            # 更新统计信息
+            self._update_search_stats(response_time, len(final_results) > 0)
+
+            # 准备术语扩展信息
+            glossary_info = glossary_expansion_result
+            llm_enhancement_info = {
+                "original_query": original_query,
+                "expanded_query": " ".join(expanded_queries),
+                "enhanced": len(expanded_queries) > 1
+            }
+
+            # 格式化响应（保持完全兼容）
+            result = self._format_compatible_response(
+                final_results,
+                original_query,
+                response_time,
+                search_type,
+                glossary_info,
+                queries_used
+            )
+
+            # 添加LLM增强信息到响应
+            if result.get('data'):
+                result['data']['llm_enhancement'] = llm_enhancement_info
+
+            logger.info(f"扩展搜索完成: 结果数={result.get('data', {}).get('total', 0)}, 耗时={response_time:.3f}秒")
+            return result
+
+        except Exception as e:
+            logger.error(f"扩展并发搜索失败: {str(e)}")
+            # 返回错误响应（兼容格式）
+            return self._format_error_response(original_query, search_type, str(e))
 
     def _should_use_chunk_search(self) -> bool:
         """判断是否应该使用分块搜索"""

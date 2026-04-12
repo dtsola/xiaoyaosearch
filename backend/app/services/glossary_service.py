@@ -117,10 +117,18 @@ class GlossaryService:
                     GlossaryTermModel.collection_id.in_(collection_ids)
                 )
 
-            # 模糊匹配（匹配术语名称或同义词）
+            # 简化的匹配逻辑：精确匹配或包含匹配
+            # 1. 精确匹配：术语等于查询词（如 "PRD" == "PRD"）
+            # 2. 包含匹配：术语包含查询词（如 "OpenAI API" 包含 "API"）
+            # 3. 同义词匹配：同义词列表包含查询词（JSON 格式）
+            from sqlalchemy import or_
+
             db_query = db_query.filter(
-                (GlossaryTermModel.term.contains(query)) |
-                (GlossaryTermModel.synonyms.contains(query))
+                or_(
+                    GlossaryTermModel.term == query,
+                    GlossaryTermModel.term.contains(query),
+                    GlossaryTermModel.synonyms.contains(f'"{query}"')
+                )
             )
 
             results = db_query.all()
@@ -137,7 +145,7 @@ class GlossaryService:
                     collection_name=row.collection_name
                 ))
 
-            logger.debug(f"查询 '{query}' 匹配到 {len(matched_terms)} 个术语")
+            logger.info(f"术语匹配完成: query='{query}', matched_terms={len(matched_terms)}")
             return matched_terms
         except Exception as e:
             logger.error(f"匹配术语失败: {str(e)}")

@@ -70,6 +70,8 @@ def init_database() -> None:
         from app.models.ai_model import AIModelModel
         from app.models.index_job import IndexJobModel
         from app.models.app_settings import AppSettingsModel
+        from app.models.glossary_collection import GlossaryCollectionModel
+        from app.models.glossary_term import GlossaryTermModel
 
         # 禁用外键约束（SQLite软外键模式）
         with engine.connect() as conn:

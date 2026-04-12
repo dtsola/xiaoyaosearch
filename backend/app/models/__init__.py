@@ -10,6 +10,8 @@ from app.models.index_job import IndexJobModel
 from app.models.file_content import FileContentModel
 from app.models.file_chunk import FileChunkModel
 from app.models.app_settings import AppSettingsModel
+from app.models.glossary_collection import GlossaryCollectionModel
+from app.models.glossary_term import GlossaryTermModel
 
 __all__ = [
     "FileModel",
@@ -18,5 +20,7 @@ __all__ = [
     "IndexJobModel",
     "FileContentModel",
     "FileChunkModel",
-    "AppSettingsModel"
+    "AppSettingsModel",
+    "GlossaryCollectionModel",
+    "GlossaryTermModel"
 ]

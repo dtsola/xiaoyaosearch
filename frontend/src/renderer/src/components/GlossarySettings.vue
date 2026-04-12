@@ -22,11 +22,18 @@
             :placeholder="t('glossary.settings.selectCollectionsPlaceholder')"
             :disabled="!config.enable"
             :options="collectionOptions"
+            :filter-option="filterOption"
+            show-search
+            :virtual="true"
+            :max-tag-count="3"
             style="width: 100%"
             @change="handleCollectionsChange"
           >
             <template #suffixIcon>
               <InfoCircleOutlined />
+            </template>
+            <template #notFoundContent>
+              <a-empty :description="t('glossary.settings.noMatchingCollections')" />
             </template>
           </a-select>
           <div class="form-help">
@@ -40,8 +47,9 @@
     <div class="settings-section">
       <h3>{{ t('glossary.settings.availableCollections') }}</h3>
       <a-list
-        :data-source="availableCollections"
+        :data-source="paginatedCollections"
         :loading="loading"
+        :pagination="listPagination"
       >
         <template #renderItem="{ item }">
           <a-list-item>
@@ -60,7 +68,7 @@
               </template>
             </a-list-item-meta>
             <template #actions>
-              <a-tag>{{ item.term_count }} {{ t('glossary.terms') }}</a-tag>
+              <a-tag>{{ item.term_count }} {{ t('glossary.termLabel') }}</a-tag>
             </template>
           </a-list-item>
         </template>
@@ -73,7 +81,7 @@
         <a-button type="primary" @click="saveConfig" :loading="saving">
           {{ t('common.save') }}
         </a-button>
-        <a-button @click="loadConfig">
+        <a-button @click="handleReset" :disabled="saving">
           {{ t('common.reset') }}
         </a-button>
       </a-space>
@@ -99,6 +107,17 @@ const config = reactive<GlossaryExpansionConfig>({
 const availableCollections = ref<any[]>([])
 const loading = ref(false)
 const saving = ref(false)
+const currentPage = ref(1)
+const pageSize = 10
+
+// 保存初始配置，用于重置
+const initialConfig = ref<{
+  enable: boolean
+  collection_ids: number[] | null
+}>({
+  enable: false,
+  collection_ids: null
+})
 
 // 计算属性
 const collectionOptions = computed(() => {
@@ -107,6 +126,33 @@ const collectionOptions = computed(() => {
     value: c.id
   }))
 })
+
+// 列表分页配置
+const listPagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: computed(() => availableCollections.value.length),
+  showSizeChanger: false,
+  showTotal: (total: number) => t('glossary.total', { total }),
+  onChange: (page: number) => {
+    currentPage.value = page
+    listPagination.current = page
+  }
+})
+
+// 当前页显示的术语库
+const paginatedCollections = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  const end = start + pageSize
+  return availableCollections.value.slice(start, end)
+})
+
+// 下拉框搜索过滤
+const filterOption = (input: string, option: any) => {
+  const label = option.label.toLowerCase()
+  const value = String(option.value).toLowerCase()
+  return label.includes(input.toLowerCase()) || value.includes(input.toLowerCase())
+}
 
 // 方法
 const loadConfig = async () => {
@@ -118,6 +164,16 @@ const loadConfig = async () => {
       config.enable = response.data.enable || false
       config.collection_ids = response.data.collection_ids || []
       availableCollections.value = response.data.available_collections || []
+
+      // 保存初始配置，用于重置
+      initialConfig.value = {
+        enable: config.enable,
+        collection_ids: [...(config.collection_ids || [])]
+      }
+
+      // 重置分页到第一页
+      currentPage.value = 1
+      listPagination.current = 1
     }
   } catch (error: any) {
     message.error(error.message || t('glossary.settings.loadConfigFailed'))
@@ -131,6 +187,12 @@ const saveConfig = async () => {
   try {
     await GlossaryService.updateExpansionConfig(config)
     message.success(t('glossary.settings.saveSuccess'))
+
+    // 保存成功后，更新初始配置
+    initialConfig.value = {
+      enable: config.enable,
+      collection_ids: config.collection_ids ? [...config.collection_ids] : []
+    }
   } catch (error: any) {
     message.error(error.message || t('glossary.settings.saveConfigFailed'))
   } finally {
@@ -146,6 +208,15 @@ const handleEnableChange = (checked: boolean) => {
 
 const handleCollectionsChange = (value: number[]) => {
   config.collection_ids = value
+}
+
+const handleReset = () => {
+  // 恢复到初始配置
+  config.enable = initialConfig.value.enable
+  config.collection_ids = initialConfig.value.collection_ids ? [...initialConfig.value.collection_ids] : []
+  currentPage.value = 1
+  listPagination.current = 1
+  message.success(t('common.resetSuccess'))
 }
 
 // 生命周期

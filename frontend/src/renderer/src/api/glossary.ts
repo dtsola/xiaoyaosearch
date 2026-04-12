@@ -109,7 +109,7 @@ export interface GlossaryExpansionConfig {
   collection_ids?: number[] | null
 }
 
-export interface GlossaryExpansionConfigResponse {
+export interface GlossaryExpansionConfigData {
   enable: boolean
   collection_ids?: number[] | null
   available_collections: Array<{
@@ -120,6 +120,11 @@ export interface GlossaryExpansionConfigResponse {
     color?: string
     term_count: number
   }>
+}
+
+export interface GlossaryExpansionConfigResponse {
+  success: boolean
+  data: GlossaryExpansionConfigData
 }
 
 // 术语库服务

@@ -40,6 +40,7 @@ export default {
     open: 'Open',
     folder: 'Folder',
     file: 'File',
+    actions: 'Actions',
     languageChanged: 'Language changed',
     localeCode: 'en-US'
   },
@@ -601,6 +602,7 @@ export default {
     home: 'Home',
     settings: 'Settings',
     index: 'Index',
+    glossary: 'Glossary',
     help: 'Help',
     about: 'About Author'
   },
@@ -849,5 +851,85 @@ export default {
         description: 'Supports local Ollama/BGE-M3 and cloud OpenAI-compatible APIs, flexible switching. Local files and index data always stored locally, only search queries sent to cloud (when using cloud models). You choose the balance between performance and privacy.'
       }
     }
+  },
+
+  // Glossary
+  glossary: {
+      system: 'System',
+      viewTerms: 'View Terms',
+      name: 'Name',
+      namePlaceholder: 'Enter collection name',
+      nameRequired: 'Collection name is required',
+      description: 'Description',
+      descriptionPlaceholder: 'Enter collection description',
+      noDescription: 'No description',
+      icon: 'Icon',
+      iconPlaceholder: 'Enter emoji icon',
+      color: 'Color',
+      colorPlaceholder: 'Enter color code (e.g. #1890ff)',
+      status: 'Status',
+      termCount: 'Term Count',
+      term: 'Term',
+      termPlaceholder: 'Enter term name',
+      termRequired: 'Term name is required',
+      synonyms: 'Synonyms',
+      synonymsPlaceholder: 'Enter synonyms and press Enter',
+      synonymsRequired: 'At least one synonym is required',
+      examples: 'Examples',
+      examplesPlaceholder: 'Enter example usage',
+      total: 'Total {total} items',
+      import: 'Import',
+      export: 'Export',
+      importTitle: 'Import Terms from CSV',
+      uploadText: 'Click or drag CSV file to this area to upload',
+      uploadHint: 'Only CSV format supported, max 5MB',
+      selectFile: 'Please select a file',
+      importSuccess: 'Successfully imported {count} terms',
+      importPartialSuccess: 'Import complete: {imported} succeeded, {failed} failed',
+      importFailed: 'Import failed',
+      exportSuccess: 'Export successful',
+      exportFailed: 'Export failed',
+      settings: {
+        title: 'Glossary Expansion Settings',
+        description: 'Enable glossary expansion to automatically match synonyms during search, improving recall rate.',
+        enableExpansion: 'Enable Glossary Expansion',
+        enableExpansionHint: 'When enabled, search will automatically use synonyms from glossary collections',
+        selectCollections: 'Select Collections',
+        selectCollectionsPlaceholder: 'Select collections to use',
+        selectCollectionsHint: 'If not selected, all enabled collections will be used',
+        availableCollections: 'Available Collections',
+        loadConfigFailed: 'Failed to load configuration',
+        saveConfigFailed: 'Failed to save configuration',
+        saveSuccess: 'Configuration saved'
+      },
+      collections: {
+        title: 'Glossary Collections',
+        subtitle: 'Manage glossary collections to improve search precision',
+        create: 'Create Collection',
+        edit: 'Edit Collection',
+        deleteConfirm: 'Are you sure to delete this collection?',
+        loadFailed: 'Failed to load collections',
+        createSuccess: 'Collection created successfully',
+        updateSuccess: 'Collection updated successfully',
+        deleteSuccess: 'Collection deleted successfully',
+        statusUpdateSuccess: 'Status updated successfully',
+        statusUpdateFailed: 'Failed to update status',
+        saveFailed: 'Failed to save',
+        deleteFailed: 'Failed to delete'
+      },
+      terms: {
+        title: 'Glossary Terms',
+        create: 'Create Term',
+        edit: 'Edit Term',
+        deleteConfirm: 'Are you sure to delete this term?',
+        loadFailed: 'Failed to load terms',
+        createSuccess: 'Term created successfully',
+        updateSuccess: 'Term updated successfully',
+        deleteSuccess: 'Term deleted successfully',
+        statusUpdateSuccess: 'Status updated successfully',
+        statusUpdateFailed: 'Failed to update status',
+        saveFailed: 'Failed to save',
+        deleteFailed: 'Failed to delete'
+      }
+    }
   }
-}

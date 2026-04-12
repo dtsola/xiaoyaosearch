@@ -405,6 +405,11 @@
         </div>
       </a-tab-pane>
 
+      <!-- 术语库设置 -->
+      <a-tab-pane key="glossary" :tab="t('glossary.settings.title')">
+        <GlossarySettings />
+      </a-tab-pane>
+
       <!-- 通用设置 -->
       <!-- <a-tab-pane key="general" tab="通用设置">
         <div class="settings-section">
@@ -457,6 +462,7 @@ import { message } from 'ant-design-vue'
 import { AIModelConfigService } from '@/api/config'
 import type { AIModelInfo, AIModelTestResult } from '@/types/api'
 import { useI18n } from 'vue-i18n'
+import GlossarySettings from '@/components/GlossarySettings.vue'
 
 // 国际化
 const { t } = useI18n()

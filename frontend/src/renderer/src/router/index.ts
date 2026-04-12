@@ -43,6 +43,23 @@ const router = createRouter({
       meta: {
         titleKey: 'about.title'
       }
+    },
+    // 术语库相关路由
+    {
+      path: '/glossary/collections',
+      name: 'GlossaryCollections',
+      component: () => import('@/views/GlossaryCollections.vue'),
+      meta: {
+        titleKey: 'glossary.collections.title'
+      }
+    },
+    {
+      path: '/glossary/terms/:collectionId',
+      name: 'GlossaryTerms',
+      component: () => import('@/views/GlossaryTerms.vue'),
+      meta: {
+        titleKey: 'glossary.terms.title'
+      }
     }
   ]
 })

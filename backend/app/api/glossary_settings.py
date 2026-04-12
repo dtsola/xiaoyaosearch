@@ -5,11 +5,12 @@
 """
 import logging
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel, Field
 
 from app.services.chunk_search_service import configure_glossary_expansion
 from app.services.glossary_collection_service import GlossaryCollectionService
+from app.core.i18n import get_locale_from_header, i18n
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,15 @@ class GlossaryExpansionConfigResponse(BaseModel):
     available_collections: List[dict]
 
 
+def get_locale(accept_language: Optional[str] = Header(None)) -> str:
+    """从请求头获取语言设置"""
+    return get_locale_from_header(accept_language)
+
+
 @router.get("/", response_model=GlossaryExpansionConfigResponse)
-async def get_glossary_expansion_config():
+async def get_glossary_expansion_config(
+    locale: str = Depends(get_locale)
+):
     """
     获取术语扩展配置
 
@@ -39,7 +47,7 @@ async def get_glossary_expansion_config():
     """
     try:
         service = GlossaryCollectionService()
-        collections = service.get_enabled_collections()
+        collections = service.get_enabled_collections(locale)
 
         return GlossaryExpansionConfigResponse(
             enable=False,  # 默认禁用
@@ -58,11 +66,17 @@ async def get_glossary_expansion_config():
         )
     except Exception as e:
         logger.error(f"获取术语扩展配置失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"获取配置失败: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=i18n.t('glossary.settings.get_config_failed', locale).format(error=str(e))
+        )
 
 
 @router.post("/")
-async def update_glossary_expansion_config(config: GlossaryExpansionConfig):
+async def update_glossary_expansion_config(
+    config: GlossaryExpansionConfig,
+    locale: str = Depends(get_locale)
+):
     """
     更新术语扩展配置
 
@@ -82,7 +96,7 @@ async def update_glossary_expansion_config(config: GlossaryExpansionConfig):
 
         return {
             "success": True,
-            "message": "术语扩展配置已更新",
+            "message": i18n.t('glossary.settings.update_success', locale),
             "config": {
                 "enable": config.enable,
                 "collection_ids": config.collection_ids
@@ -90,4 +104,7 @@ async def update_glossary_expansion_config(config: GlossaryExpansionConfig):
         }
     except Exception as e:
         logger.error(f"更新术语扩展配置失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"更新配置失败: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=i18n.t('glossary.settings.update_config_failed', locale).format(error=str(e))
+        )

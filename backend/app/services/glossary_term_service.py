@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
 from app.core.database import SessionLocal
+from app.core.i18n import i18n
 from app.models.glossary_term import GlossaryTermModel
 from app.models.glossary_collection import GlossaryCollectionModel
 from app.schemas.glossary import (
@@ -48,7 +49,8 @@ class GlossaryTermService:
         collection_id: int,
         page: int = 1,
         page_size: int = 20,
-        is_enabled: Optional[bool] = None
+        is_enabled: Optional[bool] = None,
+        locale: str = "zh_CN"
     ) -> GlossaryTermListResponse:
         """
         获取术语列表（分页）
@@ -58,6 +60,7 @@ class GlossaryTermService:
             page: 页码（从1开始）
             page_size: 每页数量
             is_enabled: 是否启用（None=全部）
+            locale: 语言代码
 
         Returns:
             GlossaryTermListResponse: 术语列表响应
@@ -71,7 +74,10 @@ class GlossaryTermService:
             ).first()
 
             if not collection:
-                raise HTTPException(status_code=404, detail=f"术语库 ID={collection_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.collection.not_found', locale).format(id=collection_id)
+                )
 
             # 查询术语
             query = db.query(GlossaryTermModel).filter(
@@ -98,16 +104,20 @@ class GlossaryTermService:
             raise
         except Exception as e:
             logger.error(f"获取术语列表失败: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"获取术语列表失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.term.get_list_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
-    def get_term_by_id(self, term_id: int) -> GlossaryTermResponse:
+    def get_term_by_id(self, term_id: int, locale: str = "zh_CN") -> GlossaryTermResponse:
         """
         根据ID获取术语
 
         Args:
             term_id: 术语ID
+            locale: 语言代码
 
         Returns:
             GlossaryTermResponse: 术语响应
@@ -122,21 +132,28 @@ class GlossaryTermService:
             ).first()
 
             if not term:
-                raise HTTPException(status_code=404, detail=f"术语 ID={term_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.term.not_found', locale).format(id=term_id)
+                )
 
             return GlossaryTermResponse.model_validate(term)
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"获取术语失败: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"获取术语失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.term.get_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
     def create_term(
         self,
         collection_id: int,
-        data: GlossaryTermCreate
+        data: GlossaryTermCreate,
+        locale: str = "zh_CN"
     ) -> GlossaryTermResponse:
         """
         创建术语
@@ -144,6 +161,7 @@ class GlossaryTermService:
         Args:
             collection_id: 术语库ID
             data: 创建术语请求
+            locale: 语言代码
 
         Returns:
             GlossaryTermResponse: 创建的术语响应
@@ -160,7 +178,10 @@ class GlossaryTermService:
             ).first()
 
             if not collection:
-                raise HTTPException(status_code=404, detail=f"术语库 ID={collection_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.collection.not_found', locale).format(id=collection_id)
+                )
 
             # 检查术语是否已存在
             existing = db.query(GlossaryTermModel).filter(
@@ -171,7 +192,10 @@ class GlossaryTermService:
             if existing:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"术语 '{data.term}' 在术语库 '{collection.name}' 中已存在"
+                    detail=i18n.t('glossary.term.exists_in_collection', locale).format(
+                        term=data.term,
+                        collection=collection.name
+                    )
                 )
 
             term = GlossaryTermModel(
@@ -201,7 +225,10 @@ class GlossaryTermService:
         except Exception as e:
             logger.error(f"创建术语失败: {str(e)}")
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"创建术语失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.term.create_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
@@ -209,7 +236,8 @@ class GlossaryTermService:
         self,
         collection_id: int,
         term_id: int,
-        data: GlossaryTermUpdate
+        data: GlossaryTermUpdate,
+        locale: str = "zh_CN"
     ) -> GlossaryTermResponse:
         """
         更新术语
@@ -218,6 +246,7 @@ class GlossaryTermService:
             collection_id: 术语库ID
             term_id: 术语ID
             data: 更新数据
+            locale: 语言代码
 
         Returns:
             GlossaryTermResponse: 更新后的术语响应
@@ -233,7 +262,10 @@ class GlossaryTermService:
             ).first()
 
             if not term:
-                raise HTTPException(status_code=404, detail=f"术语 ID={term_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.term.not_found', locale).format(id=term_id)
+                )
 
             # 如果修改术语名称，检查新名称是否冲突
             if data.term and data.term != term.term:
@@ -244,7 +276,10 @@ class GlossaryTermService:
                 ).first()
 
                 if existing:
-                    raise HTTPException(status_code=400, detail=f"术语 '{data.term}' 已存在")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=i18n.t('glossary.term.name_exists', locale).format(term=data.term)
+                    )
 
             # 更新字段
             if data.term is not None:
@@ -279,17 +314,21 @@ class GlossaryTermService:
         except Exception as e:
             logger.error(f"更新术语失败: {str(e)}")
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"更新术语失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.term.update_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
-    def delete_term(self, collection_id: int, term_id: int) -> bool:
+    def delete_term(self, collection_id: int, term_id: int, locale: str = "zh_CN") -> bool:
         """
         删除术语
 
         Args:
             collection_id: 术语库ID
             term_id: 术语ID
+            locale: 语言代码
 
         Returns:
             bool: 是否删除成功
@@ -305,7 +344,10 @@ class GlossaryTermService:
             ).first()
 
             if not term:
-                raise HTTPException(status_code=404, detail=f"术语 ID={term_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.term.not_found', locale).format(id=term_id)
+                )
 
             db.delete(term)
             db.commit()
@@ -328,14 +370,18 @@ class GlossaryTermService:
         except Exception as e:
             logger.error(f"删除术语失败: {str(e)}")
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"删除术语失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.term.delete_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
     def import_from_csv(
         self,
         collection_id: int,
-        csv_content: str
+        csv_content: str,
+        locale: str = "zh_CN"
     ) -> GlossaryImportResponse:
         """
         从CSV导入术语
@@ -343,6 +389,7 @@ class GlossaryTermService:
         Args:
             collection_id: 术语库ID
             csv_content: CSV文件内容
+            locale: 语言代码
 
         Returns:
             GlossaryImportResponse: 导入结果响应
@@ -356,7 +403,10 @@ class GlossaryTermService:
             ).first()
 
             if not collection:
-                raise HTTPException(status_code=404, detail=f"术语库 ID={collection_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.collection.not_found', locale).format(id=collection_id)
+                )
 
             # 解析CSV
             csv_file = io.StringIO(csv_content)
@@ -370,12 +420,12 @@ class GlossaryTermService:
                 try:
                     term_name = row.get("术语名称", "").strip()
                     if not term_name:
-                        raise ValueError("术语名称不能为空")
+                        raise ValueError(i18n.t('glossary.term.name_required', locale))
 
                     synonyms_str = row.get("同义词", "")
                     synonyms = [s.strip() for s in synonyms_str.split(";") if s.strip()]
                     if not synonyms:
-                        raise ValueError("同义词不能为空")
+                        raise ValueError(i18n.t('glossary.term.synonyms_required', locale))
 
                     # 检查术语是否已存在
                     existing = db.query(GlossaryTermModel).filter(
@@ -387,7 +437,7 @@ class GlossaryTermService:
                         errors.append({
                             "row": row_num,
                             "term": term_name,
-                            "error": "术语已存在"
+                            "error": i18n.t('glossary.term.term_already_exists', locale)
                         })
                         failed_count += 1
                         continue
@@ -430,16 +480,20 @@ class GlossaryTermService:
         except Exception as e:
             logger.error(f"CSV导入失败: {str(e)}")
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"CSV导入失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.term.import_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
-    def export_to_csv(self, collection_id: int) -> str:
+    def export_to_csv(self, collection_id: int, locale: str = "zh_CN") -> str:
         """
         导出术语为CSV
 
         Args:
             collection_id: 术语库ID
+            locale: 语言代码
 
         Returns:
             str: CSV文件内容
@@ -456,7 +510,10 @@ class GlossaryTermService:
             ).first()
 
             if not collection:
-                raise HTTPException(status_code=404, detail=f"术语库 ID={collection_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.collection.not_found', locale).format(id=collection_id)
+                )
 
             # 查询所有术语
             terms = db.query(GlossaryTermModel).filter(
@@ -490,6 +547,9 @@ class GlossaryTermService:
             raise
         except Exception as e:
             logger.error(f"CSV导出失败: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"CSV导出失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.term.export_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()

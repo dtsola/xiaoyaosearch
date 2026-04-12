@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
 from app.core.database import SessionLocal
+from app.core.i18n import i18n
 from app.models.glossary_collection import GlossaryCollectionModel
 from app.models.glossary_term import GlossaryTermModel
 from app.schemas.glossary import (
@@ -43,7 +44,8 @@ class GlossaryCollectionService:
         self,
         page: int = 1,
         page_size: int = 20,
-        is_enabled: Optional[bool] = None
+        is_enabled: Optional[bool] = None,
+        locale: str = "zh_CN"
     ) -> GlossaryCollectionListResponse:
         """
         获取术语库列表（分页）
@@ -52,6 +54,7 @@ class GlossaryCollectionService:
             page: 页码（从1开始）
             page_size: 每页数量
             is_enabled: 是否启用（None=全部）
+            locale: 语言代码
 
         Returns:
             GlossaryCollectionListResponse: 术语库列表响应
@@ -76,16 +79,20 @@ class GlossaryCollectionService:
             )
         except Exception as e:
             logger.error(f"获取术语库列表失败: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"获取术语库列表失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.collection.get_list_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
-    def get_collection_by_id(self, collection_id: int) -> GlossaryCollectionResponse:
+    def get_collection_by_id(self, collection_id: int, locale: str = "zh_CN") -> GlossaryCollectionResponse:
         """
         根据ID获取术语库
 
         Args:
             collection_id: 术语库ID
+            locale: 语言代码
 
         Returns:
             GlossaryCollectionResponse: 术语库响应
@@ -100,23 +107,30 @@ class GlossaryCollectionService:
             ).first()
 
             if not collection:
-                raise HTTPException(status_code=404, detail=f"术语库 ID={collection_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.collection.not_found', locale).format(id=collection_id)
+                )
 
             return GlossaryCollectionResponse.model_validate(collection)
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"获取术语库失败: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"获取术语库失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.collection.get_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
-    def create_collection(self, data: GlossaryCollectionCreate) -> GlossaryCollectionResponse:
+    def create_collection(self, data: GlossaryCollectionCreate, locale: str = "zh_CN") -> GlossaryCollectionResponse:
         """
         创建术语库
 
         Args:
             data: 创建术语库请求
+            locale: 语言代码
 
         Returns:
             GlossaryCollectionResponse: 创建的术语库响应
@@ -133,7 +147,10 @@ class GlossaryCollectionService:
             ).first()
 
             if existing:
-                raise HTTPException(status_code=400, detail=f"术语库名称 '{data.name}' 已存在")
+                raise HTTPException(
+                    status_code=400,
+                    detail=i18n.t('glossary.collection.name_exists', locale).format(name=data.name)
+                )
 
             collection = GlossaryCollectionModel(
                 name=data.name,
@@ -156,14 +173,18 @@ class GlossaryCollectionService:
         except Exception as e:
             logger.error(f"创建术语库失败: {str(e)}")
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"创建术语库失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.collection.create_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
     def update_collection(
         self,
         collection_id: int,
-        data: GlossaryCollectionUpdate
+        data: GlossaryCollectionUpdate,
+        locale: str = "zh_CN"
     ) -> GlossaryCollectionResponse:
         """
         更新术语库
@@ -171,6 +192,7 @@ class GlossaryCollectionService:
         Args:
             collection_id: 术语库ID
             data: 更新数据
+            locale: 语言代码
 
         Returns:
             GlossaryCollectionResponse: 更新后的术语库响应
@@ -185,7 +207,10 @@ class GlossaryCollectionService:
             ).first()
 
             if not collection:
-                raise HTTPException(status_code=404, detail=f"术语库 ID={collection_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.collection.not_found', locale).format(id=collection_id)
+                )
 
             # 如果修改名称，检查新名称是否冲突
             if data.name and data.name != collection.name:
@@ -195,7 +220,10 @@ class GlossaryCollectionService:
                 ).first()
 
                 if existing:
-                    raise HTTPException(status_code=400, detail=f"术语库名称 '{data.name}' 已存在")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=i18n.t('glossary.collection.name_exists', locale).format(name=data.name)
+                    )
 
             # 更新字段
             if data.name is not None:
@@ -219,16 +247,20 @@ class GlossaryCollectionService:
         except Exception as e:
             logger.error(f"更新术语库失败: {str(e)}")
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"更新术语库失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.collection.update_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
-    def delete_collection(self, collection_id: int) -> bool:
+    def delete_collection(self, collection_id: int, locale: str = "zh_CN") -> bool:
         """
         删除术语库
 
         Args:
             collection_id: 术语库ID
+            locale: 语言代码
 
         Returns:
             bool: 是否删除成功
@@ -243,10 +275,16 @@ class GlossaryCollectionService:
             ).first()
 
             if not collection:
-                raise HTTPException(status_code=404, detail=f"术语库 ID={collection_id} 不存在")
+                raise HTTPException(
+                    status_code=404,
+                    detail=i18n.t('glossary.collection.not_found', locale).format(id=collection_id)
+                )
 
             if collection.is_system:
-                raise HTTPException(status_code=400, detail="系统预置术语库不可删除，只能禁用")
+                raise HTTPException(
+                    status_code=400,
+                    detail=i18n.t('glossary.collection.system_cannot_delete', locale)
+                )
 
             # 手动删除关联术语（外键被禁用）
             db.query(GlossaryTermModel).filter(
@@ -263,13 +301,19 @@ class GlossaryCollectionService:
         except Exception as e:
             logger.error(f"删除术语库失败: {str(e)}")
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"删除术语库失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.collection.delete_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()
 
-    def get_enabled_collections(self) -> List[GlossaryCollectionResponse]:
+    def get_enabled_collections(self, locale: str = "zh_CN") -> List[GlossaryCollectionResponse]:
         """
         获取所有启用的术语库
+
+        Args:
+            locale: 语言代码
 
         Returns:
             List[GlossaryCollectionResponse]: 启用的术语库列表
@@ -283,6 +327,9 @@ class GlossaryCollectionService:
             return [GlossaryCollectionResponse.model_validate(c) for c in collections]
         except Exception as e:
             logger.error(f"获取启用术语库失败: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"获取启用术语库失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=i18n.t('glossary.collection.get_enabled_failed', locale).format(error=str(e))
+            )
         finally:
             self._close_db()

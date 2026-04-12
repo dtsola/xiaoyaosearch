@@ -15,7 +15,8 @@ import {
   ExclamationCircleOutlined,
   HddOutlined,
   SearchOutlined,
-  GlobalOutlined
+  GlobalOutlined,
+  BookOutlined
 } from '@ant-design/icons-vue'
 
 // 国际化支持
@@ -62,6 +63,7 @@ const currentRoute = computed(() => {
   if (path === '/' || path === '/home') return ['home']
   if (path === '/settings') return ['settings']
   if (path === '/index') return ['index']
+  if (path.startsWith('/glossary')) return ['glossary']
   if (path === '/help') return ['help']
   if (path === '/about') return ['about']
   return []
@@ -81,6 +83,7 @@ const handleMenuClick = ({ key }: { key: string }) => {
     home: '/',
     settings: '/settings',
     index: '/index',
+    glossary: '/glossary/collections',
     help: '/help'
   }
 
@@ -234,6 +237,10 @@ onUnmounted(() => {
           <a-menu-item key="index">
             <DatabaseOutlined />
             {{ t('nav.index') }}
+          </a-menu-item>
+          <a-menu-item key="glossary">
+            <BookOutlined />
+            {{ t('nav.glossary') }}
           </a-menu-item>
           <a-menu-item key="help">
             <QuestionCircleOutlined />

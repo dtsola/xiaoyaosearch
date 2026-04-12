@@ -309,5 +309,50 @@
     "reset_complete": "重置完成",
     "setting_deleted": "设置项 {key} 删除成功",
     "setting_not_exist": "设置项 {key} 不存在"
+  },
+
+  "glossary": {
+    "collection": {
+      "not_found": "术语库 ID={id} 不存在",
+      "name_exists": "术语库名称 '{name}' 已存在",
+      "create_success": "创建术语库成功",
+      "create_failed": "创建术语库失败",
+      "get_list_failed": "获取术语库列表失败",
+      "get_failed": "获取术语库失败",
+      "update_success": "更新术语库成功",
+      "update_failed": "更新术语库失败",
+      "delete_success": "删除术语库成功",
+      "delete_failed": "删除术语库失败",
+      "system_cannot_delete": "系统预置术语库不可删除，只能禁用",
+      "get_enabled_failed": "获取启用术语库失败"
+    },
+    "term": {
+      "not_found": "术语 ID={id} 不存在",
+      "exists_in_collection": "术语 '{term}' 在术语库 '{collection}' 中已存在",
+      "name_exists": "术语 '{term}' 已存在",
+      "create_success": "创建术语成功",
+      "create_failed": "创建术语失败",
+      "get_list_failed": "获取术语列表失败",
+      "get_failed": "获取术语失败",
+      "update_success": "更新术语成功",
+      "update_failed": "更新术语失败",
+      "delete_success": "删除术语成功",
+      "delete_failed": "删除术语失败",
+      "import_complete": "CSV导入完成: 成功{imported}条, 失败{failed}条",
+      "import_failed": "CSV导入失败",
+      "export_complete": "CSV导出完成",
+      "export_failed": "CSV导出失败",
+      "name_required": "术语名称不能为空",
+      "synonyms_required": "同义词不能为空",
+      "term_already_exists": "术语已存在",
+      "csv_format_only": "只支持CSV文件格式"
+    },
+    "settings": {
+      "get_config_failed": "获取术语扩展配置失败",
+      "get_failed": "获取配置失败",
+      "update_success": "术语扩展配置已更新",
+      "update_failed": "更新术语扩展配置失败",
+      "update_config_failed": "更新配置失败"
+    }
   }
 }

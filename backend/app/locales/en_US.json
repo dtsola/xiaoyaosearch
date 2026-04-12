@@ -305,5 +305,50 @@
     "reset_complete": "Reset complete",
     "setting_deleted": "Setting {key} deleted successfully",
     "setting_not_exist": "Setting {key} does not exist"
+  },
+
+  "glossary": {
+    "collection": {
+      "not_found": "Glossary collection ID={id} not found",
+      "name_exists": "Glossary collection name '{name}' already exists",
+      "create_success": "Glossary collection created successfully",
+      "create_failed": "Failed to create glossary collection",
+      "get_list_failed": "Failed to get glossary collection list",
+      "get_failed": "Failed to get glossary collection",
+      "update_success": "Glossary collection updated successfully",
+      "update_failed": "Failed to update glossary collection",
+      "delete_success": "Glossary collection deleted successfully",
+      "delete_failed": "Failed to delete glossary collection",
+      "system_cannot_delete": "System glossary collection cannot be deleted, can only be disabled",
+      "get_enabled_failed": "Failed to get enabled glossary collections"
+    },
+    "term": {
+      "not_found": "Glossary term ID={id} not found",
+      "exists_in_collection": "Term '{term}' already exists in glossary collection '{collection}'",
+      "name_exists": "Term '{term}' already exists",
+      "create_success": "Glossary term created successfully",
+      "create_failed": "Failed to create glossary term",
+      "get_list_failed": "Failed to get glossary term list",
+      "get_failed": "Failed to get glossary term",
+      "update_success": "Glossary term updated successfully",
+      "update_failed": "Failed to update glossary term",
+      "delete_success": "Glossary term deleted successfully",
+      "delete_failed": "Failed to delete glossary term",
+      "import_complete": "CSV import complete: {imported} succeeded, {failed} failed",
+      "import_failed": "CSV import failed",
+      "export_complete": "CSV export complete",
+      "export_failed": "CSV export failed",
+      "name_required": "Term name is required",
+      "synonyms_required": "Synonyms are required",
+      "term_already_exists": "Term already exists",
+      "csv_format_only": "Only CSV file format is supported"
+    },
+    "settings": {
+      "get_config_failed": "Failed to get glossary expansion config",
+      "get_failed": "Failed to get config",
+      "update_success": "Glossary expansion config updated",
+      "update_failed": "Failed to update glossary expansion config",
+      "update_config_failed": "Failed to update config"
+    }
   }
 }

@@ -40,6 +40,7 @@ export default {
     open: '打开',
     folder: '文件夹',
     file: '文件',
+    actions: '操作',
     languageChanged: '语言已切换',
     localeCode: 'zh-CN'
   },
@@ -607,6 +608,7 @@ export default {
     home: '首页',
     settings: '设置',
     index: '索引',
+    glossary: '术语库',
     help: '帮助',
     about: '关于作者'
   },
@@ -855,5 +857,85 @@ export default {
         description: '支持本地Ollama/BGE-M3和云端OpenAI兼容API，灵活切换。本地文件和索引数据始终存储在本地，仅搜索查询会发送到云端（使用云端模型时）。性能与隐私的权衡由您选择。'
       }
     }
+  },
+
+  // 术语库
+  glossary: {
+      system: '系统',
+      viewTerms: '查看术语',
+      name: '名称',
+      namePlaceholder: '请输入术语库名称',
+      nameRequired: '术语库名称不能为空',
+      description: '描述',
+      descriptionPlaceholder: '请输入术语库描述',
+      noDescription: '暂无描述',
+      icon: '图标',
+      iconPlaceholder: '请输入emoji图标',
+      color: '颜色',
+      colorPlaceholder: '请输入颜色代码（如#1890ff）',
+      status: '状态',
+      termCount: '术语数量',
+      term: '术语',
+      termPlaceholder: '请输入术语名称',
+      termRequired: '术语名称不能为空',
+      synonyms: '同义词',
+      synonymsPlaceholder: '请输入同义词，按回车添加',
+      synonymsRequired: '同义词不能为空',
+      examples: '示例',
+      examplesPlaceholder: '请输入示例用法',
+      total: '共 {total} 项',
+      import: '导入',
+      export: '导出',
+      importTitle: 'CSV导入术语',
+      uploadText: '点击或拖拽CSV文件到此区域上传',
+      uploadHint: '仅支持CSV格式文件，最大5MB',
+      selectFile: '请选择文件',
+      importSuccess: '成功导入 {count} 条术语',
+      importPartialSuccess: '导入完成：成功 {imported} 条，失败 {failed} 条',
+      importFailed: '导入失败',
+      exportSuccess: '导出成功',
+      exportFailed: '导出失败',
+      settings: {
+        title: '术语扩展设置',
+        description: '启用术语扩展后，搜索时会自动匹配术语库中的同义词，提升搜索召回率。',
+        enableExpansion: '启用术语扩展',
+        enableExpansionHint: '开启后，搜索时会自动使用术语库中的同义词进行扩展',
+        selectCollections: '选择术语库',
+        selectCollectionsPlaceholder: '请选择要使用的术语库',
+        selectCollectionsHint: '不选择时默认使用所有启用的术语库',
+        availableCollections: '可用术语库',
+        loadConfigFailed: '加载配置失败',
+        saveConfigFailed: '保存配置失败',
+        saveSuccess: '配置已保存'
+      },
+      collections: {
+        title: '术语库管理',
+        subtitle: '管理专业术语库，提升搜索精准度',
+        create: '创建术语库',
+        edit: '编辑术语库',
+        deleteConfirm: '确定要删除此术语库吗？',
+        loadFailed: '加载术语库列表失败',
+        createSuccess: '术语库创建成功',
+        updateSuccess: '术语库更新成功',
+        deleteSuccess: '术语库删除成功',
+        statusUpdateSuccess: '状态更新成功',
+        statusUpdateFailed: '状态更新失败',
+        saveFailed: '保存失败',
+        deleteFailed: '删除失败'
+      },
+      terms: {
+        title: '术语管理',
+        create: '创建术语',
+        edit: '编辑术语',
+        deleteConfirm: '确定要删除此术语吗？',
+        loadFailed: '加载术语列表失败',
+        createSuccess: '术语创建成功',
+        updateSuccess: '术语更新成功',
+        deleteSuccess: '术语删除成功',
+        statusUpdateSuccess: '状态更新成功',
+        statusUpdateFailed: '状态更新失败',
+        saveFailed: '保存失败',
+        deleteFailed: '删除失败'
+      }
+    }
   }
-}

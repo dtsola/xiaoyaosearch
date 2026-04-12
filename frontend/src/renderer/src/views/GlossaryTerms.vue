@@ -134,7 +134,8 @@
       v-model:open="importModalVisible"
       :title="$t('glossary.importTitle')"
       @ok="handleImport"
-      @cancel="importModalVisible = false"
+      @cancel="handleImportCancel"
+      :ok-button-props="{ disabled: !uploadFile }"
     >
       <a-upload-dragger
         :before-upload="beforeUpload"
@@ -149,6 +150,14 @@
           {{ $t('glossary.uploadHint') }}
         </p>
       </a-upload-dragger>
+
+      <!-- 已选择的文件 -->
+      <div v-if="uploadFile" class="selected-file">
+        <a-tag color="blue" closable @close="clearSelectedFile">
+          <FileOutlined />
+          {{ uploadFile.name }}
+        </a-tag>
+      </div>
 
       <div class="template-download">
         <span class="template-hint">{{ t('glossary.noTemplate') }}</span>
@@ -171,7 +180,8 @@ import {
   ExportOutlined,
   InboxOutlined,
   ArrowLeftOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  FileOutlined
 } from '@ant-design/icons-vue'
 import { GlossaryService, type GlossaryTerm, type GlossaryTermCreate } from '@/api/glossary'
 import { useI18n } from 'vue-i18n'
@@ -366,6 +376,15 @@ const beforeUpload = (file: File) => {
   return false // 阻止自动上传
 }
 
+const clearSelectedFile = () => {
+  uploadFile.value = null
+}
+
+const handleImportCancel = () => {
+  importModalVisible.value = false
+  clearSelectedFile()
+}
+
 const handleImport = async () => {
   if (!uploadFile.value) {
     message.warning(t('glossary.selectFile'))
@@ -389,6 +408,7 @@ const handleImport = async () => {
     }
 
     importModalVisible.value = false
+    clearSelectedFile()
     await loadTerms()
   } catch (error: any) {
     message.error(error.message || t('glossary.importFailed'))
@@ -410,14 +430,14 @@ const downloadTemplate = () => {
 
   const templateContent = isZhCN ? [
     'term,synonyms,description',
-    'API,应用程序接口|接口,应用程序编程接口',
-    'PRD,产品需求文档|需求文档,产品需求文档',
-    'SQL,结构化查询语言|查询语言,结构化查询语言'
+    'API,应用程序接口;接口,应用程序编程接口',
+    'PRD,产品需求文档;需求文档,产品需求文档',
+    'SQL,结构化查询语言;查询语言,结构化查询语言'
   ] : [
     'term,synonyms,description',
-    'API,application programming interface|interface,application programming interface',
-    'PRD,product requirements document|requirements document,product requirements document',
-    'SQL,structured query language|query language,structured query language'
+    'API,application programming interface;interface,application programming interface',
+    'PRD,product requirements document;requirements document,product requirements document',
+    'SQL,structured query language;query language,structured query language'
   ]
 
   const csvContent = templateContent.join('\n')
@@ -489,6 +509,16 @@ onMounted(() => {
 
 .term-name {
   font-weight: 500;
+}
+
+.selected-file {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  background: var(--bg-light);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .template-download {

@@ -10,6 +10,7 @@ import logging
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+import csv
 
 from app.core.database import SessionLocal
 from app.core.i18n import i18n
@@ -21,7 +22,9 @@ from app.schemas.glossary import (
     GlossaryTermResponse,
     GlossaryTermListData,
     GlossaryTermListResponse,
-    GlossaryImportResponse
+    GlossaryImportResponse,
+    GlossaryImportData,
+    GlossaryImportWrappedResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -425,7 +428,9 @@ class GlossaryTermService:
                         raise ValueError(i18n.t('glossary.term.name_required', locale))
 
                     synonyms_str = row.get("同义词") or row.get("synonyms", "")
+                    # 使用分号作为同义词分隔符
                     synonyms = [s.strip() for s in synonyms_str.split(";") if s.strip()]
+
                     if not synonyms:
                         raise ValueError(i18n.t('glossary.term.synonyms_required', locale))
 
@@ -472,11 +477,12 @@ class GlossaryTermService:
             db.commit()
 
             logger.info(f"CSV导入完成: 成功{imported_count}条, 失败{failed_count}条")
-            return GlossaryImportResponse(
+            data = GlossaryImportData(
                 imported_count=imported_count,
                 failed_count=failed_count,
                 errors=errors
             )
+            return GlossaryImportWrappedResponse(success=True, data=data)
         except HTTPException:
             raise
         except Exception as e:
@@ -530,7 +536,7 @@ class GlossaryTermService:
 
             # 生成CSV
             output = io.StringIO()
-            writer = csv.writer(output)
+            writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
 
             # 写入表头
             writer.writerow(headers)

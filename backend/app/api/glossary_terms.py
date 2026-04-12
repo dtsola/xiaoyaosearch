@@ -13,7 +13,7 @@ from app.schemas.glossary import (
     GlossaryTermUpdate,
     GlossaryTermResponse,
     GlossaryTermListResponse,
-    GlossaryImportResponse
+    GlossaryImportWrappedResponse
 )
 from app.core.i18n import get_locale_from_header, i18n
 from fastapi.responses import Response
@@ -138,7 +138,7 @@ async def delete_term(
     return {"success": True, "message": i18n.t('glossary.term.delete_success', locale)}
 
 
-@router.post("/import", response_model=GlossaryImportResponse)
+@router.post("/import", response_model=GlossaryImportWrappedResponse)
 async def import_terms_from_csv(
     collection_id: int = Query(..., description="术语库ID"),
     file: UploadFile = File(..., description="CSV文件"),

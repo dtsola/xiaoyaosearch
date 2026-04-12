@@ -162,10 +162,23 @@ class GlossaryExpandResponse(BaseModel):
 # ==================== CSV导入导出Schema ====================
 
 class GlossaryImportResponse(BaseModel):
-    """CSV导入响应模式"""
+    """CSV导入响应数据"""
     imported_count: int = Field(..., description="成功导入数量")
     failed_count: int = Field(..., description="失败数量")
     errors: List[dict] = Field(default_factory=list, description="错误详情")
+
+
+class GlossaryImportData(BaseModel):
+    """导入响应数据"""
+    imported_count: int
+    failed_count: int
+    errors: List[dict]
+
+
+class GlossaryImportWrappedResponse(BaseModel):
+    """导入响应包装格式"""
+    success: bool = True
+    data: GlossaryImportData
 
 
 # ==================== 用户设置Schema ====================

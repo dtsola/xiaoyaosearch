@@ -8,8 +8,8 @@ function createWindow(): void {
   const preloadPath = join(__dirname, '../preload/index.js')
 
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1280,
+    height: 760,
     show: false,
     autoHideMenuBar: true,
     // ...(process.platform === 'linux' ? { icon } : {}),

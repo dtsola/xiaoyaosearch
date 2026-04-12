@@ -188,6 +188,29 @@ async def lifespan(app: FastAPI):
             logger.warning(f"索引缓存初始化失败: {str(e)}")
             logger.info("继续运行，但首次增量更新可能较慢")
 
+        # ========== 加载术语扩展配置 ==========
+        logger.info("加载术语扩展配置...")
+        try:
+            from app.services.chunk_search_service import configure_glossary_expansion
+            from app.api.glossary_settings import get_glossary_expansion_config_from_db
+            from app.core.database import SessionLocal
+
+            db = SessionLocal()
+            try:
+                config = get_glossary_expansion_config_from_db(db)
+                configure_glossary_expansion(
+                    enable=config.get('enable', False),
+                    collection_ids=config.get('collection_ids'),
+                    max_expansion_terms=config.get('max_expansion_terms', 3)
+                )
+                logger.info("✅ 术语扩展配置加载完成")
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"术语扩展配置加载失败: {str(e)}")
+            logger.info("继续运行，但术语扩展功能可能不可用")
+        # =====================================
+
         logger.info("✅ 小遥搜索服务启动完成")
         logger.info(f"📖 API文档: http://127.0.0.1:8000/docs")
         logger.info(f"📋 ReDoc文档: http://127.0.0.1:8000/redoc")

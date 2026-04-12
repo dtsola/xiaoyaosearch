@@ -50,6 +50,7 @@ XiaoyaoSearch is a cross-platform local desktop application (Windows/MacOS/Linux
 - **🧠 AI-Enhanced**: Integrates advanced AI models including BGE-M3, FasterWhisper, CN-CLIP, and OLLAMA
   - **☁️ Cloud LLM Support**: OpenAI/DeepSeek/Alibaba Cloud compatible APIs with flexible local/cloud switching (v1.3.0)
   - **☁️ Cloud Embedding Models**: OpenAI/DeepSeek/Alibaba Cloud embedding APIs for enhanced search quality (v1.6.0)
+  - **📚 Professional Glossary**: Terminology expansion and synonym matching with 60% improved recall in professional domains (v1.9.0)
 - **⚡ High Performance**: Hybrid retrieval architecture based on Faiss vector search and Whoosh full-text search
 - **🔒 Privacy Control**: Local-first with optional cloud APIs - you choose the balance between performance and privacy
 - **🎨 Modern Interface**: Modern desktop application based on Electron + Vue 3 + TypeScript
@@ -645,3 +646,83 @@ Thanks to the following people for their contributions to this project:
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://github.com/jidingliu">@jidingliu</a>
 </p>
+
+---
+
+## 📝 Version Changelog
+
+### v1.9.0 (2026-04-12) - Search Optimization
+
+**Core Optimizations**:
+- ✅ **Terminology Expansion Timing**: Moved terminology expansion before LLM enhancement, based on original user input
+- ✅ **Responsibility Separation**: Glossary (professional synonyms) vs LLM (general query optimization)
+- ✅ **Smart Merging**: Automatic deduplication of expansion terms
+- ✅ **Concurrency Control**: Intelligent concurrency control based on CPU cores (CPU cores × 2)
+- ✅ **Recall Improvement**: 60% improved recall in professional terminology scenarios
+
+**Detailed Documentation**: [v1.9.0 Release Notes](docs/产品文档/版本更新文档/v1.9.0-搜索优化-术语库支持.md)
+
+### v1.8.0 (2026-04-08) - DingTalk Documents Support
+
+**New Features**:
+- ✅ DingTalk document data source support (with DingTalk export tool)
+- ✅ Metadata file parsing (.xyddjson format)
+- ✅ Original link jump functionality
+
+**Detailed Documentation**: [v1.8.0 Release Notes](docs/产品文档/版本更新文档/v1.8.0-钉钉文档+知识库支持.md)
+
+### v1.7.0 (2026-03-31) - Feishu Documents Support
+
+**New Features**:
+- ✅ Feishu document data source support
+- ✅ Metadata block parsing
+- ✅ Original link jump functionality
+
+### v1.6.0 (2026-03-26) - Cloud Embedding Models
+
+**New Features**:
+- ✅ Cloud embedding model API support
+- ✅ Local/cloud mutual switching
+- ✅ Batch text embedding optimization
+
+### v1.5.0 (2026-03-20) - Agent Skills
+
+**New Features**:
+- ✅ MCP Agent Skills support
+- ✅ Tool calling capabilities for Claude Code/VS Code/Cursor
+
+### v1.4.0 (2026-03-15) - MCP Server Support
+
+**New Features**:
+- ✅ MCP protocol support
+- ✅ Connectable by Claude Desktop
+- ✅ SSE transport method
+
+### v1.3.0 (2026-03-10) - OpenAI Cloud Models
+
+**New Features**:
+- ✅ OpenAI-compatible cloud LLMs
+- ✅ Dynamic form configuration
+- ✅ Encrypted API key storage
+
+### v1.2.0 (2026-03-05) - Plugin Architecture
+
+**New Features**:
+- ✅ Plugin architecture framework
+- ✅ Yuque knowledge base data source
+
+### v1.1.0 (2026-02-28) - i18n Internationalization
+
+**New Features**:
+- ✅ Bilingual Chinese/English support
+- ✅ i18n framework integration
+
+### v1.0.0 (2026-02-20) - MVP Version
+
+**Core Features**:
+- ✅ Multimodal search (text/voice/image)
+- ✅ Deep local file retrieval
+- ✅ BGE-M3 + FasterWhisper + CN-CLIP
+- ✅ Faiss + Whoosh hybrid search
+
+---

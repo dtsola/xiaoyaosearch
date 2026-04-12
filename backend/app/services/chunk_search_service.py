@@ -12,12 +12,15 @@ from app.core.logging_config import get_logger, logger
 from app.utils.enum_helpers import get_enum_value, is_semantic_search, is_fulltext_search, is_hybrid_search
 from app.schemas.enums import SearchType
 from app.services.chunk_service import get_chunk_service, ChunkService
+from typing import Optional, List, Dict, Any
 import faiss
 import numpy as np
 from whoosh import index, qparser
 from whoosh.filedb.filestore import FileStorage
 from whoosh.query import Query
 from app.services.ai_model_manager import ai_model_service
+from app.services.glossary_service import GlossaryService
+from app.services.glossary_service import GlossaryService
 
 
 class ChunkSearchService:
@@ -35,7 +38,9 @@ class ChunkSearchService:
         self,
         chunk_faiss_index_path: str,
         chunk_whoosh_index_path: str,
-        use_ai_models: bool = True
+        use_ai_models: bool = True,
+        enable_glossary_expansion: bool = False,
+        glossary_collection_ids: Optional[List[int]] = None
     ):
         """初始化分块搜索服务
 
@@ -43,8 +48,12 @@ class ChunkSearchService:
             chunk_faiss_index_path: 分块Faiss索引文件路径
             chunk_whoosh_index_path: 分块Whoosh索引目录路径
             use_ai_models: 是否使用AI模型进行搜索增强
+            enable_glossary_expansion: 是否启用术语扩展
+            glossary_collection_ids: 使用的术语库ID列表，None表示全部
         """
         self.use_ai_models = use_ai_models
+        self.enable_glossary_expansion = enable_glossary_expansion
+        self.glossary_collection_ids = glossary_collection_ids
 
         self.chunk_faiss_index_path = chunk_faiss_index_path
         self.chunk_whoosh_index_path = chunk_whoosh_index_path
@@ -52,13 +61,18 @@ class ChunkSearchService:
         # 初始化分块服务
         self.chunk_service = get_chunk_service()
 
+        # 初始化术语扩展服务
+        self.glossary_service = GlossaryService()
+
         # 搜索状态统计
         self.search_stats = {
             'total_searches': 0,
             'chunk_searches': 0,
             'hybrid_searches': 0,
             'avg_response_time': 0.0,
-            'chunk_hit_rate': 0.0
+            'chunk_hit_rate': 0.0,
+            'glossary_expansions': 0,
+            'glossary_matches': 0
         }
 
         # 加载索引
@@ -133,8 +147,29 @@ class ChunkSearchService:
             Dict[str, Any]: 搜索结果（与现有API完全兼容）
         """
         start_time = time.time()
+        glossary_info = None
 
         try:
+            # 术语扩展
+            if self.enable_glossary_expansion:
+                try:
+                    glossary_result = self.glossary_service.expand_query(
+                        query,
+                        self.glossary_collection_ids
+                    )
+                    if glossary_result.matched_terms:
+                        logger.info(f"术语扩展匹配: {len(glossary_result.matched_terms)} 个术语")
+                        logger.info(f"扩展查询词: {glossary_result.expanded_queries}")
+                        self.search_stats['glossary_expansions'] += 1
+                        self.search_stats['glossary_matches'] += len(glossary_result.matched_terms)
+                        glossary_info = glossary_result
+
+                        # 使用扩展的查询词进行搜索
+                        # 这里可以选择：1) 使用所有扩展词  2) 使用原词+扩展词
+                        # 暂时使用原词，扩展信息返回给前端
+                except Exception as e:
+                    logger.warning(f"术语扩展失败: {str(e)}")
+
             logger.info(f"开始透明搜索: query='{query}', type={get_enum_value(search_type)}")
 
             # 调试信息
@@ -160,7 +195,7 @@ class ChunkSearchService:
             self._update_search_stats(response_time, len(final_results) > 0)
 
             # 6. 格式化响应（保持完全兼容）
-            result = self._format_compatible_response(final_results, query, response_time, search_type)
+            result = self._format_compatible_response(final_results, query, response_time, search_type, glossary_info)
 
             logger.info(f"搜索完成: 结果数={result.get('total', 0)}, 耗时={response_time:.3f}秒")
             return result
@@ -732,8 +767,23 @@ class ChunkSearchService:
             chunk_hits = self.search_stats['chunk_hit_rate'] * (self.search_stats['total_searches'] - 1)
             self.search_stats['chunk_hit_rate'] = chunk_hits / self.search_stats['total_searches']
 
-    def _format_compatible_response(self, results: List[Dict[str, Any]], query: str, response_time: float, search_type: SearchType) -> Dict[str, Any]:
-        """格式化兼容响应（与现有API完全一致）"""
+    def _format_compatible_response(
+        self,
+        results: List[Dict[str, Any]],
+        query: str,
+        response_time: float,
+        search_type: SearchType,
+        glossary_info: Optional[Any] = None
+    ) -> Dict[str, Any]:
+        """格式化兼容响应（与现有API完全一致）
+
+        Args:
+            results: 搜索结果列表
+            query: 原始查询词
+            response_time: 响应时间
+            search_type: 搜索类型
+            glossary_info: 术语扩展信息（可选）
+        """
         formatted_results = []
         for result in results:
             # 映射文件类型到枚举值
@@ -757,7 +807,7 @@ class ChunkSearchService:
             }
             formatted_results.append(formatted_result)
 
-        return {
+        response_data = {
             'success': True,
             'data': {
                 'results': formatted_results,
@@ -769,6 +819,25 @@ class ChunkSearchService:
                 'search_type': get_enum_value(search_type)
             }
         }
+
+        # 添加术语扩展信息
+        if glossary_info:
+            response_data['data']['glossary_expansion'] = {
+                'matched_terms': [
+                    {
+                        'id': term.id,
+                        'term': term.term,
+                        'synonyms': term.synonyms,
+                        'collection_id': term.collection_id,
+                        'collection_name': term.collection_name
+                    }
+                    for term in glossary_info.matched_terms
+                ],
+                'expanded_queries': glossary_info.expanded_queries,
+                'used_collections': glossary_info.used_collections
+            }
+
+        return response_data
 
     def _format_error_response(self, query: str, search_type: SearchType, error_msg: str) -> Dict[str, Any]:
         """格式化错误响应（兼容格式）"""
@@ -964,6 +1033,23 @@ def get_chunk_search_service() -> ChunkSearchService:
         )
 
     return _chunk_search_service
+
+
+def configure_glossary_expansion(
+    enable: bool = False,
+    collection_ids: Optional[List[int]] = None
+):
+    """配置术语扩展功能
+
+    Args:
+        enable: 是否启用术语扩展
+        collection_ids: 使用的术语库ID列表，None表示全部
+    """
+    global _chunk_search_service
+    if _chunk_search_service is not None:
+        _chunk_search_service.enable_glossary_expansion = enable
+        _chunk_search_service.glossary_collection_ids = collection_ids
+        logger.info(f"术语扩展配置已更新: enable={enable}, collection_ids={collection_ids}")
 
 
 def reload_chunk_search_service():

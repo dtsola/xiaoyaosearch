@@ -39,6 +39,7 @@ from app.api import (
 from app.api.glossary_collections import router as glossary_collections_router
 from app.api.glossary_terms import router as glossary_terms_router
 from app.api.glossary import router as glossary_router
+from app.api.glossary_settings import router as glossary_settings_router
 
 
 @asynccontextmanager
@@ -252,6 +253,7 @@ app.include_router(settings_router)
 app.include_router(glossary_collections_router)
 app.include_router(glossary_terms_router)
 app.include_router(glossary_router)
+app.include_router(glossary_settings_router)
 
 # 根路径
 @app.get("/")

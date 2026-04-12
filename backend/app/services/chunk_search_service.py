@@ -157,12 +157,15 @@ class ChunkSearchService:
 
         try:
             # 术语扩展并并发搜索
+            logger.info(f"检查术语扩展: enable_glossary_expansion={self.enable_glossary_expansion}")
             if self.enable_glossary_expansion:
                 try:
+                    logger.info(f"开始术语扩展: query='{query}', collection_ids={self.glossary_collection_ids}")
                     glossary_result = self.glossary_service.expand_query(
                         query,
                         self.glossary_collection_ids
                     )
+                    logger.info(f"术语扩展结果: matched_terms={len(glossary_result.matched_terms) if glossary_result else 0}")
 
                     if glossary_result.matched_terms:
                         logger.info(f"术语扩展匹配: {len(glossary_result.matched_terms)} 个术语")

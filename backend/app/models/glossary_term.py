@@ -37,7 +37,6 @@ class GlossaryTermModel(Base):
     term = Column(String(100), nullable=False, comment="术语名称")
     synonyms = Column(Text, nullable=False, comment="同义词（JSON数组）")
     description = Column(Text, nullable=True, comment="术语描述")
-    examples = Column(Text, nullable=True, comment="示例用法（JSON数组）")
 
     # 状态字段
     is_enabled = Column(Boolean, default=True, nullable=False, comment="是否启用")
@@ -59,7 +58,6 @@ class GlossaryTermModel(Base):
             "term": self.term,
             "synonyms": self.get_synonyms_list(),
             "description": self.description,
-            "examples": self.get_examples_list(),
             "is_enabled": self.is_enabled,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
@@ -79,20 +77,6 @@ class GlossaryTermModel(Base):
         except (json.JSONDecodeError, TypeError):
             return []
 
-    def get_examples_list(self) -> list:
-        """
-        获取示例列表
-
-        Returns:
-            list: 示例列表
-        """
-        try:
-            if isinstance(self.examples, str):
-                return json.loads(self.examples)
-            return self.examples if self.examples else []
-        except (json.JSONDecodeError, TypeError):
-            return []
-
     def set_synonyms(self, synonyms: list):
         """
         设置同义词
@@ -102,14 +86,15 @@ class GlossaryTermModel(Base):
         """
         self.synonyms = json.dumps(synonyms, ensure_ascii=False)
 
-    def set_examples(self, examples: list):
+    @property
+    def synonyms_list(self) -> list:
         """
-        设置示例
+        同义词列表（供Pydantic使用）
 
-        Args:
-            examples: 示例列表
+        Returns:
+            list: 同义词列表
         """
-        self.examples = json.dumps(examples, ensure_ascii=False)
+        return self.get_synonyms_list()
 
     def __repr__(self) -> str:
         """模型字符串表示"""

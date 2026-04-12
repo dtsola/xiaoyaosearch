@@ -40,12 +40,18 @@ class GlossaryCollectionResponse(GlossaryCollectionBase):
         from_attributes = True
 
 
-class GlossaryCollectionListResponse(BaseModel):
-    """术语库列表响应模式"""
+class GlossaryCollectionListData(BaseModel):
+    """术语库列表数据"""
     items: List[GlossaryCollectionResponse]
     total: int
     page: int
     page_size: int
+
+
+class GlossaryCollectionListResponse(BaseModel):
+    """术语库列表响应模式"""
+    success: bool = True
+    data: GlossaryCollectionListData
 
 
 # ==================== 术语Schema ====================
@@ -55,7 +61,6 @@ class GlossaryTermBase(BaseModel):
     term: str = Field(..., min_length=1, max_length=100, description="术语名称")
     synonyms: List[str] = Field(..., min_length=1, description="同义词列表")
     description: Optional[str] = Field(None, description="术语描述")
-    examples: Optional[List[str]] = Field(None, description="示例用法")
 
     @field_validator('synonyms')
     @classmethod
@@ -77,7 +82,6 @@ class GlossaryTermUpdate(BaseModel):
     term: Optional[str] = Field(None, min_length=1, max_length=100, description="术语名称")
     synonyms: Optional[List[str]] = Field(None, min_length=1, description="同义词列表")
     description: Optional[str] = Field(None, description="术语描述")
-    examples: Optional[List[str]] = Field(None, description="示例用法")
     is_enabled: Optional[bool] = Field(None, description="是否启用")
 
     @field_validator('synonyms')
@@ -97,6 +101,18 @@ class GlossaryTermResponse(GlossaryTermBase):
     is_enabled: bool
     created_at: datetime
     updated_at: datetime
+
+    @field_validator('synonyms', mode='before')
+    @classmethod
+    def parse_json_fields(cls, v):
+        """解析JSON字符串字段为列表"""
+        if isinstance(v, str):
+            try:
+                import json
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return []
+        return v
 
     class Config:
         from_attributes = True

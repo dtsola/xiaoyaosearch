@@ -44,7 +44,6 @@ export interface GlossaryTerm {
   term: string
   synonyms: string[]
   description?: string
-  examples?: string[]
   is_enabled: boolean
   created_at: string
   updated_at: string
@@ -54,14 +53,12 @@ export interface GlossaryTermCreate {
   term: string
   synonyms: string[]
   description?: string
-  examples?: string[]
 }
 
 export interface GlossaryTermUpdate {
   term?: string
   synonyms?: string[]
   description?: string
-  examples?: string[]
   is_enabled?: boolean
 }
 
@@ -224,9 +221,12 @@ export class GlossaryService {
   }
 
   // CSV导出
-  static async exportToCSV(collectionId: number) {
+  static async exportToCSV(collectionId: number, locale: string = 'zh-CN') {
     const response = await httpClient.get(`/api/glossary/terms/export/${collectionId}`, {
-      responseType: 'blob'
+      responseType: 'blob',
+      headers: {
+        'Accept-Language': locale
+      }
     })
 
     // 创建下载链接

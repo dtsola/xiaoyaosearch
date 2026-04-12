@@ -203,7 +203,6 @@ class GlossaryTermService:
                 term=data.term,
                 synonyms=json.dumps(data.synonyms, ensure_ascii=False),
                 description=data.description,
-                examples=json.dumps(data.examples or [], ensure_ascii=False),
                 is_enabled=True
             )
 
@@ -288,8 +287,6 @@ class GlossaryTermService:
                 term.synonyms = json.dumps(data.synonyms, ensure_ascii=False)
             if data.description is not None:
                 term.description = data.description
-            if data.examples is not None:
-                term.examples = json.dumps(data.examples, ensure_ascii=False)
             if data.is_enabled is not None:
                 term.is_enabled = data.is_enabled
 
@@ -418,11 +415,14 @@ class GlossaryTermService:
 
             for row_num, row in enumerate(csv_reader, start=2):
                 try:
-                    term_name = row.get("术语名称", "").strip()
+                    # 支持中英文列名
+                    term_name = row.get("术语名称") or row.get("term", "")
+                    term_name = term_name.strip()
+
                     if not term_name:
                         raise ValueError(i18n.t('glossary.term.name_required', locale))
 
-                    synonyms_str = row.get("同义词", "")
+                    synonyms_str = row.get("同义词") or row.get("synonyms", "")
                     synonyms = [s.strip() for s in synonyms_str.split(";") if s.strip()]
                     if not synonyms:
                         raise ValueError(i18n.t('glossary.term.synonyms_required', locale))
@@ -447,7 +447,7 @@ class GlossaryTermService:
                         collection_id=collection_id,
                         term=term_name,
                         synonyms=json.dumps(synonyms, ensure_ascii=False),
-                        description=row.get("描述", "").strip()
+                        description=row.get("描述") or row.get("description", "").strip()
                     )
                     db.add(term)
                     imported_count += 1
@@ -455,7 +455,7 @@ class GlossaryTermService:
                 except Exception as e:
                     errors.append({
                         "row": row_num,
-                        "term": row.get("术语名称", ""),
+                        "term": row.get("术语名称") or row.get("term", ""),
                         "error": str(e)
                     })
                     failed_count += 1
@@ -520,23 +520,27 @@ class GlossaryTermService:
                 GlossaryTermModel.collection_id == collection_id
             ).order_by(GlossaryTermModel.term.asc()).all()
 
+            # 根据语言选择表头
+            if locale == "zh_CN":
+                headers = ["术语名称", "同义词", "描述"]
+            else:
+                headers = ["term", "synonyms", "description"]
+
             # 生成CSV
             output = io.StringIO()
             writer = csv.writer(output)
 
             # 写入表头
-            writer.writerow(["术语名称", "同义词", "描述", "示例"])
+            writer.writerow(headers)
 
             # 写入数据
             for term in terms:
                 synonyms = term.get_synonyms_list()
-                examples = term.get_examples_list()
 
                 writer.writerow([
                     term.term,
                     ";".join(synonyms),
-                    term.description or "",
-                    ";".join(examples) if examples else ""
+                    term.description or ""
                 ])
 
             csv_content = output.getvalue()

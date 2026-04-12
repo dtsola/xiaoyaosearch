@@ -889,6 +889,9 @@ export default {
       importFailed: 'Import failed',
       exportSuccess: 'Export successful',
       exportFailed: 'Export failed',
+      noTemplate: 'Don\'t know the CSV format?',
+      downloadTemplate: 'Download Template',
+      templateDownloadSuccess: 'Template downloaded successfully',
       settings: {
         title: 'Glossary Expansion Settings',
         description: 'Enable glossary expansion to automatically match synonyms during search, improving recall rate.',

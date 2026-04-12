@@ -126,14 +126,6 @@
             :rows="3"
           />
         </a-form-item>
-
-        <a-form-item :label="$t('glossary.examples')" name="examples">
-          <a-select
-            v-model:value="formData.examples"
-            mode="tags"
-            :placeholder="$t('glossary.examplesPlaceholder')"
-          />
-        </a-form-item>
       </a-form>
     </a-modal>
 
@@ -157,6 +149,14 @@
           {{ $t('glossary.uploadHint') }}
         </p>
       </a-upload-dragger>
+
+      <div class="template-download">
+        <span class="template-hint">{{ t('glossary.noTemplate') }}</span>
+        <a-button type="link" @click="downloadTemplate">
+          <DownloadOutlined />
+          {{ t('glossary.downloadTemplate') }}
+        </a-button>
+      </div>
     </a-modal>
   </div>
 </template>
@@ -170,12 +170,13 @@ import {
   ImportOutlined,
   ExportOutlined,
   InboxOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  DownloadOutlined
 } from '@ant-design/icons-vue'
 import { GlossaryService, type GlossaryTerm, type GlossaryTermCreate } from '@/api/glossary'
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
 const route = useRoute()
 
@@ -197,8 +198,7 @@ const formRef = ref()
 const formData = reactive<GlossaryTermCreate>({
   term: '',
   synonyms: [],
-  description: '',
-  examples: []
+  description: ''
 })
 
 // 同义词选项
@@ -288,8 +288,7 @@ const showCreateModal = () => {
   Object.assign(formData, {
     term: '',
     synonyms: [],
-    description: '',
-    examples: []
+    description: ''
   })
   modalVisible.value = true
 }
@@ -300,8 +299,7 @@ const editTerm = (term: GlossaryTerm) => {
   Object.assign(formData, {
     term: term.term,
     synonyms: term.synonyms,
-    description: term.description,
-    examples: term.examples || []
+    description: term.description
   })
   modalVisible.value = true
 }
@@ -399,11 +397,45 @@ const handleImport = async () => {
 
 const exportToCSV = async () => {
   try {
-    await GlossaryService.exportToCSV(collectionId.value)
+    await GlossaryService.exportToCSV(collectionId.value, locale.value)
     message.success(t('glossary.exportSuccess'))
   } catch (error: any) {
     message.error(error.message || t('glossary.exportFailed'))
   }
+}
+
+const downloadTemplate = () => {
+  // 根据当前语言生成不同的模板内容
+  const isZhCN = locale.value === 'zh-CN'
+
+  const templateContent = isZhCN ? [
+    'term,synonyms,description',
+    'API,应用程序接口|接口,应用程序编程接口',
+    'PRD,产品需求文档|需求文档,产品需求文档',
+    'SQL,结构化查询语言|查询语言,结构化查询语言'
+  ] : [
+    'term,synonyms,description',
+    'API,application programming interface|interface,application programming interface',
+    'PRD,product requirements document|requirements document,product requirements document',
+    'SQL,structured query language|query language,structured query language'
+  ]
+
+  const csvContent = templateContent.join('\n')
+
+  // 创建Blob对象
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+
+  // 创建下载链接
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  link.setAttribute('href', url)
+  link.setAttribute('download', 'glossary_template.csv')
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+
+  message.success(t('glossary.templateDownloadSuccess'))
 }
 
 const handleBack = () => {
@@ -457,5 +489,19 @@ onMounted(() => {
 
 .term-name {
   font-weight: 500;
+}
+
+.template-download {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.template-hint {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 </style>

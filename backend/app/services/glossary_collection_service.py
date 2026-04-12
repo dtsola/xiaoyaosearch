@@ -16,7 +16,8 @@ from app.schemas.glossary import (
     GlossaryCollectionCreate,
     GlossaryCollectionUpdate,
     GlossaryCollectionResponse,
-    GlossaryCollectionListResponse
+    GlossaryCollectionListResponse,
+    GlossaryCollectionListData
 )
 
 logger = logging.getLogger(__name__)
@@ -71,11 +72,16 @@ class GlossaryCollectionService:
                 (page - 1) * page_size
             ).limit(page_size).all()
 
-            return GlossaryCollectionListResponse(
+            data = GlossaryCollectionListData(
                 items=[GlossaryCollectionResponse.model_validate(item) for item in items],
                 total=total,
                 page=page,
                 page_size=page_size
+            )
+
+            return GlossaryCollectionListResponse(
+                success=True,
+                data=data
             )
         except Exception as e:
             logger.error(f"获取术语库列表失败: {str(e)}")

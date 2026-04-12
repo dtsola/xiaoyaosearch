@@ -895,6 +895,9 @@ export default {
       importFailed: '导入失败',
       exportSuccess: '导出成功',
       exportFailed: '导出失败',
+      noTemplate: '不知道CSV格式？',
+      downloadTemplate: '下载导入模板',
+      templateDownloadSuccess: '模板下载成功',
       settings: {
         title: '术语扩展设置',
         description: '启用术语扩展后，搜索时会自动匹配术语库中的同义词，提升搜索召回率。',

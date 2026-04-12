@@ -40,7 +40,8 @@ class ChunkSearchService:
         chunk_whoosh_index_path: str,
         use_ai_models: bool = True,
         enable_glossary_expansion: bool = False,
-        glossary_collection_ids: Optional[List[int]] = None
+        glossary_collection_ids: Optional[List[int]] = None,
+        max_expansion_terms: int = 3
     ):
         """初始化分块搜索服务
 
@@ -50,10 +51,12 @@ class ChunkSearchService:
             use_ai_models: 是否使用AI模型进行搜索增强
             enable_glossary_expansion: 是否启用术语扩展
             glossary_collection_ids: 使用的术语库ID列表，None表示全部
+            max_expansion_terms: 术语扩展最大词数（包含原词），默认3
         """
         self.use_ai_models = use_ai_models
         self.enable_glossary_expansion = enable_glossary_expansion
         self.glossary_collection_ids = glossary_collection_ids
+        self.max_expansion_terms = max(1, min(max_expansion_terms, 20))  # 限制在1-20之间
 
         self.chunk_faiss_index_path = chunk_faiss_index_path
         self.chunk_whoosh_index_path = chunk_whoosh_index_path
@@ -72,7 +75,9 @@ class ChunkSearchService:
             'avg_response_time': 0.0,
             'chunk_hit_rate': 0.0,
             'glossary_expansions': 0,
-            'glossary_matches': 0
+            'glossary_matches': 0,
+            'expansion_searches_used': 0,
+            'expansion_avg_terms': 0
         }
 
         # 加载索引
@@ -148,54 +153,100 @@ class ChunkSearchService:
         """
         start_time = time.time()
         glossary_info = None
+        queries_used = [query]  # 记录实际使用的查询词
 
         try:
-            # 术语扩展
+            # 术语扩展并并发搜索
             if self.enable_glossary_expansion:
                 try:
                     glossary_result = self.glossary_service.expand_query(
                         query,
                         self.glossary_collection_ids
                     )
+
                     if glossary_result.matched_terms:
                         logger.info(f"术语扩展匹配: {len(glossary_result.matched_terms)} 个术语")
-                        logger.info(f"扩展查询词: {glossary_result.expanded_queries}")
-                        self.search_stats['glossary_expansions'] += 1
-                        self.search_stats['glossary_matches'] += len(glossary_result.matched_terms)
-                        glossary_info = glossary_result
 
-                        # 使用扩展的查询词进行搜索
-                        # 这里可以选择：1) 使用所有扩展词  2) 使用原词+扩展词
-                        # 暂时使用原词，扩展信息返回给前端
+                        # 准备扩展查询词列表（限制数量）
+                        expanded_queries = [query]  # 原始查询始终包含
+                        for exp_query in glossary_result.expanded_queries[1:]:
+                            if exp_query != query and len(expanded_queries) < self.max_expansion_terms:
+                                expanded_queries.append(exp_query)
+
+                        if len(expanded_queries) > 1:
+                            logger.info(f"执行术语扩展并发搜索: {len(expanded_queries)} 个查询词")
+                            logger.info(f"查询词列表: {expanded_queries}")
+                            self.search_stats['glossary_expansions'] += 1
+                            self.search_stats['glossary_matches'] += len(glossary_result.matched_terms)
+                            self.search_stats['expansion_searches_used'] += 1
+                            self.search_stats['expansion_avg_terms'] = (
+                                self.search_stats['expansion_avg_terms'] * (self.search_stats['expansion_searches_used'] - 1) + len(expanded_queries)
+                            ) / self.search_stats['expansion_searches_used']
+
+                            queries_used = expanded_queries
+                            glossary_info = glossary_result
+
+                            # 并发搜索所有查询词
+                            should_use_chunk = self._should_use_chunk_search()
+                            if should_use_chunk:
+                                search_tasks = [
+                                    self._chunk_search(q, search_type, limit, threshold, filters)
+                                    for q in expanded_queries
+                                ]
+                                all_results = await asyncio.gather(*search_tasks)
+
+                                # 合并结果
+                                final_results = self._merge_expansion_search_results(all_results)
+                                logger.info(f"术语扩展搜索完成，合并后结果数量: {len(final_results)}")
+                            else:
+                                logger.error("分块搜索服务不可用")
+                                final_results = []
+                        else:
+                            # 扩展词与原词重复，使用原词搜索
+                            logger.info("扩展词与原词重复，使用原词搜索")
+                            final_results = await self._chunk_search(query, search_type, limit, threshold, filters)
+                            glossary_info = glossary_result
+                    else:
+                        # 没有匹配的术语，使用原词搜索
+                        final_results = await self._chunk_search(query, search_type, limit, threshold, filters)
                 except Exception as e:
-                    logger.warning(f"术语扩展失败: {str(e)}")
-
-            logger.info(f"开始透明搜索: query='{query}', type={get_enum_value(search_type)}")
-
-            # 调试信息
-            should_use_chunk = self._should_use_chunk_search()
-            logger.info(f"是否使用分块搜索: {should_use_chunk}")
-            logger.info(f"chunk_faiss_index存在: {self.chunk_faiss_index is not None}")
-            logger.info(f"chunk_whoosh_index存在: {self.chunk_whoosh_index is not None}")
-
-            # 直接使用分块搜索
-            if should_use_chunk:
-                logger.info("执行分块搜索...")
-                final_results = await self._chunk_search(query, search_type, limit, threshold, filters)
-                logger.info(f"分块搜索完成，结果数量: {len(final_results)}")
-                self.search_stats['chunk_searches'] += 1
+                    logger.warning(f"术语扩展失败: {str(e)}，使用原词搜索")
+                    final_results = await self._chunk_search(query, search_type, limit, threshold, filters)
             else:
-                logger.error("分块搜索服务不可用")
-                final_results = []
+                # 未启用术语扩展，直接搜索
+                logger.info(f"开始透明搜索: query='{query}', type={get_enum_value(search_type)}")
 
-            # 4. 计算响应时间
+                # 调试信息
+                should_use_chunk = self._should_use_chunk_search()
+                logger.info(f"是否使用分块搜索: {should_use_chunk}")
+                logger.info(f"chunk_faiss_index存在: {self.chunk_faiss_index is not None}")
+                logger.info(f"chunk_whoosh_index存在: {self.chunk_whoosh_index is not None}")
+
+                # 直接使用分块搜索
+                if should_use_chunk:
+                    logger.info("执行分块搜索...")
+                    final_results = await self._chunk_search(query, search_type, limit, threshold, filters)
+                    logger.info(f"分块搜索完成，结果数量: {len(final_results)}")
+                    self.search_stats['chunk_searches'] += 1
+                else:
+                    logger.error("分块搜索服务不可用")
+                    final_results = []
+
+            # 计算响应时间
             response_time = time.time() - start_time
 
-            # 5. 更新统计信息
+            # 更新统计信息
             self._update_search_stats(response_time, len(final_results) > 0)
 
-            # 6. 格式化响应（保持完全兼容）
-            result = self._format_compatible_response(final_results, query, response_time, search_type, glossary_info)
+            # 格式化响应（保持完全兼容）
+            result = self._format_compatible_response(
+                final_results,
+                query,
+                response_time,
+                search_type,
+                glossary_info,
+                queries_used
+            )
 
             logger.info(f"搜索完成: 结果数={result.get('total', 0)}, 耗时={response_time:.3f}秒")
             return result
@@ -773,7 +824,8 @@ class ChunkSearchService:
         query: str,
         response_time: float,
         search_type: SearchType,
-        glossary_info: Optional[Any] = None
+        glossary_info: Optional[Any] = None,
+        queries_used: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """格式化兼容响应（与现有API完全一致）
 
@@ -783,6 +835,7 @@ class ChunkSearchService:
             response_time: 响应时间
             search_type: 搜索类型
             glossary_info: 术语扩展信息（可选）
+            queries_used: 实际使用的查询词列表（可选）
         """
         formatted_results = []
         for result in results:
@@ -834,7 +887,8 @@ class ChunkSearchService:
                     for term in glossary_info.matched_terms
                 ],
                 'expanded_queries': glossary_info.expanded_queries,
-                'used_collections': glossary_info.used_collections
+                'used_collections': glossary_info.used_collections,
+                'queries_used': queries_used or [query]  # 实际使用的查询词
             }
 
         return response_data
@@ -1005,6 +1059,40 @@ class ChunkSearchService:
             logger.error(f"向量搜索失败: {str(e)}")
             return self._format_error_response("", SearchType.SEMANTIC, str(e))
 
+    def _merge_expansion_search_results(self, all_results: List[List[Dict]]) -> List[Dict]:
+        """合并多个查询词的搜索结果
+
+        合并策略：
+        1. 按file_id分组
+        2. 同一file_id取最高relevance_score
+        3. 按聚合后的score排序
+
+        Args:
+            all_results: 多个查询词的搜索结果列表
+
+        Returns:
+            List[Dict]: 合并去重后的结果
+        """
+        # 按file_id分组，保留最高分
+        file_scores = {}
+        file_data = {}
+
+        for results in all_results:
+            for item in results:
+                file_id = item.get('file_id') or item.get('id')
+                score = item.get('relevance_score', 0)
+
+                if file_id and (file_id not in file_scores or score > file_scores[file_id]):
+                    file_scores[file_id] = score
+                    file_data[file_id] = item
+
+        # 按score排序
+        merged = list(file_data.values())
+        merged.sort(key=lambda x: x['relevance_score'], reverse=True)
+
+        logger.info(f"术语扩展结果合并: 原始结果数={sum(len(r) for r in all_results)}, 合并后={len(merged)}")
+        return merged
+
     def get_search_stats(self) -> Dict[str, Any]:
         """获取搜索统计信息"""
         return self.search_stats.copy()
@@ -1037,19 +1125,22 @@ def get_chunk_search_service() -> ChunkSearchService:
 
 def configure_glossary_expansion(
     enable: bool = False,
-    collection_ids: Optional[List[int]] = None
+    collection_ids: Optional[List[int]] = None,
+    max_expansion_terms: int = 3
 ):
     """配置术语扩展功能
 
     Args:
         enable: 是否启用术语扩展
         collection_ids: 使用的术语库ID列表，None表示全部
+        max_expansion_terms: 术语扩展最大词数（包含原词）
     """
     global _chunk_search_service
     if _chunk_search_service is not None:
         _chunk_search_service.enable_glossary_expansion = enable
         _chunk_search_service.glossary_collection_ids = collection_ids
-        logger.info(f"术语扩展配置已更新: enable={enable}, collection_ids={collection_ids}")
+        _chunk_search_service.max_expansion_terms = max(1, min(max_expansion_terms, 20))
+        logger.info(f"术语扩展配置已更新: enable={enable}, collection_ids={collection_ids}, max_terms={_chunk_search_service.max_expansion_terms}")
 
 
 def reload_chunk_search_service():

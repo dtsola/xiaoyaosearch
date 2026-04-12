@@ -32,7 +32,7 @@ def get_glossary_expansion_config_from_db(db: Session) -> dict:
         db: 数据库会话
 
     Returns:
-        dict: 配置字典，包含 enable 和 collection_ids
+        dict: 配置字典，包含 enable、collection_ids 和 max_expansion_terms
     """
     try:
         setting = db.query(AppSettingsModel).filter(
@@ -40,18 +40,24 @@ def get_glossary_expansion_config_from_db(db: Session) -> dict:
         ).first()
 
         if setting and setting.setting_value:
-            return json.loads(setting.setting_value)
+            config = json.loads(setting.setting_value)
+            # 确保 max_expansion_terms 字段存在（向后兼容）
+            if 'max_expansion_terms' not in config:
+                config['max_expansion_terms'] = 3
+            return config
         else:
             # 默认配置
             return {
                 "enable": False,
-                "collection_ids": None
+                "collection_ids": None,
+                "max_expansion_terms": 3
             }
     except Exception as e:
         logger.error(f"读取术语扩展配置失败: {str(e)}")
         return {
             "enable": False,
-            "collection_ids": None
+            "collection_ids": None,
+            "max_expansion_terms": 3
         }
 
 
@@ -93,12 +99,14 @@ class GlossaryExpansionConfig(BaseModel):
     """术语扩展配置"""
     enable: bool = Field(..., description="是否启用术语扩展")
     collection_ids: Optional[List[int]] = Field(None, description="使用的术语库ID列表，null表示全部")
+    max_expansion_terms: int = Field(3, ge=1, le=20, description="术语扩展最大词数（包含原词）")
 
 
 class GlossaryExpansionConfigData(BaseModel):
     """术语扩展配置数据"""
     enable: bool
     collection_ids: Optional[List[int]]
+    max_expansion_terms: int = 3
     available_collections: List[dict]
 
 
@@ -136,6 +144,7 @@ async def get_glossary_expansion_config(
             data = GlossaryExpansionConfigData(
                 enable=config_dict.get("enable", False),
                 collection_ids=config_dict.get("collection_ids"),
+                max_expansion_terms=config_dict.get("max_expansion_terms", 3),
                 available_collections=[
                     {
                         "id": c.id,
@@ -179,24 +188,27 @@ async def update_glossary_expansion_config(
             # 保存配置到数据库
             config_dict = {
                 "enable": config.enable,
-                "collection_ids": config.collection_ids
+                "collection_ids": config.collection_ids,
+                "max_expansion_terms": config.max_expansion_terms
             }
             save_glossary_expansion_config_to_db(db, config_dict)
 
             # 更新搜索服务的配置
             configure_glossary_expansion(
                 enable=config.enable,
-                collection_ids=config.collection_ids
+                collection_ids=config.collection_ids,
+                max_expansion_terms=config.max_expansion_terms
             )
 
-            logger.info(f"术语扩展配置已更新: enable={config.enable}, collection_ids={config.collection_ids}")
+            logger.info(f"术语扩展配置已更新: enable={config.enable}, collection_ids={config.collection_ids}, max_terms={config.max_expansion_terms}")
 
             return {
                 "success": True,
                 "message": i18n.t('glossary.settings.update_success', locale),
                 "data": {
                     "enable": config.enable,
-                    "collection_ids": config.collection_ids
+                    "collection_ids": config.collection_ids,
+                    "max_expansion_terms": config.max_expansion_terms
                 }
             }
         finally:

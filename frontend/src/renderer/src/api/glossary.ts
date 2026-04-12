@@ -107,11 +107,13 @@ export interface GlossaryImportResponse {
 export interface GlossaryExpansionConfig {
   enable: boolean
   collection_ids?: number[] | null
+  max_expansion_terms?: number
 }
 
 export interface GlossaryExpansionConfigData {
   enable: boolean
   collection_ids?: number[] | null
+  max_expansion_terms: number
   available_collections: Array<{
     id: number
     name: string

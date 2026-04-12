@@ -912,7 +912,10 @@ export default {
         availableCollections: '可用术语库',
         loadConfigFailed: '加载配置失败',
         saveConfigFailed: '保存配置失败',
-        saveSuccess: '配置已保存'
+        saveSuccess: '配置已保存',
+        maxExpansionTerms: '扩展词数量',
+        maxExpansionTermsHint: '并发搜索的最大词数（包含原词），数量越多召回率越高但速度越慢',
+        maxExpansionTermsRange: '1-20之间'
       },
       collections: {
         title: '术语库管理',

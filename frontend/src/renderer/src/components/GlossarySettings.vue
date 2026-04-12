@@ -14,6 +14,20 @@
           </div>
         </a-form-item>
 
+        <!-- 扩展词数量 -->
+        <a-form-item :label="t('glossary.settings.maxExpansionTerms')">
+          <a-input-number
+            v-model:value="config.max_expansion_terms"
+            :min="1"
+            :max="20"
+            :disabled="!config.enable"
+            style="width: 100%"
+          />
+          <div class="form-help">
+            {{ t('glossary.settings.maxExpansionTermsHint') }}
+          </div>
+        </a-form-item>
+
         <!-- 选择术语库 -->
         <a-form-item :label="t('glossary.settings.selectCollections')">
           <a-select
@@ -101,7 +115,8 @@ const { t } = useI18n()
 // 数据
 const config = reactive<GlossaryExpansionConfig>({
   enable: false,
-  collection_ids: []
+  collection_ids: [],
+  max_expansion_terms: 3
 })
 
 const availableCollections = ref<any[]>([])
@@ -114,9 +129,11 @@ const pageSize = 10
 const initialConfig = ref<{
   enable: boolean
   collection_ids: number[] | null
+  max_expansion_terms: number
 }>({
   enable: false,
-  collection_ids: null
+  collection_ids: null,
+  max_expansion_terms: 3
 })
 
 // 计算属性
@@ -163,12 +180,14 @@ const loadConfig = async () => {
     if (response.success) {
       config.enable = response.data.enable || false
       config.collection_ids = response.data.collection_ids || []
+      config.max_expansion_terms = response.data.max_expansion_terms || 3
       availableCollections.value = response.data.available_collections || []
 
       // 保存初始配置，用于重置
       initialConfig.value = {
         enable: config.enable,
-        collection_ids: [...(config.collection_ids || [])]
+        collection_ids: config.collection_ids ? [...config.collection_ids] : [],
+        max_expansion_terms: config.max_expansion_terms
       }
 
       // 重置分页到第一页
@@ -191,7 +210,8 @@ const saveConfig = async () => {
     // 保存成功后，更新初始配置
     initialConfig.value = {
       enable: config.enable,
-      collection_ids: config.collection_ids ? [...config.collection_ids] : []
+      collection_ids: config.collection_ids ? [...config.collection_ids] : [],
+      max_expansion_terms: config.max_expansion_terms || 3
     }
   } catch (error: any) {
     message.error(error.message || t('glossary.settings.saveConfigFailed'))
@@ -214,6 +234,7 @@ const handleReset = () => {
   // 恢复到初始配置
   config.enable = initialConfig.value.enable
   config.collection_ids = initialConfig.value.collection_ids ? [...initialConfig.value.collection_ids] : []
+  config.max_expansion_terms = initialConfig.value.max_expansion_terms
   currentPage.value = 1
   listPagination.current = 1
   message.success(t('common.resetSuccess'))

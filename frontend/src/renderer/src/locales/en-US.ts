@@ -906,7 +906,10 @@ export default {
         availableCollections: 'Available Collections',
         loadConfigFailed: 'Failed to load configuration',
         saveConfigFailed: 'Failed to save configuration',
-        saveSuccess: 'Configuration saved'
+        saveSuccess: 'Configuration saved',
+        maxExpansionTerms: 'Max Expansion Terms',
+        maxExpansionTermsHint: 'Maximum number of terms for concurrent search (including original query). Higher values improve recall but reduce speed.',
+        maxExpansionTermsRange: 'Between 1-20'
       },
       collections: {
         title: 'Glossary Collections',

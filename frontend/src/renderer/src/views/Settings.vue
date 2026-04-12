@@ -138,6 +138,19 @@
                 </a-alert>
               </a-form-item>
 
+              <a-form-item :label="t('settingsLLM.cloudProvider')">
+                <a-select
+                  v-model:value="llmConfig.cloud_provider"
+                  style="width: 100%"
+                  @change="handleCloudProviderChange"
+                >
+                  <a-select-option value="minimax">{{ t('settingsLLM.cloudProviderMiniMax') }}</a-select-option>
+                  <a-select-option value="openai">{{ t('settingsLLM.cloudProviderOpenAI') }}</a-select-option>
+                  <a-select-option value="deepseek">{{ t('settingsLLM.cloudProviderDeepSeek') }}</a-select-option>
+                  <a-select-option value="custom">{{ t('settingsLLM.cloudProviderCustom') }}</a-select-option>
+                </a-select>
+              </a-form-item>
+
               <a-form-item :label="t('settingsLLM.apiKey')">
                 <a-input-password
                   v-model:value="llmConfig.api_key"
@@ -154,11 +167,19 @@
               </a-form-item>
 
               <a-form-item :label="t('settingsLLM.modelName')">
-                <a-input
-                  v-model:value="llmConfig.model_name_cloud"
-                  :placeholder="t('settingsLLM.modelNamePlaceholderCloud')"
-                />
-                <div class="form-help">{{ t('settingsLLM.modelNameHelpCloud') }}</div>
+                <template v-if="llmConfig.cloud_provider === 'minimax'">
+                  <a-select v-model:value="llmConfig.model_name_cloud" style="width: 100%">
+                    <a-select-option value="MiniMax-M2.7">MiniMax-M2.7 ({{ t('settingsLLM.modelDefault') }})</a-select-option>
+                    <a-select-option value="MiniMax-M2.7-highspeed">MiniMax-M2.7-highspeed ({{ t('settingsLLM.modelFast') }})</a-select-option>
+                  </a-select>
+                </template>
+                <template v-else>
+                  <a-input
+                    v-model:value="llmConfig.model_name_cloud"
+                    :placeholder="t('settingsLLM.modelNamePlaceholderCloud')"
+                  />
+                  <div class="form-help">{{ t('settingsLLM.modelNameHelpCloud') }}</div>
+                </template>
               </a-form-item>
             </template>
           </a-form>
@@ -477,11 +498,12 @@ const speechConfig = reactive({
 
 const llmConfig = reactive({
   provider: 'local',      // 'local' | 'cloud'（新增）
+  cloud_provider: 'minimax',  // 云端服务商: 'minimax' | 'openai' | 'deepseek' | 'custom'
   model_name_local: 'qwen2.5:1.5b',   // local 专用
-  model_name_cloud: 'gpt-3.5-turbo',  // cloud 专用
+  model_name_cloud: 'MiniMax-M2.7',  // cloud 专用
   base_url: 'http://localhost:11434',
   api_key: '',            // 新增
-  endpoint: '',           // 新增
+  endpoint: 'https://api.minimax.io/v1',           // 新增
   isLoading: false,
   isTesting: false
 })
@@ -520,6 +542,24 @@ const handleProviderChange = (value: string) => {
   llmConfig.provider = value
 }
 
+// 云端服务商切换处理
+const CLOUD_PROVIDER_PRESETS: Record<string, { endpoint: string; model: string }> = {
+  minimax: { endpoint: 'https://api.minimax.io/v1', model: 'MiniMax-M2.7' },
+  openai: { endpoint: 'https://api.openai.com/v1', model: 'gpt-3.5-turbo' },
+  deepseek: { endpoint: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  custom: { endpoint: '', model: '' },
+}
+
+const handleCloudProviderChange = (value: string) => {
+  const preset = CLOUD_PROVIDER_PRESETS[value]
+  if (preset) {
+    llmConfig.endpoint = preset.endpoint
+    if (preset.model) {
+      llmConfig.model_name_cloud = preset.model
+    }
+  }
+}
+
 // Embedding provider 切换处理
 const handleEmbeddingProviderChange = (value: string) => {
   embeddingConfig.provider = value
@@ -546,7 +586,18 @@ const loadAIModels = async () => {
             if (model.provider === 'cloud') {
               llmConfig.model_name_cloud = model.model_name
               llmConfig.api_key = config.api_key || ''
-              llmConfig.endpoint = config.endpoint || 'https://api.openai.com/v1'
+              llmConfig.endpoint = config.endpoint || 'https://api.minimax.io/v1'
+              // 根据端点推断云端服务商
+              const endpoint = config.endpoint || ''
+              if (endpoint.includes('minimax.io')) {
+                llmConfig.cloud_provider = 'minimax'
+              } else if (endpoint.includes('openai.com')) {
+                llmConfig.cloud_provider = 'openai'
+              } else if (endpoint.includes('deepseek.com')) {
+                llmConfig.cloud_provider = 'deepseek'
+              } else {
+                llmConfig.cloud_provider = 'custom'
+              }
             } else {
               llmConfig.model_name_local = model.model_name
               llmConfig.base_url = config.base_url || 'http://localhost:11434'

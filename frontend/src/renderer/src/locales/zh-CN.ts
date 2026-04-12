@@ -508,6 +508,15 @@ export default {
     modelNamePlaceholderCloud: '例如: gpt-3.5-turbo、qwen-turbo、deepseek-chat',
     modelNameHelp: '输入已安装的Ollama模型名称，支持任何格式',
     modelNameHelpCloud: '输入云端模型名称，如 gpt-3.5-turbo、qwen-turbo、deepseek-chat 等',
+    modelDefault: '默认',
+    modelFast: '高速版',
+
+    // 云端服务商选择
+    cloudProvider: '云端服务商',
+    cloudProviderMiniMax: 'MiniMax（推荐）',
+    cloudProviderOpenAI: 'OpenAI',
+    cloudProviderDeepSeek: 'DeepSeek',
+    cloudProviderCustom: '自定义',
 
     serviceUrl: '服务地址',
     serviceUrlPlaceholder: 'http://localhost:11434',

@@ -504,6 +504,15 @@ export default {
     modelNamePlaceholderCloud: 'e.g. gpt-3.5-turbo, qwen-turbo, deepseek-chat',
     modelNameHelp: 'Enter installed Ollama model name, any format supported',
     modelNameHelpCloud: 'Enter cloud model name, e.g. gpt-3.5-turbo, qwen-turbo, deepseek-chat, etc.',
+    modelDefault: 'Default',
+    modelFast: 'Highspeed',
+
+    // Cloud provider selection
+    cloudProvider: 'Cloud Provider',
+    cloudProviderMiniMax: 'MiniMax (Recommended)',
+    cloudProviderOpenAI: 'OpenAI',
+    cloudProviderDeepSeek: 'DeepSeek',
+    cloudProviderCustom: 'Custom',
 
     serviceUrl: 'Service URL',
     serviceUrlPlaceholder: 'http://localhost:11434',

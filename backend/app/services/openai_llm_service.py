@@ -68,6 +68,15 @@ class OpenAILLMService(BaseAIModel):
 
         default_config.update(config)
 
+        # MiniMax 特殊处理：temperature 范围为 (0.0, 1.0]，不能为 0
+        model_name = default_config.get("model", "")
+        if model_name.lower().startswith("minimax"):
+            if default_config.get("temperature", 0.7) <= 0:
+                default_config["temperature"] = 1.0
+            # MiniMax 默认使用海外端点
+            if default_config.get("endpoint") == "https://api.openai.com/v1":
+                default_config["endpoint"] = "https://api.minimax.io/v1"
+
         super().__init__(
             model_name=default_config["model"],
             model_type=ModelType.LLM,
@@ -152,6 +161,10 @@ class OpenAILLMService(BaseAIModel):
             temperature = kwargs.get("temperature", self.config.get("temperature", 0.7))
             max_tokens = kwargs.get("max_tokens", self.config.get("max_tokens", 2048))
             top_p = kwargs.get("top_p", self.config.get("top_p", 1.0))
+
+            # MiniMax 特殊处理：temperature 范围为 (0.0, 1.0]，不能为 0
+            if self.model.lower().startswith("minimax") and temperature <= 0:
+                temperature = 1.0
 
             logger.info(f"开始OpenAI兼容API预测，消息数量: {len(standardized_messages)}")
 

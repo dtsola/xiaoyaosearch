@@ -289,6 +289,20 @@ class AIModelModel(Base):
                     },
                     "device": device
                 }
+            },
+            "minimax_cloud": {
+                "model_type": "llm",
+                "provider": "cloud",
+                "model_name": "MiniMax-M2.7",
+                "config": {
+                    "api_key": os.environ.get("MINIMAX_API_KEY", ""),
+                    "endpoint": "https://api.minimax.io/v1",
+                    "model": "MiniMax-M2.7",
+                    "timeout": 60,
+                    "temperature": 1.0,
+                    "max_tokens": 2048,
+                    "top_p": 1.0
+                }
             }
         }
 

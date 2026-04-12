@@ -36,6 +36,9 @@ from app.api import (
     system_router,
     settings_router
 )
+from app.api.glossary_collections import router as glossary_collections_router
+from app.api.glossary_terms import router as glossary_terms_router
+from app.api.glossary import router as glossary_router
 
 
 @asynccontextmanager
@@ -246,6 +249,9 @@ app.include_router(index_router)
 app.include_router(config_router)
 app.include_router(system_router)
 app.include_router(settings_router)
+app.include_router(glossary_collections_router)
+app.include_router(glossary_terms_router)
+app.include_router(glossary_router)
 
 # 根路径
 @app.get("/")

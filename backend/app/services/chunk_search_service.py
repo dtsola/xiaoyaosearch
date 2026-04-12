@@ -1101,10 +1101,17 @@ class ChunkSearchService:
 # 创建全局分块搜索服务实例
 _chunk_search_service: Optional[ChunkSearchService] = None
 
+# 保存术语扩展配置（供服务创建时使用）
+_glossary_expansion_config = {
+    "enable": False,
+    "collection_ids": None,
+    "max_expansion_terms": 3
+}
+
 
 def get_chunk_search_service() -> ChunkSearchService:
     """获取分块搜索服务实例"""
-    global _chunk_search_service
+    global _chunk_search_service, _glossary_expansion_config
     if _chunk_search_service is None:
         # 使用默认路径创建服务实例
         chunk_faiss_path = os.getenv('FAISS_INDEX_PATH', '../data/indexes/faiss') + '/document_index_chunks.faiss'
@@ -1117,8 +1124,15 @@ def get_chunk_search_service() -> ChunkSearchService:
         _chunk_search_service = ChunkSearchService(
             chunk_faiss_index_path=chunk_faiss_path,
             chunk_whoosh_index_path=chunk_whoosh_path,
-            use_ai_models=True
+            use_ai_models=True,
+            enable_glossary_expansion=_glossary_expansion_config["enable"],
+            glossary_collection_ids=_glossary_expansion_config["collection_ids"],
+            max_expansion_terms=_glossary_expansion_config["max_expansion_terms"]
         )
+
+        logger.info(f"术语扩展配置: enable={_chunk_search_service.enable_glossary_expansion}, "
+                   f"collection_ids={_chunk_search_service.glossary_collection_ids}, "
+                   f"max_terms={_chunk_search_service.max_expansion_terms}")
 
     return _chunk_search_service
 
@@ -1135,12 +1149,22 @@ def configure_glossary_expansion(
         collection_ids: 使用的术语库ID列表，None表示全部
         max_expansion_terms: 术语扩展最大词数（包含原词）
     """
-    global _chunk_search_service
+    global _chunk_search_service, _glossary_expansion_config
+
+    # 保存配置（供服务创建时使用）
+    _glossary_expansion_config = {
+        "enable": enable,
+        "collection_ids": collection_ids,
+        "max_expansion_terms": max(1, min(max_expansion_terms, 20))
+    }
+
     if _chunk_search_service is not None:
         _chunk_search_service.enable_glossary_expansion = enable
         _chunk_search_service.glossary_collection_ids = collection_ids
-        _chunk_search_service.max_expansion_terms = max(1, min(max_expansion_terms, 20))
+        _chunk_search_service.max_expansion_terms = _glossary_expansion_config["max_expansion_terms"]
         logger.info(f"术语扩展配置已更新: enable={enable}, collection_ids={collection_ids}, max_terms={_chunk_search_service.max_expansion_terms}")
+    else:
+        logger.info(f"术语扩展配置已保存（服务未创建）: enable={enable}, collection_ids={collection_ids}, max_terms={_glossary_expansion_config['max_expansion_terms']}")
 
 
 def reload_chunk_search_service():

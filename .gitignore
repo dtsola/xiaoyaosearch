@@ -84,9 +84,9 @@ release/
 
 # 临时文档
 **/项目提示词.md
-docs/base/
+docs/base*/
 docs/内容创作/
-docs/content-creator-base/
+
 
 # 整合包运行时
 runtime/

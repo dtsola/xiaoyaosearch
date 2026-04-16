@@ -1,0 +1,71 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "claude-code",
+  "elements": [
+    { "id": "mobile",    "type": "rectangle", "x": 80,  "y": 60,  "width": 160, "height": 60, "angle": 0, "strokeColor": "#364fc7", "backgroundColor": "#dbe4ff", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "mobile-t",  "type": "text",      "x": 80,  "y": 80,  "width": 160, "height": 20, "angle": 0, "strokeColor": "#364fc7", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Mobile App", "fontSize": 15, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "web",       "type": "rectangle", "x": 430, "y": 60,  "width": 160, "height": 60, "angle": 0, "strokeColor": "#364fc7", "backgroundColor": "#dbe4ff", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "web-t",     "type": "text",      "x": 430, "y": 80,  "width": 160, "height": 20, "angle": 0, "strokeColor": "#364fc7", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Web Browser", "fontSize": 15, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "admin",     "type": "rectangle", "x": 800, "y": 60,  "width": 160, "height": 60, "angle": 0, "strokeColor": "#364fc7", "backgroundColor": "#dbe4ff", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "admin-t",   "type": "text",      "x": 800, "y": 80,  "width": 160, "height": 20, "angle": 0, "strokeColor": "#364fc7", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Admin Panel", "fontSize": 15, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "gateway",   "type": "rectangle", "x": 80,  "y": 210, "width": 880, "height": 60, "angle": 0, "strokeColor": "#6741d9", "backgroundColor": "#f3d9fa", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "gateway-t", "type": "text",      "x": 80,  "y": 230, "width": 880, "height": 20, "angle": 0, "strokeColor": "#6741d9", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "API Gateway  (Auth + Rate Limit + Router)", "fontSize": 16, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "user-svc",    "type": "rectangle", "x": 80,  "y": 370, "width": 160, "height": 60, "angle": 0, "strokeColor": "#2f9e44", "backgroundColor": "#d3f9d8", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "user-svc-t",  "type": "text",      "x": 80,  "y": 390, "width": 160, "height": 20, "angle": 0, "strokeColor": "#2f9e44", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "User Service", "fontSize": 14, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "order-svc",   "type": "rectangle", "x": 320, "y": 370, "width": 160, "height": 60, "angle": 0, "strokeColor": "#2f9e44", "backgroundColor": "#d3f9d8", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "order-svc-t", "type": "text",      "x": 320, "y": 390, "width": 160, "height": 20, "angle": 0, "strokeColor": "#2f9e44", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Order Service", "fontSize": 14, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "product-svc",   "type": "rectangle", "x": 560, "y": 370, "width": 160, "height": 60, "angle": 0, "strokeColor": "#2f9e44", "backgroundColor": "#d3f9d8", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "product-svc-t", "type": "text",      "x": 560, "y": 390, "width": 160, "height": 20, "angle": 0, "strokeColor": "#2f9e44", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Product Service", "fontSize": 14, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "pay-svc",   "type": "rectangle", "x": 800, "y": 370, "width": 160, "height": 60, "angle": 0, "strokeColor": "#2f9e44", "backgroundColor": "#d3f9d8", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "pay-svc-t", "type": "text",      "x": 800, "y": 390, "width": 160, "height": 20, "angle": 0, "strokeColor": "#2f9e44", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Payment Service", "fontSize": 14, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "kafka",   "type": "rectangle", "x": 310, "y": 530, "width": 200, "height": 60, "angle": 0, "strokeColor": "#e67700", "backgroundColor": "#ffe8cc", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "kafka-t", "type": "text",      "x": 310, "y": 550, "width": 200, "height": 20, "angle": 0, "strokeColor": "#e67700", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Kafka Event Bus", "fontSize": 14, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "notify",   "type": "rectangle", "x": 590, "y": 530, "width": 180, "height": 60, "angle": 0, "strokeColor": "#e67700", "backgroundColor": "#ffe8cc", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "notify-t", "type": "text",      "x": 590, "y": 550, "width": 180, "height": 20, "angle": 0, "strokeColor": "#e67700", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Notification Svc", "fontSize": 14, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "stripe",   "type": "rectangle", "x": 860, "y": 530, "width": 140, "height": 60, "angle": 0, "strokeColor": "#c92a2a", "backgroundColor": "#ffe3e3", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "stripe-t", "type": "text",      "x": 860, "y": 550, "width": 140, "height": 20, "angle": 0, "strokeColor": "#c92a2a", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Stripe API", "fontSize": 14, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "user-db",    "type": "ellipse", "x": 80,  "y": 700, "width": 140, "height": 60, "angle": 0, "strokeColor": "#e67700", "backgroundColor": "#fff3bf", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "user-db-t",  "type": "text",    "x": 80,  "y": 720, "width": 140, "height": 20, "angle": 0, "strokeColor": "#664d03", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "User DB", "fontSize": 13, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "order-db",   "type": "ellipse", "x": 320, "y": 700, "width": 140, "height": 60, "angle": 0, "strokeColor": "#e67700", "backgroundColor": "#fff3bf", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "order-db-t", "type": "text",    "x": 320, "y": 720, "width": 140, "height": 20, "angle": 0, "strokeColor": "#664d03", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Order DB", "fontSize": 13, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "product-db",   "type": "ellipse", "x": 560, "y": 700, "width": 140, "height": 60, "angle": 0, "strokeColor": "#e67700", "backgroundColor": "#fff3bf", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "product-db-t", "type": "text",    "x": 560, "y": 720, "width": 140, "height": 20, "angle": 0, "strokeColor": "#664d03", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Product DB", "fontSize": 13, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "redis",   "type": "ellipse", "x": 800, "y": 700, "width": 160, "height": 60, "angle": 0, "strokeColor": "#e67700", "backgroundColor": "#fff3bf", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100 },
+    { "id": "redis-t", "type": "text",    "x": 800, "y": 720, "width": 160, "height": 20, "angle": 0, "strokeColor": "#664d03", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "text": "Redis Cache", "fontSize": 13, "fontFamily": 1, "textAlign": "center" },
+
+    { "id": "a1", "type": "arrow", "x": 159, "y": 120, "width": 1,   "height": 85,  "angle": 0, "strokeColor": "#495057", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[0,85]],    "startBinding": {"elementId":"mobile",    "gap":5,"focus":0}, "endBinding": {"elementId":"gateway",  "gap":5,"focus":0} },
+    { "id": "a2", "type": "arrow", "x": 509, "y": 120, "width": 1,   "height": 85,  "angle": 0, "strokeColor": "#495057", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[0,85]],    "startBinding": {"elementId":"web",       "gap":5,"focus":0}, "endBinding": {"elementId":"gateway",  "gap":5,"focus":0} },
+    { "id": "a3", "type": "arrow", "x": 879, "y": 120, "width": 1,   "height": 85,  "angle": 0, "strokeColor": "#495057", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[0,85]],    "startBinding": {"elementId":"admin",     "gap":5,"focus":0}, "endBinding": {"elementId":"gateway",  "gap":5,"focus":0} },
+
+    { "id": "a4", "type": "arrow", "x": 159, "y": 270, "width": 1,   "height": 95,  "angle": 0, "strokeColor": "#6741d9", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[0,95]],    "startBinding": {"elementId":"gateway",   "gap":5,"focus":0}, "endBinding": {"elementId":"user-svc",  "gap":5,"focus":0} },
+    { "id": "a5", "type": "arrow", "x": 399, "y": 270, "width": 1,   "height": 95,  "angle": 0, "strokeColor": "#6741d9", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[0,95]],    "startBinding": {"elementId":"gateway",   "gap":5,"focus":0}, "endBinding": {"elementId":"order-svc", "gap":5,"focus":0} },
+    { "id": "a6", "type": "arrow", "x": 639, "y": 270, "width": 1,   "height": 95,  "angle": 0, "strokeColor": "#6741d9", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[0,95]],    "startBinding": {"elementId":"gateway",   "gap":5,"focus":0}, "endBinding": {"elementId":"product-svc","gap":5,"focus":0} },
+    { "id": "a7", "type": "arrow", "x": 879, "y": 270, "width": 1,   "height": 95,  "angle": 0, "strokeColor": "#6741d9", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[0,95]],    "startBinding": {"elementId":"gateway",   "gap":5,"focus":0}, "endBinding": {"elementId":"pay-svc",   "gap":5,"focus":0} },
+
+    { "id": "a8",  "type": "arrow", "x": 159, "y": 430, "width": 1,   "height": 265, "angle": 0, "strokeColor": "#868e96", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "points": [[0,0],[0,265]], "startBinding": {"elementId":"user-svc",  "gap":5,"focus":0}, "endBinding": {"elementId":"user-db",   "gap":5,"focus":0} },
+    { "id": "a9",  "type": "arrow", "x": 399, "y": 430, "width": 1,   "height": 265, "angle": 0, "strokeColor": "#868e96", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "points": [[0,0],[0,265]], "startBinding": {"elementId":"order-svc", "gap":5,"focus":0}, "endBinding": {"elementId":"order-db",  "gap":5,"focus":0} },
+    { "id": "a10", "type": "arrow", "x": 639, "y": 430, "width": 1,   "height": 265, "angle": 0, "strokeColor": "#868e96", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "points": [[0,0],[0,265]], "startBinding": {"elementId":"product-svc","gap":5,"focus":0}, "endBinding": {"elementId":"product-db","gap":5,"focus":0} },
+    { "id": "a11", "type": "arrow", "x": 879, "y": 430, "width": 1,   "height": 265, "angle": 0, "strokeColor": "#868e96", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 1, "roughness": 1, "opacity": 100, "points": [[0,0],[0,265]], "startBinding": {"elementId":"pay-svc",   "gap":5,"focus":0}, "endBinding": {"elementId":"redis",     "gap":5,"focus":0} },
+
+    { "id": "a12", "type": "arrow", "x": 399, "y": 430, "width": 10,  "height": 95,  "angle": 0, "strokeColor": "#e67700", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[10,95]],   "startBinding": {"elementId":"order-svc", "gap":5,"focus":0}, "endBinding": {"elementId":"kafka",     "gap":5,"focus":0} },
+    { "id": "a13", "type": "arrow", "x": 879, "y": 430, "width": 470, "height": 95,  "angle": 0, "strokeColor": "#e67700", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[-470,95]], "startBinding": {"elementId":"pay-svc",   "gap":5,"focus":0}, "endBinding": {"elementId":"kafka",     "gap":5,"focus":0} },
+    { "id": "a14", "type": "arrow", "x": 510, "y": 560, "width": 75,  "height": 1,   "angle": 0, "strokeColor": "#e67700", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[75,0]],    "startBinding": {"elementId":"kafka",     "gap":5,"focus":0}, "endBinding": {"elementId":"notify",    "gap":5,"focus":0} },
+    { "id": "a15", "type": "arrow", "x": 879, "y": 430, "width": 51,  "height": 95,  "angle": 0, "strokeColor": "#c92a2a", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2, "roughness": 1, "opacity": 100, "points": [[0,0],[51,95]],   "startBinding": {"elementId":"pay-svc",   "gap":5,"focus":0}, "endBinding": {"elementId":"stripe",    "gap":5,"focus":0} }
+  ],
+  "appState": { "viewBackgroundColor": "#f8f9fa" }
+}

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小遥搜索 v2.0 - Lucide图标预览</title>
+  <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f6f5f4;
+      --text-primary: rgba(0, 0, 0, 0.92);
+      --text-secondary: #615d59;
+      --text-tertiary: #9a9590;
+      --brand-blue: #0075de;
+      --border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      font-size: 16px;
+    }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title iconify-icon {
+      color: var(--brand-blue);
+    }
+
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+    }
+
+    .icon-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .icon-card:hover {
+      box-shadow:
+        rgba(0, 0, 0, 0.03) 0px 4px 12px,
+        rgba(0, 0, 0, 0.02) 0px 2px 6px;
+      transform: translateY(-2px);
+      border-color: var(--brand-blue);
+    }
+
+    .icon-preview {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+    }
+
+    .icon-preview iconify-icon {
+      font-size: 24px;
+      color: var(--brand-blue);
+    }
+
+    .icon-preview.secondary iconify-icon {
+      color: var(--text-secondary);
+    }
+
+    .icon-preview.warning iconify-icon {
+      color: #dd5b00;
+    }
+
+    .icon-preview.success iconify-icon {
+      color: #2a9d99;
+    }
+
+    .icon-name {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      font-family: 'Monaco', 'Consolas', monospace;
+    }
+
+    .icon-usage {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      text-align: center;
+    }
+
+    .size-demo {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 20px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+    }
+
+    .size-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .size-item iconify-icon {
+      color: var(--brand-blue);
+    }
+
+    .size-label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .color-demo {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 20px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+    }
+
+    .color-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .color-item iconify-icon {
+      font-size: 20px;
+    }
+
+    .color-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: monospace;
+    }
+
+    .info-box {
+      background: #e8f4fd;
+      border-left: 4px solid var(--brand-blue);
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 24px;
+    }
+
+    .info-box p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .info-box strong {
+      color: var(--brand-blue);
+    }
+
+    .copy-hint {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--text-primary);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.2s ease;
+      pointer-events: none;
+    }
+
+    .copy-hint.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>小遥搜索 v2.0 - Lucide图标库</h1>
+    <p class="subtitle">Notion温暖明亮风格 · 清晰简洁 · 专业高效</p>
+
+    <div class="info-box">
+      <p><strong>推荐图标库：</strong>Lucide Icons - 基于Feather Icons改进，更加现代和专业，完美契合Notion温暖明亮风格</p>
+      <p><strong>图标总数：</strong>35个核心图标 | <strong>笔画粗细：</strong>2px | <strong>使用许可：</strong>ISC License</p>
+    </div>
+
+    <!-- 尺寸演示 -->
+    <div class="section">
+      <h2 class="section-title">
+        <iconify-icon icon="lucide:ruler"></iconify-icon>
+        尺寸系统
+      </h2>
+      <div class="size-demo">
+        <div class="size-item">
+          <iconify-icon icon="lucide:home" width="16" height="16"></iconify-icon>
+          <span class="size-label">XS: 16px</span>
+        </div>
+        <div class="size-item">
+          <iconify-icon icon="lucide:home" width="18" height="18"></iconify-icon>
+          <span class="size-label">SM: 18px</span>
+        </div>
+        <div class="size-item">
+          <iconify-icon icon="lucide:home" width="20" height="20"></iconify-icon>
+          <span class="size-label">MD: 20px</span>
+        </div>
+        <div class="size-item">
+          <iconify-icon icon="lucide:home" width="24" height="24"></iconify-icon>
+          <span class="size-label">LG: 24px</span>
+        </div>
+        <div class="size-item">
+          <iconify-icon icon="lucide:home" width="32" height="32"></iconify-icon>
+          <span class="size-label">XL: 32px</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 颜色演示 -->
+    <div class="section">
+      <h2 class="section-title">
+        <iconify-icon icon="lucide:palette"></iconify-icon>
+        颜色系统
+      </h2>
+      <div class="color-demo">
+        <div class="color-item">
+          <iconify-icon icon="lucide:search" style="color: rgba(0,0,0,0.92)"></iconify-icon>
+          <span class="color-label">primary</span>
+        </div>
+        <div class="color-item">
+          <iconify-icon icon="lucide:search" style="color: #615d59"></iconify-icon>
+          <span class="color-label">secondary</span>
+        </div>
+        <div class="color-item">
+          <iconify-icon icon="lucide:search" style="color: #9a9590"></iconify-icon>
+          <span class="color-label">tertiary</span>
+        </div>
+        <div class="color-item">
+          <iconify-icon icon="lucide:search" style="color: #0075de"></iconify-icon>
+          <span class="color-label">brand-blue</span>
+        </div>
+        <div class="color-item">
+          <iconify-icon icon="lucide:search" style="color: #dd5b00"></iconify-icon>
+          <span class="color-label">warning</span>
+        </div>
+        <div class="color-item">
+          <iconify-icon icon="lucide:search" style="color: #2a9d99"></iconify-icon>
+          <span class="color-label">success</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 导航图标 -->
+    <div class="section">
+      <h2 class="section-title">
+        <iconify-icon icon="lucide:compass"></iconify-icon>
+        导航图标
+      </h2>
+      <div class="icon-grid">
+        <div class="icon-card" data-icon="lucide:home">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:home"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:home</span>
+          <span class="icon-usage">首页</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:settings">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:settings"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:settings</span>
+          <span class="icon-usage">设置</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:list">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:list"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:list</span>
+          <span class="icon-usage">索引</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:help-circle">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:help-circle"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:help-circle</span>
+          <span class="icon-usage">帮助</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 多模态输入 -->
+    <div class="section">
+      <h2 class="section-title">
+        <iconify-icon icon="lucide:mic"></iconify-icon>
+        多模态输入
+      </h2>
+      <div class="icon-grid">
+        <div class="icon-card" data-icon="lucide:mic">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:mic"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:mic</span>
+          <span class="icon-usage">语音输入</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:keyboard">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:keyboard"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:keyboard</span>
+          <span class="icon-usage">文本输入</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:image">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:image"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:image</span>
+          <span class="icon-usage">图像输入</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:sparkles">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:sparkles"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:sparkles</span>
+          <span class="icon-usage">AI智能</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 功能操作 -->
+    <div class="section">
+      <h2 class="section-title">
+        <iconify-icon icon="lucide:zap"></iconify-icon>
+        功能操作
+      </h2>
+      <div class="icon-grid">
+        <div class="icon-card" data-icon="lucide:search">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:search"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:search</span>
+          <span class="icon-usage">搜索</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:bar-chart-3">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:bar-chart-3"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:bar-chart-3</span>
+          <span class="icon-usage">AI增强</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:folder-open">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:folder-open"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:folder-open</span>
+          <span class="icon-usage">选择目录</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:clock">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:clock"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:clock</span>
+          <span class="icon-usage">计时器</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 结果操作 -->
+    <div class="section">
+      <h2 class="section-title">
+        <iconify-icon icon="lucide:mouse-pointer-2"></iconify-icon>
+        结果操作
+      </h2>
+      <div class="icon-grid">
+        <div class="icon-card" data-icon="lucide:eye">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:eye"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:eye</span>
+          <span class="icon-usage">预览</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:external-link">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:external-link"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:external-link</span>
+          <span class="icon-usage">打开位置</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:star">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:star"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:star</span>
+          <span class="icon-usage">收藏</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:copy">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:copy"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:copy</span>
+          <span class="icon-usage">复制</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:trash-2">
+          <div class="icon-preview warning">
+            <iconify-icon icon="lucide:trash-2"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:trash-2</span>
+          <span class="icon-usage">删除</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 文件类型 -->
+    <div class="section">
+      <h2 class="section-title">
+        <iconify-icon icon="lucide:files"></iconify-icon>
+        文件类型
+      </h2>
+      <div class="icon-grid">
+        <div class="icon-card" data-icon="lucide:music">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:music"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:music</span>
+          <span class="icon-usage">音频文件</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:file-text">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:file-text"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:file-text</span>
+          <span class="icon-usage">文档文件</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:film">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:film"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:film</span>
+          <span class="icon-usage">视频文件</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:code-2">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:code-2"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:code-2</span>
+          <span class="icon-usage">代码文件</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:archive">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:archive"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:archive</span>
+          <span class="icon-usage">压缩文件</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 状态指示 -->
+    <div class="section">
+      <h2 class="section-title">
+        <iconify-icon icon="lucide:activity"></iconify-icon>
+        状态指示
+      </h2>
+      <div class="icon-grid">
+        <div class="icon-card" data-icon="lucide:globe">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:globe"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:globe</span>
+          <span class="icon-usage">语言切换</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:bell">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:bell"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:bell</span>
+          <span class="icon-usage">通知</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:moon">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:moon"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:moon</span>
+          <span class="icon-usage">主题切换</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:user">
+          <div class="icon-preview secondary">
+            <iconify-icon icon="lucide:user"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:user</span>
+          <span class="icon-usage">用户</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:check-circle-2">
+          <div class="icon-preview success">
+            <iconify-icon icon="lucide:check-circle-2"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:check-circle-2</span>
+          <span class="icon-usage">成功</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:x-circle">
+          <div class="icon-preview warning">
+            <iconify-icon icon="lucide:x-circle"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:x-circle</span>
+          <span class="icon-usage">错误</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:alert-triangle">
+          <div class="icon-preview warning">
+            <iconify-icon icon="lucide:alert-triangle"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:alert-triangle</span>
+          <span class="icon-usage">警告</span>
+        </div>
+        <div class="icon-card" data-icon="lucide:loader-2">
+          <div class="icon-preview">
+            <iconify-icon icon="lucide:loader-2" class="spin"></iconify-icon>
+          </div>
+          <span class="icon-name">lucide:loader-2</span>
+          <span class="icon-usage">加载中</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="copy-hint" id="copyHint">已复制图标名称！</div>
+
+  <style>
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
+  <script>
+    // 点击复制图标名称
+    document.querySelectorAll('.icon-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const iconName = card.dataset.icon;
+        navigator.clipboard.writeText(iconName).then(() => {
+          const hint = document.getElementById('copyHint');
+          hint.classList.add('show');
+          setTimeout(() => {
+            hint.classList.remove('show');
+          }, 2000);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

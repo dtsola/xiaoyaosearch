@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小遥搜索 - Notion温暖明亮风格 v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* 背景色系 - 温暖明亮 */
+      --bg-primary: #ffffff;
+      --bg-secondary: #faf8f6;
+      --bg-tertiary: #f5f3f0;
+      --bg-hover: rgba(0, 0, 0, 0.02);
+
+      /* 文字色系 - 温暖中性 */
+      --text-primary: #2c2a29;
+      --text-secondary: #6b6967;
+      --text-tertiary: #9a9896;
+      --text-muted: #b8b6b4;
+
+      /* 品牌色系 */
+      --brand-blue: #0075de;
+      --brand-blue-dark: #0056a3;
+      --brand-blue-light: #e8f4fd;
+
+      /* 装饰色系 */
+      --accent-teal: #20c997;
+      --accent-purple: #8b5cf6;
+      --accent-orange: #fd7e14;
+
+      /* 边框色系 */
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --border-standard: rgba(0, 0, 0, 0.1);
+
+      /* 阴影系统 */
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
+
+      /* 圆角系统 */
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --radius-pill: 9999px;
+
+      /* 间距系统 */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 20px;
+      --space-2xl: 24px;
+      --space-3xl: 32px;
+
+      /* 字体系统 */
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Quicksand', sans-serif;
+
+      /* 过渡 */
+      --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: linear-gradient(135deg, #ffffff 0%, #faf9f7 100%);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 装饰性背景元素 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      right: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(0, 117, 222, 0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -30%;
+      left: -5%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(32, 201, 151, 0.03) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* 顶部导航栏 */
+    .header {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: var(--border-subtle);
+      height: 60px;
+      padding: 0 var(--space-xl);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .logo-icon {
+      font-size: 24px;
+      background: linear-gradient(135deg, var(--brand-blue), var(--accent-teal));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.03em;
+    }
+
+    .logo-version {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      background: var(--bg-secondary);
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      margin-left: var(--space-xs);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: var(--space-xl);
+    }
+
+    .nav-link {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+      position: relative;
+    }
+
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) scaleX(0);
+      width: 20px;
+      height: 2px;
+      background: var(--brand-blue);
+      transition: transform var(--transition);
+      transform-origin: center;
+    }
+
+    .nav-link:hover {
+      color: var(--brand-blue);
+      background: var(--bg-hover);
+    }
+
+    .nav-link:hover::before {
+      transform: translateX(-50%) scaleX(1);
+    }
+
+    .nav-link.active {
+      color: var(--brand-blue);
+    }
+
+    .nav-link.active::before {
+      transform: translateX(-50%) scaleX(1);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    .action-btn {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+    }
+
+    .action-btn:hover {
+      color: var(--brand-blue);
+      background: var(--bg-hover);
+    }
+
+    /* 主内容区域 */
+    .content {
+      flex: 1;
+      padding: var(--space-3xl) var(--space-xl);
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* 多模态指示器 */
+    .modal-indicators {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-lg);
+      margin-bottom: var(--space-2xl);
+    }
+
+    .indicator {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--bg-primary);
+      border: 2px solid var(--border-standard);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .indicator::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand-blue-light), transparent);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .indicator:hover {
+      transform: translateY(-3px) scale(1.05);
+      border-color: var(--brand-blue);
+      box-shadow: var(--shadow-md);
+    }
+
+    .indicator:hover::before {
+      opacity: 1;
+    }
+
+    .indicator.active {
+      border-color: var(--brand-blue);
+      background: var(--brand-blue-light);
+      box-shadow: 0 0 0 4px rgba(0, 117, 222, 0.1);
+    }
+
+    .indicator.active::before {
+      opacity: 0.5;
+    }
+
+    .indicator-icon {
+      font-size: 22px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .indicator-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 2px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .indicator.active .indicator-label {
+      color: var(--brand-blue);
+    }
+
+    /* 搜索容器 */
+    .search-container {
+      max-width: 640px;
+      margin: 0 auto var(--space-3xl);
+    }
+
+    .search-box {
+      background: var(--bg-primary);
+      border: var(--border-standard);
+      border-radius: 24px;
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition);
+    }
+
+    .search-box:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+
+    .mode-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .mode-btn:hover {
+      background: var(--bg-tertiary);
+      transform: translateY(-2px);
+    }
+
+    .mode-btn.active {
+      background: var(--brand-blue-light);
+      border-color: var(--brand-blue);
+      color: var(--brand-blue);
+    }
+
+    .input-wrapper {
+      position: relative;
+      margin-bottom: var(--space-md);
+    }
+
+    .search-input {
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 16px;
+      font-weight: 500;
+      background: var(--bg-secondary);
+      border: 2px solid transparent;
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      padding: 16px var(--space-lg) 16px 100px;
+      outline: none;
+      transition: all var(--transition);
+    }
+
+    .search-input:focus {
+      background: var(--bg-primary);
+      border-color: var(--brand-blue);
+      box-shadow: 0 0 0 4px rgba(0, 117, 222, 0.1);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .search-timer {
+      position: absolute;
+      right: var(--space-md);
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: var(--space-md);
+    }
+
+    .btn {
+      font-family: var(--font-display);
+      flex: 1;
+      height: 48px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-blue-dark));
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 117, 222, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 117, 222, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-tertiary);
+      transform: translateY(-2px);
+    }
+
+    .search-status {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-xl);
+      margin-top: var(--space-md);
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-size: 14px;
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+
+    /* 搜索结果 */
+    .results-container {
+      display: grid;
+      gap: var(--space-md);
+    }
+
+    .result-card {
+      background: var(--bg-primary);
+      border: var(--border-standard);
+      border-radius: 20px;
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition);
+    }
+
+    .result-card:hover {
+      border-color: var(--brand-blue);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-3px);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      margin-bottom: var(--space-md);
+    }
+
+    .result-icon {
+      font-size: 32px;
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--brand-blue-light), #ffffff);
+      border-radius: var(--radius-lg);
+      flex-shrink: 0;
+    }
+
+    .result-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .result-title {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 600;
+      line-height: 1.3;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      margin-bottom: var(--space-sm);
+    }
+
+    .result-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: linear-gradient(135deg, var(--accent-teal), #1aa179);
+      color: #ffffff;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .result-size {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .result-preview {
+      margin-bottom: var(--space-md);
+    }
+
+    .preview-text {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: var(--space-xs);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .preview-path {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: 'SF Mono', 'Consolas', monospace;
+      background: var(--bg-secondary);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .result-actions {
+      display: flex;
+      gap: var(--space-xs);
+      padding-top: var(--space-md);
+      border-top: var(--border-subtle);
+    }
+
+    .action-link {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+    }
+
+    .action-link:hover {
+      color: var(--brand-blue);
+      background: var(--brand-blue-light);
+    }
+
+    .action-link.danger:hover {
+      color: var(--accent-orange);
+      background: rgba(253, 126, 20, 0.1);
+    }
+
+    /* 搜索结果统计 */
+    .results-footer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: var(--space-xl);
+      margin-top: var(--space-xl);
+      padding: var(--space-md);
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* 底部状态栏 */
+    .footer {
+      background: var(--bg-secondary);
+      border-top: var(--border-subtle);
+      padding: var(--space-md) var(--space-xl);
+    }
+
+    .footer-content {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      gap: var(--space-2xl);
+    }
+
+    .footer-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-size: 13px;
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .header-actions .action-btn:not(:last-child) {
+        display: none;
+      }
+
+      .results-footer {
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+
+      .footer-content {
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <header class="header">
+    <div class="logo-section">
+      <span class="logo-icon">◤</span>
+      <span class="logo-text">小遥搜索</span>
+      <span class="logo-version">v2.0</span>
+    </div>
+
+    <nav class="nav-links">
+      <a href="#" class="nav-link active">首页</a>
+      <a href="#" class="nav-link">设置</a>
+      <a href="#" class="nav-link">索引</a>
+      <a href="#" class="nav-link">帮助</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="action-btn">🌐 中文</button>
+      <button class="action-btn">🔔</button>
+      <button class="action-btn">🌙</button>
+      <button class="action-btn">👤 admin</button>
+    </div>
+  </header>
+
+  <!-- 主内容区域 -->
+  <main class="content">
+    <!-- 多模态悬浮指示器 -->
+    <div class="modal-indicators">
+      <div class="indicator" onclick="setMode('voice')">
+        <span class="indicator-icon">🎙️</span>
+        <span class="indicator-label">5</span>
+      </div>
+      <div class="indicator active" onclick="setMode('text')">
+        <span class="indicator-icon">✏️</span>
+        <span class="indicator-label">•</span>
+      </div>
+      <div class="indicator" onclick="setMode('image')">
+        <span class="indicator-icon">🖼️</span>
+        <span class="indicator-label">✗</span>
+      </div>
+    </div>
+
+    <!-- 搜索输入容器 -->
+    <div class="search-container">
+      <div class="search-box">
+        <!-- 模式选择按钮 -->
+        <div class="mode-selector">
+          <button class="mode-btn" onclick="setMode('voice')">🎙️</button>
+          <button class="mode-btn active" onclick="setMode('text')">✏️</button>
+          <button class="mode-btn" onclick="setMode('image')">🖼️</button>
+        </div>
+
+        <!-- 搜索输入框 -->
+        <div class="input-wrapper">
+          <input type="text" class="search-input" placeholder="✨ 说出你的想法，或开始输入...">
+          <span class="search-timer">⏱️ 30s</span>
+        </div>
+
+        <!-- 操作按钮组 -->
+        <div class="action-buttons">
+          <button class="btn btn-primary">
+            ⚡ 智能搜索
+          </button>
+          <button class="btn btn-secondary">
+            📈 AI增强
+          </button>
+          <button class="btn btn-secondary">
+            📂 选择目录
+          </button>
+        </div>
+      </div>
+
+      <!-- 搜索状态 -->
+      <div class="search-status">
+        <span class="status-item">🎯️ AI引擎: Ollama</span>
+        <span class="status-item">📊 搜索空间: 所有文件夹</span>
+      </div>
+    </div>
+
+    <!-- 搜索结果列表 -->
+    <div class="results-container">
+      <div class="result-card">
+        <div class="result-header">
+          <span class="result-icon">🎵</span>
+          <div class="result-info">
+            <h3 class="result-title">AI讨论_2024-11-15.mp3</h3>
+            <div class="result-meta">
+              <span class="badge">匹配度 95%</span>
+              <span class="result-size">2.3MB</span>
+            </div>
+          </div>
+        </div>
+        <div class="result-preview">
+          <p class="preview-text">💬 "技术会议录音，深入讨论AI发展趋势、机器学习前沿技术，以及在实际项目中的应用案例分享..."</p>
+          <p class="preview-path">📍 D:\Work\Audio\AI_2024.mp3</p>
+        </div>
+        <div class="result-actions">
+          <button class="action-link">👁️ 预览</button>
+          <button class="action-link">📂 打开</button>
+          <button class="action-link">⭐ 收藏</button>
+          <button class="action-link">🔗 复制</button>
+          <button class="action-link danger">🗑️ 删除</button>
+        </div>
+      </div>
+
+      <div class="result-card">
+        <div class="result-header">
+          <span class="result-icon">📄</span>
+          <div class="result-info">
+            <h3 class="result-title">API接口文档_v2.1.md</h3>
+            <div class="result-meta">
+              <span class="badge">匹配度 87%</span>
+              <span class="result-size">156KB</span>
+            </div>
+          </div>
+        </div>
+        <div class="result-preview">
+          <p class="preview-text">📝 "RESTful API完整规范，包含认证机制、请求参数详细说明、响应格式定义以及错误处理规范..."</p>
+          <p class="preview-path">📍 D:\Work\API_Documentation.md</p>
+        </div>
+        <div class="result-actions">
+          <button class="action-link">👁️ 预览</button>
+          <button class="action-link">📂 打开</button>
+          <button class="action-link">⭐ 收藏</button>
+          <button class="action-link">🔗 复制</button>
+          <button class="action-link danger">🗑️ 删除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 搜索结果统计 -->
+    <div class="results-footer">
+      <span>🔍 找到 2 个结果</span>
+      <span>⚡ 耗时 0.8s</span>
+      <span>🔄 正在分析相似文件...</span>
+    </div>
+  </main>
+
+  <!-- 底部状态栏 -->
+  <footer class="footer">
+    <div class="footer-content">
+      <span class="footer-item">📊 索引: 1,234文件</span>
+      <span class="footer-item">🔍 今日: 15次搜索</span>
+      <span class="footer-item">💾 数据: 8.7GB</span>
+    </div>
+  </footer>
+
+  <script>
+    function setMode(mode) {
+      const indicators = document.querySelectorAll('.indicator');
+      const modeBtns = document.querySelectorAll('.mode-btn');
+
+      indicators.forEach(el => el.classList.remove('active'));
+      modeBtns.forEach(el => el.classList.remove('active'));
+
+      if (mode === 'voice') {
+        indicators[0].classList.add('active');
+        modeBtns[0].classList.add('active');
+      } else if (mode === 'text') {
+        indicators[1].classList.add('active');
+        modeBtns[1].classList.add('active');
+      } else if (mode === 'image') {
+        indicators[2].classList.add('active');
+        modeBtns[2].classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>

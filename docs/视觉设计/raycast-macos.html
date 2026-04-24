@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小遥搜索 - Raycast macOS暗色风格</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-deep: #07080a;
+      --bg-surface: #101111;
+      --bg-card: #1b1c1e;
+      --text-primary: #f9f9f9;
+      --text-secondary: #cecece;
+      --text-dim: #6a6b6c;
+      --brand-red: #FF6363;
+      --brand-blue: hsl(202, 100%, 67%);
+      --border-light: rgba(255, 255, 255, 0.06);
+      --border-standard: rgba(255, 255, 255, 0.08);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background-color: var(--bg-deep);
+      color: var(--text-primary);
+      line-height: 1.6;
+      letter-spacing: 0.2px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部导航栏 */
+    .header {
+      background-color: var(--bg-deep);
+      border-bottom: 1px solid var(--border-light);
+      height: 56px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-icon {
+      font-size: 24px;
+      color: var(--brand-red);
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .logo-version {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .nav-link {
+      color: #9c9c9d;
+      font-size: 16px;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 8px 0;
+      position: relative;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: #ffffff;
+    }
+
+    .nav-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--brand-red);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .action-btn {
+      background: transparent;
+      border: none;
+      color: #9c9c9d;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 86px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .action-btn:hover {
+      opacity: 0.6;
+    }
+
+    /* 主内容区域 */
+    .content {
+      flex: 1;
+      padding: 48px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* 多模态指示器 */
+    .modal-indicators {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .indicator {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .indicator:hover {
+      background-color: #121212;
+      border-color: var(--brand-blue);
+    }
+
+    .indicator.active {
+      background-color: rgba(255, 99, 99, 0.15);
+      border-color: var(--brand-red);
+      box-shadow: 0 0 0 2px rgba(255, 99, 99, 0.3);
+    }
+
+    .indicator-icon {
+      font-size: 18px;
+    }
+
+    .indicator-label {
+      font-size: 10px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* 搜索容器 */
+    .search-container {
+      max-width: 700px;
+      margin: 0 auto 48px;
+    }
+
+    .search-box {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow:
+        rgb(27, 28, 30) 0px 0px 0px 1px,
+        rgb(7, 8, 10) 0px 0px 0px 1px inset,
+        rgba(0, 0, 0, 0.5) 0px 0px 0px 2px,
+        rgba(255, 255, 255, 0.19) 0px 0px 14px;
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .mode-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn:hover {
+      background-color: #121212;
+    }
+
+    .mode-btn.active {
+      background-color: rgba(255, 99, 99, 0.15);
+      color: var(--brand-red);
+    }
+
+    .search-input {
+      width: 100%;
+      background-color: var(--bg-deep);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 16px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: all 0.2s;
+      letter-spacing: 0.2px;
+    }
+
+    .search-input:focus {
+      border-color: var(--brand-blue);
+      box-shadow: 0 0 0 3px hsla(202, 100%, 67%, 0.15);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .search-timer {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 86px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background-color: transparent;
+      color: #ffffff;
+      box-shadow:
+        rgba(255, 255, 255, 0.05) 0px 1px 0px 0px inset,
+        rgba(255, 255, 255, 0.25) 0px 0px 0px 1px,
+        rgba(0, 0, 0, 0.2) 0px -1px 0px 0px inset;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.6;
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      box-shadow: rgba(0, 0, 0, 0.28) 0px 1.189px 2.377px;
+    }
+
+    .btn-secondary:hover {
+      opacity: 0.6;
+    }
+
+    .search-status {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 16px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    /* 搜索结果 */
+    .results-container {
+      display: grid;
+      gap: 16px;
+    }
+
+    .result-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow:
+        rgb(27, 28, 30) 0px 0px 0px 1px,
+        rgb(7, 8, 10) 0px 0px 0px 1px inset;
+      transition: all 0.2s;
+    }
+
+    .result-card:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow:
+        rgba(0, 0, 0, 0.5) 0px 0px 0px 2px,
+        rgba(255, 255, 255, 0.19) 0px 0px 14px;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .result-icon {
+      font-size: 24px;
+      color: var(--brand-red);
+    }
+
+    .result-info {
+      flex: 1;
+    }
+
+    .result-title {
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.15;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .result-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      background-color: #10b981;
+      color: #ffffff;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+    }
+
+    .result-size {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .result-preview {
+      margin-bottom: 12px;
+    }
+
+    .preview-text {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 4px;
+    }
+
+    .preview-path {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 4px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .action-link {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.2s;
+    }
+
+    .action-link:hover {
+      color: var(--text-secondary);
+    }
+
+    .action-link.danger:hover {
+      color: #ff6363;
+    }
+
+    /* 搜索结果统计 */
+    .results-footer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      margin-top: 24px;
+      padding: 16px;
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    /* 底部状态栏 */
+    .footer {
+      background-color: var(--bg-deep);
+      border-top: 1px solid var(--border-light);
+      padding: 12px 24px;
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+    }
+
+    .footer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .header-actions .action-btn:not(:last-child) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <header class="header">
+    <div class="logo-section">
+      <span class="logo-icon">◤</span>
+      <span class="logo-text">小遥搜索</span>
+      <span class="logo-version">v2.0</span>
+    </div>
+
+    <nav class="nav-links">
+      <a href="#" class="nav-link active">首页</a>
+      <a href="#" class="nav-link">设置</a>
+      <a href="#" class="nav-link">索引</a>
+      <a href="#" class="nav-link">帮助</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="action-btn">🌐 中文</button>
+      <button class="action-btn">🔔</button>
+      <button class="action-btn">🌙</button>
+      <button class="action-btn">👤 admin</button>
+    </div>
+  </header>
+
+  <!-- 主内容区域 -->
+  <main class="content">
+    <!-- 多模态悬浮指示器 -->
+    <div class="modal-indicators">
+      <div class="indicator active" onclick="setMode('voice')">
+        <span class="indicator-icon">🎙️</span>
+        <span class="indicator-label">5</span>
+      </div>
+      <div class="indicator active" onclick="setMode('text')">
+        <span class="indicator-icon">✏️</span>
+        <span class="indicator-label">•</span>
+      </div>
+      <div class="indicator" onclick="setMode('image')">
+        <span class="indicator-icon">🖼️</span>
+        <span class="indicator-label">✗</span>
+      </div>
+    </div>
+
+    <!-- 搜索输入容器 -->
+    <div class="search-container">
+      <div class="search-box">
+        <!-- 模式选择按钮 -->
+        <div class="mode-selector">
+          <button class="mode-btn active" onclick="setMode('voice')">🎙️</button>
+          <button class="mode-btn active" onclick="setMode('text')">✏️</button>
+          <button class="mode-btn" onclick="setMode('image')">🖼️</button>
+        </div>
+
+        <!-- 搜索输入框 -->
+        <div class="input-wrapper">
+          <input type="text" class="search-input" placeholder="✨ 说出你的想法，或开始输入...">
+          <span class="search-timer">⏱️ 30s</span>
+        </div>
+
+        <!-- 操作按钮组 -->
+        <div class="action-buttons">
+          <button class="btn btn-primary">
+            ⚡ 智能搜索
+          </button>
+          <button class="btn btn-secondary">
+            📈 AI增强
+          </button>
+          <button class="btn btn-secondary">
+            📂 选择目录
+          </button>
+        </div>
+      </div>
+
+      <!-- 搜索状态 -->
+      <div class="search-status">
+        <span class="status-item">🎯️ AI引擎: Ollama</span>
+        <span class="status-item">📊 搜索空间: 所有文件夹</span>
+      </div>
+    </div>
+
+    <!-- 搜索结果列表 -->
+    <div class="results-container">
+      <div class="result-card">
+        <div class="result-header">
+          <span class="result-icon">🎵</span>
+          <div class="result-info">
+            <h3 class="result-title">AI讨论_2024-11-15.mp3</h3>
+            <div class="result-meta">
+              <span class="badge">匹配度 95%</span>
+              <span class="result-size">2.3MB</span>
+            </div>
+          </div>
+        </div>
+        <div class="result-preview">
+          <p class="preview-text">💬 "技术会议录音，深入讨论AI发展趋势、机器学习..."</p>
+          <p class="preview-path">📍 D:\Work\Audio\AI_2024.mp3</p>
+        </div>
+        <div class="result-actions">
+          <button class="action-link">👁️ 预览</button>
+          <button class="action-link">📂 打开</button>
+          <button class="action-link">⭐ 收藏</button>
+          <button class="action-link">🔗 复制</button>
+          <button class="action-link danger">🗑️ 删除</button>
+        </div>
+      </div>
+
+      <div class="result-card">
+        <div class="result-header">
+          <span class="result-icon">📄</span>
+          <div class="result-info">
+            <h3 class="result-title">API接口文档_v2.1.md</h3>
+            <div class="result-meta">
+              <span class="badge">匹配度 87%</span>
+              <span class="result-size">156KB</span>
+            </div>
+          </div>
+        </div>
+        <div class="result-preview">
+          <p class="preview-text">📝 "RESTful API完整规范，包含认证、请求参数..."</p>
+          <p class="preview-path">📍 D:\Work\API_Documentation.md</p>
+        </div>
+        <div class="result-actions">
+          <button class="action-link">👁️ 预览</button>
+          <button class="action-link">📂 打开</button>
+          <button class="action-link">⭐ 收藏</button>
+          <button class="action-link">🔗 复制</button>
+          <button class="action-link danger">🗑️ 删除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 搜索结果统计 -->
+    <div class="results-footer">
+      <span>🔍 找到 2 个结果</span>
+      <span>⚡ 耗时 0.8s</span>
+      <span>🔄 正在分析相似文件...</span>
+    </div>
+  </main>
+
+  <!-- 底部状态栏 -->
+  <footer class="footer">
+    <div class="footer-content">
+      <span class="footer-item">📊 索引: 1,234文件</span>
+      <span class="footer-item">🔍 今日: 15次搜索</span>
+      <span class="footer-item">💾 数据: 8.7GB</span>
+    </div>
+  </footer>
+
+  <script>
+    function setMode(mode) {
+      document.querySelectorAll('.indicator').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.mode-btn').forEach(el => el.classList.remove('active'));
+
+      if (mode === 'voice') {
+        document.querySelectorAll('.indicator')[0].classList.add('active');
+        document.querySelectorAll('.mode-btn')[0].classList.add('active');
+      } else if (mode === 'text') {
+        document.querySelectorAll('.indicator')[1].classList.add('active');
+        document.querySelectorAll('.mode-btn')[1].classList.add('active');
+      } else if (mode === 'image') {
+        document.querySelectorAll('.indicator')[2].classList.add('active');
+        document.querySelectorAll('.mode-btn')[2].classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>

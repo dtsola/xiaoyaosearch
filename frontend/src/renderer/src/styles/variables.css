@@ -1,0 +1,120 @@
+/* ==================== Notion温暖明亮设计系统 - CSS变量 ==================== */
+/* 版本: v2.0.0 */
+/* 创建时间: 2026-04-24 */
+/* 设计风格: Notion温暖明亮风格 */
+
+:root {
+  /* ==================== 背景色系 ==================== */
+  --bg-primary: #ffffff;           /* 纯白主背景 */
+  --bg-secondary: #f6f5f4;         /* 温暖白次要背景 */
+  --bg-tertiary: #f9f8f6;          /* 浅灰背景 */
+  --bg-hover: rgba(0, 0, 0, 0.03); /* 悬停背景 */
+
+  /* ==================== 文字色系 ==================== */
+  --text-primary: rgba(0, 0, 0, 0.92);    /* 主要文字 */
+  --text-secondary: #615d59;              /* 次要文字 */
+  --text-tertiary: #9a9590;               /* 辅助文字 */
+  --text-muted: #b8b3ae;                  /* 弱化文字 */
+
+  /* ==================== 品牌色系 ==================== */
+  --brand-blue: #0075de;              /* Notion蓝 */
+  --brand-blue-hover: #005fb8;        /* 悬停蓝 */
+  --brand-blue-light: #e8f4fd;        /* 浅蓝背景 */
+  --brand-blue-lighter: #f0f7ff;       /* 更浅蓝背景 */
+
+  /* ==================== 语义色系 ==================== */
+  --success-green: #2a9d99;      /* 成功 */
+  --warning-orange: #dd5b00;     /* 警告 */
+  --accent-purple: #7c3aed;      /* 强调 */
+
+  /* ==================== 边框色系 ==================== */
+  --border-subtle: rgba(0, 0, 0, 0.08);   /* 超细边框 */
+  --border-standard: rgba(0, 0, 0, 0.1);  /* 标准边框 */
+  --border-light: rgba(0, 0, 0, 0.06);    /* 浅色边框 */
+
+  /* ==================== 阴影系统 ==================== */
+  /* 卡片阴影 - 4层堆叠 */
+  --shadow-card:
+    rgba(0, 0, 0, 0.02) 0px 2px 8px,
+    rgba(0, 0, 0, 0.015) 0px 1px 4px,
+    rgba(0, 0, 0, 0.01) 0px 0.5px 2px,
+    rgba(0, 0, 0, 0.008) 0px 0.2px 1px;
+
+  /* 悬浮阴影 - 5层堆叠 */
+  --shadow-elevated:
+    rgba(0, 0, 0, 0.03) 0px 4px 12px,
+    rgba(0, 0, 0, 0.02) 0px 2px 6px,
+    rgba(0, 0, 0, 0.015) 0px 1px 3px,
+    rgba(0, 0, 0, 0.01) 0px 0.5px 1px,
+    rgba(0, 0, 0, 0.008) 0px 0.2px 0.5px;
+
+  /* 焦点效果 */
+  --shadow-focus: 0 0 0 3px rgba(0, 117, 222, 0.15);
+
+  /* ==================== 圆角系统 ==================== */
+  --radius-sm: 4px;     /* 按钮 */
+  --radius-md: 6px;     /* 小卡片、标签 */
+  --radius-lg: 10px;    /* 中卡片 */
+  --radius-xl: 12px;    /* 大卡片 */
+  --radius-pill: 9999px; /* 徽章、标签 */
+
+  /* ==================== 间距系统（8px基准） ==================== */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+
+  /* ==================== 字体系统（系统字体优化方案） ==================== */
+  /*
+   * 说明: 使用精心挑选的系统字体栈，模拟 Notion 温暖明亮风格
+   * - macOS: SF Pro Text (圆润、清晰)
+   * - Windows: Segoe UI (现代、专业)
+   * - Linux: Ubuntu / Roboto / DejaVu
+   * - 降级: 系统默认无衬线字体
+   */
+  --font-display:
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+
+  --font-body:
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+
+  --font-code:
+    'SF Mono',
+    'Consolas',
+    'Monaco',
+    'Courier New',
+    monospace;
+
+  /* ==================== 字号系统 ==================== */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+
+  /* ==================== 过渡系统 ==================== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ==================== 图标尺寸 ==================== */
+  --icon-xs: 16px;
+  --icon-sm: 18px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 32px;
+}

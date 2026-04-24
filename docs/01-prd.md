@@ -43,6 +43,7 @@
 - [ ] **插件化架构与数据源扩展（语雀+飞书+钉钉）** 🚧 规划中 - 建立插件化框架支持多数据源扩展，优先实现语雀知识库数据源、飞书文档数据源和钉钉文档数据源（详见[语雀PRD](特性开发/plugins+yuque/plugins+yuque-01-prd.md) | [飞书PRD](特性开发/plugins+feishu/plugins+feishu-01-prd.md) | [钉钉PRD](特性开发/plugins+dingding/plugins+dingding-01-prd.md)）
 - [ ] **MCP服务器支持** 🚧 规划中 - 为小遥搜索添加 Model Context Protocol (MCP) 服务器能力，使 Claude Desktop 等 AI 应用能够连接小遥搜索进行本地文件智能搜索（详见[特性PRD](特性开发/mcp/mcp-01-prd.md)）
 - [ ] **Agent Skill工具规范** 🚧 规划中 - 为 Claude Code 提供小遥搜索 MCP 工具调用能力的 Agent Skill 规范定义（详见[特性PRD](特性开发/agent-skills/agent-skills-01-prd.md)）
+- [ ] **UI视觉系统升级 v2.0** 🚧 设计阶段 - 全面UI视觉系统升级，采用Notion温暖明亮设计风格，建立完整设计系统规范（Nunito + Work Sans字体、色彩系统、间距、圆角、阴影），为知识工作者提供专业、舒适、高效的产品体验（详见[特性PRD](特性开发/ui-update/ui-update-01-prd.md) | [原型设计](特性开发/ui-update/ui-update-02-原型.md)）
 - [ ] **视频画面搜索** ⏸️ 已暂停 - 通过图片搜索视频内容，快速定位视频中的关键画面（详见[特性PRD](特性开发/videosearch/videosearch-01-prd.md)）
 - [ ] 语音识别模型配置：支持云端API和本地FastWhisper
 - [ ] 视觉模型配置：支持云端API和本地视觉模型

@@ -24,6 +24,7 @@
     "@ant-design/icons-vue": "^7.0.1",
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@iconify/vue": "^5.0.0",
     "ant-design-vue": "^4.2.6",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",

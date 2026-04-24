@@ -95,10 +95,12 @@
         ref="formRef"
         :model="formData"
         :rules="formRules"
-        :label-col="{ span: 6 }"
-        :wrapper-col="{ span: 18 }"
+        layout="vertical"
       >
-        <a-form-item :label="$t('glossary.name')" name="name">
+        <a-form-item name="name">
+          <template #label>
+            {{ $t('glossary.name') }} <span class="required-mark">*</span>
+          </template>
           <a-input
             v-model:value="formData.name"
             :placeholder="$t('glossary.namePlaceholder')"
@@ -342,31 +344,141 @@ onMounted(() => {
 .glossary-collections-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--space-xl);
 }
 
 .glossary-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-3xl);
 }
 
 .header-title h2 {
-  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  letter-spacing: -0.25px;
   color: var(--text-primary);
+  margin: 0 0 var(--space-xs);
 }
 
 .header-title p {
-  margin: var(--space-1) 0 0;
+  font-size: var(--text-base);
   color: var(--text-secondary);
+  margin: 0;
 }
 
 .glossary-list {
+  border: var(--border-standard);
   border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  background: var(--bg-primary);
 }
 
 .collection-icon {
-  font-size: 18px;
+  font-size: var(--text-lg);
+}
+
+/* 模态框样式 */
+:deep(.ant-modal-content) {
+  border-radius: var(--radius-xl);
+  border: var(--border-standard);
+  box-shadow: var(--shadow-elevated);
+  background: var(--bg-primary);
+}
+
+:deep(.ant-modal-header) {
+  border-bottom: var(--border-standard);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--bg-secondary);
+}
+
+:deep(.ant-modal-title) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+}
+
+:deep(.ant-modal-body) {
+  padding: var(--space-xl);
+  color: var(--text-primary);
+}
+
+:deep(.ant-modal-footer) {
+  border-top: var(--border-standard);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+:deep(.ant-form-item) {
+  margin-bottom: var(--space-lg);
+}
+
+:deep(.ant-form-item-label > label) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+/* 隐藏 Ant Design 默认的必填标记 */
+:deep(.ant-form-item-required::before) {
+  display: none !important;
+}
+
+/* 必填标记红色 */
+.required-mark {
+  color: #ff4d4f;
+  margin-left: 4px;
+}
+
+:deep(.ant-input),
+:deep(.ant-textarea) {
+  border-radius: var(--radius-sm);
+  border: var(--border-standard);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+:deep(.ant-input::placeholder),
+:deep(.ant-textarea::placeholder) {
+  color: var(--text-tertiary);
+}
+
+:deep(.ant-input:focus),
+:deep(.ant-input-focused),
+:deep(.ant-textarea:focus),
+:deep(.ant-textarea-focused) {
+  border-color: var(--brand-blue);
+  box-shadow: 0 0 0 2px rgba(0, 117, 222, 0.1);
+}
+
+:deep(.ant-input[type="color"]) {
+  padding: 2px 4px;
+  width: 60px;
+  height: 32px;
+  cursor: pointer;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .glossary-collections-page {
+    padding: var(--space-lg);
+  }
+
+  .glossary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .header-title h2 {
+    font-size: var(--text-xl);
+  }
 }
 </style>

@@ -871,35 +871,42 @@ onMounted(() => {
 
 <style scoped>
 .settings-container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--space-xl);
 }
 
 .settings-header {
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-3xl);
+  text-align: center;
 }
 
 .settings-header h2 {
-  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  letter-spacing: -0.25px;
   color: var(--text-primary);
+  margin: 0 0 var(--space-sm);
 }
 
 .settings-header p {
-  margin: 0;
+  font-size: var(--text-base);
   color: var(--text-secondary);
+  margin: 0;
 }
 
 .settings-tabs {
-  background: var(--surface-01);
+  background: var(--bg-primary);
+  border: var(--border-standard);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-base);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
 .settings-section {
-  padding: var(--space-6);
-  border-bottom: 1px solid var(--border-light);
+  padding: var(--space-xl);
+  border-bottom: var(--border-standard);
 }
 
 .settings-section:last-child {
@@ -907,38 +914,40 @@ onMounted(() => {
 }
 
 .settings-section h3 {
-  margin: 0 0 var(--space-4);
-  color: var(--text-primary);
-  font-size: 1.125rem;
+  font-family: var(--font-display);
   font-weight: 600;
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-lg);
 }
 
 .form-help {
-  margin-left: var(--space-2);
+  margin-top: var(--space-xs);
   color: var(--text-tertiary);
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
+  line-height: 1.5;
 }
 
 /* 模型变化警告框样式 */
 .model-change-alert {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-lg);
 }
 
 .model-change-alert .alert-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .model-change-alert .alert-actions {
   display: flex;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
 }
 
 /* 云端服务说明卡片样式 */
 .cloud-service-info {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-lg);
 }
 
 .cloud-service-info-content {
@@ -946,49 +955,58 @@ onMounted(() => {
 }
 
 .cloud-service-info-content p {
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-sm);
+  color: var(--text-secondary);
 }
 
 .cloud-service-info-content .info-list {
   list-style: none;
   padding: 0;
-  margin: var(--space-3) 0;
+  margin: var(--space-md) 0;
 }
 
 .cloud-service-info-content .info-list li {
-  padding: var(--space-2) 0;
+  padding: var(--space-xs) 0;
   display: flex;
   align-items: flex-start;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .cloud-service-info-content .info-item-success {
-  color: var(--color-success);
+  color: var(--success-green);
 }
 
 .cloud-service-info-content .info-item-warning {
-  color: var(--color-warning);
+  color: var(--warning-orange);
 }
 
 .cloud-service-info-content .info-item-tip {
-  color: var(--color-info);
+  color: var(--brand-blue);
 }
 
 .cloud-service-info-content .info-notice {
-  margin-top: var(--space-3);
-  padding: var(--space-2);
-  background: var(--surface-02);
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
   border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .settings-container {
-    padding: var(--space-4);
+    padding: var(--space-lg);
   }
 
   .settings-section {
-    padding: var(--space-4);
+    padding: var(--space-lg);
+  }
+
+  .settings-header h2 {
+    font-size: var(--text-xl);
   }
 }
 </style>

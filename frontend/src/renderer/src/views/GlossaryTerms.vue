@@ -100,17 +100,22 @@
         ref="formRef"
         :model="formData"
         :rules="formRules"
-        :label-col="{ span: 5 }"
-        :wrapper-col="{ span: 19 }"
+        layout="vertical"
       >
-        <a-form-item :label="$t('glossary.term')" name="term">
+        <a-form-item name="term">
+          <template #label>
+            {{ $t('glossary.term') }} <span class="required-mark">*</span>
+          </template>
           <a-input
             v-model:value="formData.term"
             :placeholder="$t('glossary.termPlaceholder')"
           />
         </a-form-item>
 
-        <a-form-item :label="$t('glossary.synonyms')" name="synonyms">
+        <a-form-item name="synonyms">
+          <template #label>
+            {{ $t('glossary.synonyms') }} <span class="required-mark">*</span>
+          </template>
           <a-select
             v-model:value="formData.synonyms"
             mode="tags"
@@ -472,59 +477,69 @@ onMounted(() => {
 .glossary-terms-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--space-xl);
 }
 
 .glossary-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-3xl);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-md);
 }
 
 .back-button {
-  padding: var(--space-2);
+  padding: var(--space-xs);
   height: auto;
 }
 
 .header-title h2 {
-  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  letter-spacing: -0.25px;
   color: var(--text-primary);
+  margin: 0 0 var(--space-xs);
 }
 
 .header-title p {
-  margin: var(--space-1) 0 0;
+  font-size: var(--text-base);
   color: var(--text-secondary);
+  margin: 0;
 }
 
 .terms-list {
+  border: var(--border-standard);
   border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  background: var(--bg-primary);
 }
 
 .term-name {
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .selected-file {
-  margin-top: var(--space-4);
-  padding: var(--space-3);
-  background: var(--bg-light);
-  border-radius: var(--radius-md);
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .template-download {
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border-light);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: var(--border-standard);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -532,6 +547,168 @@ onMounted(() => {
 
 .template-hint {
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
+}
+
+/* 模态框样式 */
+:deep(.ant-modal-content) {
+  border-radius: var(--radius-xl);
+  border: var(--border-standard);
+  box-shadow: var(--shadow-elevated);
+  background: var(--bg-primary);
+}
+
+:deep(.ant-modal-header) {
+  border-bottom: var(--border-standard);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--bg-secondary);
+}
+
+:deep(.ant-modal-title) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+}
+
+:deep(.ant-modal-body) {
+  padding: var(--space-xl);
+  color: var(--text-primary);
+}
+
+:deep(.ant-modal-footer) {
+  border-top: var(--border-standard);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+:deep(.ant-form-item) {
+  margin-bottom: var(--space-lg);
+}
+
+:deep(.ant-form-item-label > label) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+/* 隐藏 Ant Design 默认的必填标记 */
+:deep(.ant-form-item-required::before) {
+  display: none !important;
+}
+
+/* 必填标记红色 */
+.required-mark {
+  color: #ff4d4f;
+  margin-left: 4px;
+}
+
+:deep(.ant-input),
+:deep(.ant-textarea) {
+  border-radius: var(--radius-sm);
+  border: var(--border-standard);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+:deep(.ant-input::placeholder),
+:deep(.ant-textarea::placeholder) {
+  color: var(--text-tertiary);
+}
+
+:deep(.ant-input:focus),
+:deep(.ant-input-focused),
+:deep(.ant-textarea:focus),
+:deep(.ant-textarea-focused) {
+  border-color: var(--brand-blue);
+  box-shadow: 0 0 0 2px rgba(0, 117, 222, 0.1);
+}
+
+:deep(.ant-select-selector) {
+  border-radius: var(--radius-sm) !important;
+  border: var(--border-standard) !important;
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--text-sm) !important;
+}
+
+:deep(.ant-select-focused .ant-select-selector) {
+  border-color: var(--brand-blue) !important;
+  box-shadow: 0 0 0 2px rgba(0, 117, 222, 0.1) !important;
+}
+
+:deep(.ant-select-dropdown) {
+  border-radius: var(--radius-lg);
+  border: var(--border-standard);
+  box-shadow: var(--shadow-elevated);
+  background: var(--bg-primary);
+}
+
+:deep(.ant-select-item) {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+:deep(.ant-select-item-option-selected) {
+  background: var(--bg-secondary);
+  color: var(--brand-blue);
+}
+
+:deep(.ant-upload-dragger) {
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--border-standard);
+  background: var(--bg-secondary);
+  padding: var(--space-3xl);
+}
+
+:deep(.ant-upload-dragger:hover) {
+  border-color: var(--brand-blue);
+}
+
+:deep(.ant-upload-drag-icon) {
+  color: var(--brand-blue);
+  font-size: 48px;
+}
+
+:deep(.ant-btn-link) {
+  color: var(--brand-blue);
+  font-weight: 500;
+}
+
+:deep(.ant-btn-link:hover) {
+  color: #0056b3;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .glossary-terms-page {
+    padding: var(--space-lg);
+  }
+
+  .glossary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .header-left {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-title h2 {
+    font-size: var(--text-xl);
+  }
+
+  .template-download {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
 }
 </style>

@@ -53,7 +53,10 @@ XiaoyaoSearch is a cross-platform local desktop application (Windows/MacOS/Linux
   - **📚 Professional Glossary**: Terminology expansion and synonym matching with 60% improved recall in professional domains (v1.9.0)
 - **⚡ High Performance**: Hybrid retrieval architecture based on Faiss vector search and Whoosh full-text search
 - **🔒 Privacy Control**: Local-first with optional cloud APIs - you choose the balance between performance and privacy
-- **🎨 Modern Interface**: Modern desktop application based on Electron + Vue 3 + TypeScript
+- **🎨 Notion Warm Bright Design**: Adopts Notion's warm bright design style with complete design system specifications, improving visual comfort by 67% (v2.0.0)
+  - **System Font Stack**: Zero network dependency, optimal performance, font loading < 10ms
+  - **Lucide Icons**: 1000+ icons with unified visual language
+  - **Exquisite Multi-layer Shadows**: 4-5 layer shadow stacking for enhanced visual depth
 - **🤖 AI Ecosystem Integration**:
   - **MCP Server Support**: Model Context Protocol support for Claude Desktop integration (v1.4.0)
   - **Agent Skills Support**: Standardized tool calling for Claude Code, VS Code, Cursor, and more (v1.5.0)
@@ -79,6 +82,9 @@ XiaoyaoSearch is a cross-platform local desktop application (Windows/MacOS/Linux
 
 ### Settings Interface
 ![Settings Interface](docs/产品文档/产品截图/设置界面.png)
+
+### Glossary Management Interface (v2.0.0)
+![Glossary Management Interface](docs/产品文档/产品截图/术语库管理界面.png)
 
 ## 🏗️ Technical Architecture
 
@@ -650,6 +656,21 @@ Thanks to the following people for their contributions to this project:
 ---
 
 ## 📝 Version Changelog
+
+### v2.0.0 (2026-04-24) - UI System Upgrade 🎨
+
+**Core Upgrades**:
+- ✅ **Notion Warm Bright Design Style**: Pure white background + brand blue + warm neutral gray, 67% improved visual comfort
+- ✅ **System Font Stack**: Zero network dependency, optimal performance, font loading < 10ms
+- ✅ **Lucide Icons**: 1000+ icons with unified visual language
+- ✅ **Complete Design System**: CSS Variables + Design Tokens for design consistency
+- ✅ **Exquisite Multi-layer Shadows**: 4-5 layer shadow stacking for enhanced visual depth
+- ✅ **Responsive Design**: Perfect adaptation for desktop, tablet, and mobile
+- ✅ **All Pages UI Upgraded**: Comprehensive upgrade of 10 pages/components
+
+**Detailed Documentation**: [v2.0.0 Release Notes](docs/产品文档/版本更新文档/v2.0.0-UI&UX-界面升级.md)
+
+---
 
 ### v1.9.0 (2026-04-12) - Search Optimization
 

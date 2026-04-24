@@ -1,3 +1,8 @@
+/* ==================== 引入Notion温暖明亮设计系统 v2.0 ==================== */
+@import './variables.css';
+@import './animations.css';
+@import './global.css';
+
 /* 现代简约风格 - 小遥搜索 v2.0 */
 
 /* 基础变量定义 */

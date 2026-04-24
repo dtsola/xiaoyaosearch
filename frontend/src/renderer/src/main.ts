@@ -9,6 +9,12 @@ import './styles/index.css'
 // 国际化支持
 import i18n from './i18n/config'
 
+// 系统字体加载器
+import fontLoader from './utils/font-loader'
+
+// 初始化系统字体
+fontLoader.initSystemFonts()
+
 const app = createApp(App)
 
 app.use(createPinia())

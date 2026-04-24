@@ -287,21 +287,20 @@ const openSourceUrl = async () => {
 
 <style scoped>
 .result-card {
-  background: var(--surface-01);
-  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  border: var(--border-standard);
   border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-base);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-card);
   transition: all var(--transition-base);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-lg);
   position: relative;
   overflow: hidden;
 }
 
 .result-card:hover {
-  border-color: var(--primary-200);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-elevated);
+  transform: translateY(-2px);
 }
 
 
@@ -309,13 +308,13 @@ const openSourceUrl = async () => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-md);
 }
 
 .file-info {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-4);
+  gap: var(--space-md);
   flex: 1;
 }
 
@@ -325,18 +324,18 @@ const openSourceUrl = async () => {
   justify-content: center;
   width: 48px;
   height: 48px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   font-size: 24px;
   color: white;
   flex-shrink: 0;
 }
 
 .file-type-document {
-  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  background: var(--brand-blue);
 }
 
 .file-type-audio {
-  background: linear-gradient(135deg, #faad14, #ffc53d);
+  background: var(--warning-orange);
 }
 
 .file-type-video {
@@ -344,7 +343,7 @@ const openSourceUrl = async () => {
 }
 
 .file-type-image {
-  background: linear-gradient(135deg, #52c41a, #73d13d);
+  background: var(--success-green);
 }
 
 .file-details {
@@ -353,24 +352,26 @@ const openSourceUrl = async () => {
 }
 
 .file-name {
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-xl);
+  letter-spacing: -0.25px;
   color: var(--text-primary);
-  margin: 0 0 var(--space-1);
+  margin: 0 0 6px 0;
   cursor: pointer;
   transition: color var(--transition-base);
   word-break: break-word;
 }
 
 .file-name:hover {
-  color: var(--primary-600);
+  color: var(--brand-blue);
 }
 
 .file-path {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: 0.875rem;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -381,8 +382,8 @@ const openSourceUrl = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  margin-left: var(--space-4);
+  gap: var(--space-xs);
+  margin-left: var(--space-md);
 }
 
 .score-circle {
@@ -390,74 +391,74 @@ const openSourceUrl = async () => {
 }
 
 .score-text {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
 .score-label {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--text-tertiary);
 }
 
 .card-content {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-md);
 }
 
 .preview-text {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
   color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: var(--space-3);
+  line-height: 1.5;
+  margin-bottom: var(--space-sm);
   word-break: break-word;
 }
 
 .preview-text :deep(em) {
-  background: rgba(245, 158, 11, 0.2);
-  color: #d97706;
+  background: var(--brand-blue-light);
+  color: var(--brand-blue);
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-style: normal;
   font-weight: 500;
 }
 
 .file-metadata {
-  border-top: 1px solid var(--border-light);
-  padding-top: var(--space-3);
+  border-top: var(--border-standard);
+  padding-top: var(--space-sm);
 }
 
 .metadata-row {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-lg);
   flex-wrap: wrap;
 }
 
 .metadata-item {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: 0.75rem;
+  gap: var(--space-xs);
+  font-size: var(--text-xs);
   color: var(--text-tertiary);
   white-space: nowrap;
 }
 
-/* 来源类型样式 - 默认使用filesystem颜色 */
+/* 来源类型样式 */
 .source-type {
-  padding: 2px 8px;
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  /* 默认蓝色（filesystem颜色） */
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.1);
+  padding: 4px var(--space-sm);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: var(--text-xs);
 }
 
 .source-type.source-filesystem {
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.1);
+  color: var(--brand-blue);
+  background: var(--brand-blue-light);
 }
 
 .source-type.source-yuque {
-  color: #52c41a;
-  background: rgba(82, 196, 26, 0.1);
+  color: var(--success-green);
+  background: rgba(42, 157, 153, 0.1);
 }
 
 .source-type.source-feishu {
@@ -471,11 +472,11 @@ const openSourceUrl = async () => {
 }
 
 .source-type.source-notion {
-  color: #fa541c;
-  background: rgba(250, 84, 28, 0.1);
+  color: var(--warning-orange);
+  background: rgba(221, 91, 0, 0.1);
 }
 
-/* 新增数据源类型样式 */
+/* 其他数据源样式 */
 .source-type.source-github {
   color: #24292e;
   background: rgba(36, 41, 46, 0.1);
@@ -497,7 +498,7 @@ const openSourceUrl = async () => {
 }
 
 .source-type.source-obsidian {
-  color: #7c3aed;
+  color: var(--accent-purple);
   background: rgba(124, 58, 237, 0.1);
 }
 
@@ -524,44 +525,46 @@ const openSourceUrl = async () => {
 .card-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-wrap: wrap;
+  padding-top: var(--space-md);
+  border-top: var(--border-standard);
 }
 
 .card-actions .ant-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  border-radius: var(--radius-lg);
+  gap: var(--space-xs);
+  border-radius: var(--radius-sm);
   transition: all var(--transition-base);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
 .card-actions .ant-btn:hover {
-  background: var(--surface-02);
-  transform: translateY(-1px);
+  color: var(--brand-blue);
+  background: var(--bg-hover);
 }
 
 /* 打开链接按钮特殊样式 */
 .card-actions .open-link-btn {
-  color: #1890ff;
+  color: var(--brand-blue);
 }
 
 .card-actions .open-link-btn:hover {
-  color: #40a9ff;
-  background: rgba(24, 144, 255, 0.1);
+  background: var(--brand-blue-light);
 }
-
-
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .result-card {
-    padding: var(--space-4);
+    padding: var(--space-lg);
   }
 
   .card-header {
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-md);
     align-items: stretch;
   }
 
@@ -571,7 +574,7 @@ const openSourceUrl = async () => {
   }
 
   .file-info {
-    gap: var(--space-3);
+    gap: var(--space-sm);
   }
 
   .card-actions {
@@ -580,7 +583,7 @@ const openSourceUrl = async () => {
 
   .metadata-row {
     justify-content: center;
-    gap: var(--space-2);
+    gap: var(--space-md);
   }
 }
 </style>

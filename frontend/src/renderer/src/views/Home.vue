@@ -243,7 +243,8 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { SearchService } from '@/api/search'
-import type { SearchResult, SearchType, FileType } from '@/types/api'
+import type { SearchResult, SearchType } from '@/types/api'
+import { FileType } from '@/types/api'
 import { InputType } from '@/types/api'
 import SearchResultCard from '@/components/SearchResultCard.vue'
 import {
@@ -605,6 +606,18 @@ const handleOpen = async (result: SearchResult) => {
   }
 }
 
+/**
+ * 复制文件路径
+ */
+const handleCopyPath = async (filePath: string) => {
+  try {
+    await navigator.clipboard.writeText(filePath)
+    message.success(t('home.filePathCopied', { path: filePath }))
+  } catch (error) {
+    message.error(t('home.copyFailed'))
+  }
+}
+
 
 
 // 加载更多
@@ -651,22 +664,20 @@ onMounted(() => {
 
 .page-header {
   text-align: center;
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-3xl);
 }
 
 .page-title {
-  font-size: 2.5rem;
+  font-family: var(--font-display);
   font-weight: 700;
+  font-size: var(--text-2xl);
+  letter-spacing: -0.25px;
   color: var(--text-primary);
-  margin: 0 0 var(--space-3);
-  background: linear-gradient(135deg, var(--primary-600), var(--accent));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  margin: 0 0 var(--space-md);
 }
 
 .page-subtitle {
-  font-size: 1.125rem;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   margin: 0;
 }
@@ -678,30 +689,59 @@ onMounted(() => {
 .multimodal-indicators {
   display: flex;
   justify-content: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
+  gap: var(--space-xl);
+  margin-bottom: var(--space-lg);
+}
+
+.multimodal-indicator {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  border: var(--border-standard);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  color: var(--text-secondary);
+}
+
+.multimodal-indicator:hover {
+  border-color: var(--brand-blue);
+  background: var(--brand-blue-light);
+}
+
+.multimodal-indicator.active {
+  background: var(--brand-blue-light);
+  border-color: var(--brand-blue);
+  box-shadow: var(--shadow-focus);
+  color: var(--brand-blue);
 }
 
 .search-container {
-  position: relative;
-  margin-bottom: var(--space-4);
+  background: var(--bg-primary);
+  border: var(--border-standard);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-lg);
 }
 
 .search-input-wrapper {
-  position: relative;
+  margin-bottom: var(--space-lg);
 }
 
 .search-input {
-  padding: var(--space-4) var(--space-6);
-  font-size: 1.125rem;
-  border-radius: var(--radius-2xl);
-  border: 2px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  border: var(--border-standard);
   transition: all var(--transition-base);
 }
 
 .search-input:focus {
-  border-color: var(--primary-300);
-  box-shadow: 0 0 0 3px var(--primary-100);
+  border-color: var(--brand-blue);
+  box-shadow: var(--shadow-focus);
 }
 
 

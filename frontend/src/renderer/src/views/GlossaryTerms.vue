@@ -472,59 +472,69 @@ onMounted(() => {
 .glossary-terms-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--space-xl);
 }
 
 .glossary-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-3xl);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-md);
 }
 
 .back-button {
-  padding: var(--space-2);
+  padding: var(--space-xs);
   height: auto;
 }
 
 .header-title h2 {
-  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  letter-spacing: -0.25px;
   color: var(--text-primary);
+  margin: 0 0 var(--space-xs);
 }
 
 .header-title p {
-  margin: var(--space-1) 0 0;
+  font-size: var(--text-base);
   color: var(--text-secondary);
+  margin: 0;
 }
 
 .terms-list {
+  border: var(--border-standard);
   border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  background: var(--bg-primary);
 }
 
 .term-name {
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .selected-file {
-  margin-top: var(--space-4);
-  padding: var(--space-3);
-  background: var(--bg-light);
-  border-radius: var(--radius-md);
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .template-download {
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border-light);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: var(--border-standard);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -532,6 +542,35 @@ onMounted(() => {
 
 .template-hint {
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .glossary-terms-page {
+    padding: var(--space-lg);
+  }
+
+  .glossary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .header-left {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-title h2 {
+    font-size: var(--text-xl);
+  }
+
+  .template-download {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
 }
 </style>

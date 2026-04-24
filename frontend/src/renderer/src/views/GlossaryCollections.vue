@@ -342,31 +342,56 @@ onMounted(() => {
 .glossary-collections-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--space-xl);
 }
 
 .glossary-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-3xl);
 }
 
 .header-title h2 {
-  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  letter-spacing: -0.25px;
   color: var(--text-primary);
+  margin: 0 0 var(--space-xs);
 }
 
 .header-title p {
-  margin: var(--space-1) 0 0;
+  font-size: var(--text-base);
   color: var(--text-secondary);
+  margin: 0;
 }
 
 .glossary-list {
+  border: var(--border-standard);
   border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  background: var(--bg-primary);
 }
 
 .collection-icon {
-  font-size: 18px;
+  font-size: var(--text-lg);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .glossary-collections-page {
+    padding: var(--space-lg);
+  }
+
+  .glossary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .header-title h2 {
+    font-size: var(--text-xl);
+  }
 }
 </style>

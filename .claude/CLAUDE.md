@@ -8,6 +8,7 @@
 - **本地文件深度检索**：视频、音频、文档的内容和文件名搜索
 - **灵活AI模型配置**：云端API（OpenAI、Claude、阿里云）和本地模型（Ollama、FastWhisper、CN-CLIP）自由切换
 - **插件化架构与数据源扩展（语雀+飞书+钉钉）** 🚧：建立插件化框架支持多数据源扩展，优先实现语雀知识库、飞书文档和钉钉文档数据源（钉钉开发中）
+- **UI视觉系统升级 v2.0** 🎨：采用Notion温暖明亮设计风格，建立完整的设计系统规范，提升产品品质和用户体验（开发中）
 - **视频画面搜索** ⏸️：通过图片检索视频内容，快速定位视频中的关键画面（已暂停）
 
 ## 💻 开发环境
@@ -110,6 +111,14 @@
 - **[专业术语库增量接口文档](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-接口文档.md)** - API接口增量设计（946行）
 - **[专业术语库增量数据库设计](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-数据库设计文档.md)** - 数据库表结构增量设计（1207行）
 
+### UI视觉系统升级 v2.0 🎨 开发中
+- **[UI升级PRD](docs/特性开发/ui-update/ui-update-01-prd.md)** - UI视觉系统升级产品需求（649行）
+- **[UI升级原型](docs/特性开发/ui-update/ui-update-02-原型.md)** - UI视觉系统升级原型设计（901行）
+- **[UI升级技术方案](docs/特性开发/ui-update/ui-update-03-技术方案.md)** - CSS Variables + Design Tokens技术实现（1412行）
+- **[UI升级任务清单](docs/特性开发/ui-update/ui-update-04-开发任务清单.md)** - UI升级开发任务分解（766行）
+- **[UI升级排期表](docs/特性开发/ui-update/ui-update-05-开发排期表.md)** - UI升级时间规划和里程碑（643行）
+- **[图标系统规范](docs/特性开发/ui-update/ui-update-图标系统.md)** - Lucide Icons图标系统规范（551行）
+
 ### 测试文档
 - **[配置接口测试](docs/测试文档/测试用例/test-data-config.md)** - AI模型配置接口测试
 - **[搜索接口测试](docs/测试文档/测试用例/test-data-search.md)** - 搜索服务接口测试
@@ -176,7 +185,7 @@ npm run dev
 
 ## 📊 项目进度
 
-- **当前阶段**：特性开发阶段 - 全部特性已完成
+- **当前阶段**：特性开发阶段 - UI视觉系统升级开发中
 - **开发周期**：8-10周（2025年11月-2026年4月）
 - **MVP开发**：✅ 已完成
 - **i18n国际化**：✅ 已完成
@@ -187,6 +196,7 @@ npm run dev
 - **MCP服务器支持**：✅ 已完成
 - **云端嵌入模型调用能力**：✅ 已完成
 - **专业术语库系统**：✅ 已完成
+- **UI视觉系统升级 v2.0**：🎨 开发中（预计5-7天）
 
 > **进度管理**：任务完成后必须更新 [开发进度文档](docs/开发进度.md)
 
@@ -198,9 +208,36 @@ npm run dev
 
 ### 当前开发特性说明
 
-#### 暂无开发中的特性
+#### 🎨 UI视觉系统升级 v2.0（开发中）
 
-所有计划特性已完成开发。
+**目标**：对小遥搜索v2.0里程碑版本进行全面的UI视觉系统升级，采用Notion温暖明亮设计风格，为知识工作者提供更加专业、舒适、高效的产品体验。
+
+**技术栈**：
+- 前端：Vue 3 + TypeScript + CSS Variables + Design Tokens
+- 设计系统：完整的设计令牌系统（颜色、字体、间距、圆角、阴影）
+- 字体系统：精心挑选的系统字体栈（零网络依赖，最优性能）
+- 图标系统：Lucide Icons + Iconify集成
+- 动画系统：CSS3 Animations + Transitions
+
+**核心特性**：
+- 建立完整的设计系统规范（CSS Variables）
+- Notion温暖明亮设计风格
+- 精心挑选的系统字体栈（零网络依赖，最优性能）
+- Lucide Icons图标库（1000+图标）
+- 多层阴影堆叠效果
+- 响应式设计适配
+
+**开发周期**：5-7天（2026-04-24 ~ 2026-04-30）
+
+**全局文档**：已同步
+
+**特性文档**：
+- PRD：[ui-update-01-prd.md](docs/特性开发/ui-update/ui-update-01-prd.md)（649行）
+- 原型：[ui-update-02-原型.md](docs/特性开发/ui-update/ui-update-02-原型.md)（901行）
+- 技术方案：[ui-update-03-技术方案.md](docs/特性开发/ui-update/ui-update-03-技术方案.md)（1412行）
+- 任务清单：[ui-update-04-开发任务清单.md](docs/特性开发/ui-update/ui-update-04-开发任务清单.md)（766行）
+- 排期表：[ui-update-05-开发排期表.md](docs/特性开发/ui-update/ui-update-05-开发排期表.md)（643行）
+- 图标系统：[ui-update-图标系统.md](docs/特性开发/ui-update/ui-update-图标系统.md)（551行）
 
 ### 文档导航
 | 需求类型 | 主要文档 |
@@ -241,6 +278,12 @@ npm run dev
 | **专业术语库任务清单** | **[专业术语库系统任务清单](docs/特性开发/search-optimization-glossary/search-optimization-glossary-04-开发任务清单.md)** |
 | **专业术语库接口文档** | **[专业术语库系统增量接口文档](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-接口文档.md)** |
 | **专业术语库数据库设计** | **[专业术语库系统增量数据库设计](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-数据库设计文档.md)** |
+| **UI升级PRD** | **[UI视觉系统升级PRD](docs/特性开发/ui-update/ui-update-01-prd.md)** |
+| **UI升级原型** | **[UI视觉系统升级原型](docs/特性开发/ui-update/ui-update-02-原型.md)** |
+| **UI升级技术方案** | **[UI视觉系统升级技术方案](docs/特性开发/ui-update/ui-update-03-技术方案.md)** |
+| **UI升级任务清单** | **[UI视觉系统升级任务清单](docs/特性开发/ui-update/ui-update-04-开发任务清单.md)** |
+| **UI升级排期表** | **[UI视觉系统升级排期表](docs/特性开发/ui-update/ui-update-05-开发排期表.md)** |
+| **图标系统规范** | **[Lucide Icons图标系统规范](docs/特性开发/ui-update/ui-update-图标系统.md)** |
 | API测试 | [测试文档目录](docs/测试文档/测试用例/) |
 
 ### 快速链接
@@ -277,14 +320,20 @@ npm run dev
 - 📋 专业术语库系统任务清单 → [专业术语库系统任务清单](docs/特性开发/search-optimization-glossary/search-optimization-glossary-04-开发任务清单.md)
 - 🔌 专业术语库系统接口文档 → [专业术语库系统增量接口文档](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-接口文档.md)
 - 🗄️ 专业术语库系统数据库设计 → [专业术语库系统增量数据库设计](docs/特性开发/search-optimization-glossary/search-optimization-glossary-增量-数据库设计文档.md)
+- 🎨 UI升级PRD → [UI视觉系统升级PRD](docs/特性开发/ui-update/ui-update-01-prd.md)
+- 🎨 UI升级原型 → [UI视觉系统升级原型](docs/特性开发/ui-update/ui-update-02-原型.md)
+- ⚙️ UI升级技术方案 → [UI视觉系统升级技术方案](docs/特性开发/ui-update/ui-update-03-技术方案.md)
+- 📋 UI升级任务清单 → [UI视觉系统升级任务清单](docs/特性开发/ui-update/ui-update-04-开发任务清单.md)
+- 📅 UI升级排期表 → [UI视觉系统升级排期表](docs/特性开发/ui-update/ui-update-05-开发排期表.md)
+- 🎨 图标系统规范 → [Lucide Icons图标系统规范](docs/特性开发/ui-update/ui-update-图标系统.md)
 
 ---
 
-**文档版本**：v19.0 (术语库系统完成版)
+**文档版本**：v20.0 (UI视觉系统升级开发中)
 **维护者**：AI助手
 **重要提醒**：所有AI回复、文档编写、代码注释必须使用中文
 
-**当前开发重点**：暂无新特性开发
+**当前开发重点**：🎨 UI视觉系统升级 v2.0（开发中）
 
 **特性开发说明**：
 - 🔌 **插件化架构与数据源扩展（语雀+飞书+钉钉）** ✅ 已完成
@@ -338,6 +387,15 @@ npm run dev
   - **全局文档**：已同步
   - **特性文档**：PRD、原型、技术方案、任务清单、增量接口文档、增量数据库设计文档
   - **性能指标**：并发搜索召回率提升60%，延迟增加50-200ms
+
+- 🎨 **UI视觉系统升级 v2.0** 🎨 开发中
+  - **技术栈**：Vue 3 + TypeScript + CSS Variables + Design Tokens + Lucide Icons
+  - **核心能力**：Notion温暖明亮设计风格、完整设计系统规范、系统字体栈（零网络依赖）、Lucide Icons图标库
+  - **配置参数**：CSS变量系统、系统字体栈、图标预加载、响应式断点
+  - **开发状态**：开发中 - 预计工期5-7天
+  - **全局文档**：待同步
+  - **特性文档**：PRD（649行）、原型（901行）、技术方案（1412行）、任务清单（766行）、排期表（643行）、图标系统（551行）
+  - **性能目标**：字体加载<10ms（系统字体）、首屏渲染<2s、页面交互响应<100ms
 
 ---
 

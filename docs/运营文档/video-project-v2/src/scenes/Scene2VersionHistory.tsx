@@ -5,8 +5,77 @@
  */
 
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {useFadeIn, useFadeSlideIn} from '../components/animations';
+import {useFadeIn} from '../components/animations';
 import {COLORS, FONTS, VERSION_HISTORY} from '../types/video';
+
+// 版本卡片组件
+const VersionCard: React.FC<{
+	version: typeof VERSION_HISTORY[number];
+	index: number;
+}> = ({version, index}) => {
+	const frame = useCurrentFrame();
+	const startFrame = 150 + index * 90;
+
+	// 计算动画状态
+	const opacity = frame < startFrame
+		? 0
+		: frame < startFrame + 30
+			? (frame - startFrame) / 30
+			: 1;
+
+	const translateY = frame < startFrame
+		? -50
+		: frame < startFrame + 30
+			? -50 + ((frame - startFrame) / 30) * 50
+			: 0;
+
+	return (
+		<div
+			style={{
+				padding: 32,
+				background: COLORS.bgSecondary,
+				borderRadius: 12,
+				border: `1px solid ${COLORS.borderStandard}`,
+				opacity,
+				transform: `translateY(${translateY}px)`,
+			}}
+		>
+			{/* 版本号 */}
+			<div
+				style={{
+					fontSize: FONTS.heading,
+					fontWeight: 700,
+					color: COLORS.brandBlue,
+					marginBottom: 12,
+				}}
+			>
+				{version.version}
+			</div>
+
+			{/* 发布日期 */}
+			<div
+				style={{
+					fontSize: FONTS.caption,
+					color: COLORS.textTertiary,
+					marginBottom: 16,
+				}}
+			>
+				{version.date}
+			</div>
+
+			{/* 功能特性 */}
+			<div
+				style={{
+					fontSize: FONTS.body,
+					color: COLORS.textSecondary,
+					lineHeight: 1.5,
+				}}
+			>
+				{version.feature}
+			</div>
+		</div>
+	);
+};
 
 export const Scene2VersionHistory: React.FC = () => {
 	const frame = useCurrentFrame();
@@ -14,6 +83,13 @@ export const Scene2VersionHistory: React.FC = () => {
 	// 开场过渡（5秒 = 150帧）
 	const {opacity: titleOpacity} = useFadeIn(0, 30);
 	const {opacity: subtitleOpacity} = useFadeIn(30, 30);
+
+	// 底部总结的动画
+	const summaryOpacity = frame >= 900
+		? (frame >= 900 && frame < 930
+			? (frame - 900) / 30
+			: 1)
+		: 0;
 
 	return (
 		<AbsoluteFill
@@ -76,82 +152,34 @@ export const Scene2VersionHistory: React.FC = () => {
 					marginTop: 120,
 				}}
 			>
-				{VERSION_HISTORY.map((version, index) => {
-					// 每个版本从 150+90*index 帧开始出现
-					const startFrame = 150 + index * 90;
-					const {opacity, transform} = useFadeSlideIn('top', startFrame, 30);
-
-					return (
-						<div
-							key={version.version}
-							style={{
-								padding: 32,
-								background: COLORS.bgSecondary,
-								borderRadius: 12,
-								border: `1px solid ${COLORS.borderStandard}`,
-								opacity,
-								transform,
-							}}
-						>
-							{/* 版本号 */}
-							<div
-								style={{
-									fontSize: FONTS.heading,
-									fontWeight: 700,
-									color: COLORS.brandBlue,
-									marginBottom: 12,
-								}}
-							>
-								{version.version}
-							</div>
-
-							{/* 发布日期 */}
-							<div
-								style={{
-									fontSize: FONTS.caption,
-									color: COLORS.textTertiary,
-									marginBottom: 16,
-								}}
-							>
-								{version.date}
-							</div>
-
-							{/* 功能特性 */}
-							<div
-								style={{
-									fontSize: FONTS.body,
-									color: COLORS.textSecondary,
-									lineHeight: 1.5,
-								}}
-							>
-								{version.feature}
-							</div>
-						</div>
-					);
-				})}
+				{VERSION_HISTORY.map((version, index) => (
+					<VersionCard
+						key={version.version}
+						version={version}
+						index={index}
+					/>
+				))}
 			</div>
 
-			{/* 底部总结（最后5秒） */}
-			{frame > 900 && (
+			{/* 底部总结 */}
+			<div
+				style={{
+					position: 'absolute',
+					bottom: 100,
+					opacity: summaryOpacity,
+				}}
+			>
 				<div
 					style={{
-						position: 'absolute',
-						bottom: 100,
-						opacity: useFadeIn(900, 30).opacity,
+						fontSize: FONTS.subtitle,
+						fontWeight: 600,
+						color: COLORS.textPrimary,
+						textAlign: 'center',
 					}}
 				>
-					<div
-						style={{
-							fontSize: FONTS.subtitle,
-							fontWeight: 600,
-							color: COLORS.textPrimary,
-							textAlign: 'center',
-						}}
-					>
-						每一次迭代，都在让小遥搜索变得更强大
-					</div>
+					每一次迭代，都在让小遥搜索变得更强大
 				</div>
-			)}
+			</div>
 		</AbsoluteFill>
 	);
 };

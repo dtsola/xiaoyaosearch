@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/dtsola-xiaoyaosearch-badge.png)](https://mseep.ai/app/dtsola-xiaoyaosearch)
+
 # 小遥搜索 XiaoyaoSearch
 
 [English Version](README_EN.md) | 简体中文

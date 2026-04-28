@@ -95,8 +95,6 @@ export const Scene2VersionHistory: React.FC = () => {
 		<AbsoluteFill
 			style={{
 				background: COLORS.bgPrimary,
-				justifyContent: 'center',
-				alignItems: 'center',
 				padding: 80,
 			}}
 		>
@@ -104,7 +102,7 @@ export const Scene2VersionHistory: React.FC = () => {
 			<div
 				style={{
 					position: 'absolute',
-					top: 100,
+					top: 40,
 					left: 80,
 					opacity: titleOpacity,
 				}}
@@ -126,7 +124,7 @@ export const Scene2VersionHistory: React.FC = () => {
 			<div
 				style={{
 					position: 'absolute',
-					top: 180,
+					top: 130,
 					left: 80,
 					opacity: subtitleOpacity,
 				}}
@@ -141,15 +139,18 @@ export const Scene2VersionHistory: React.FC = () => {
 				</div>
 			</div>
 
-			{/* 版本卡片网格 */}
+			{/* 版本卡片网格 - 使用绝对定位确保不与底部文字重叠 */}
 			<div
 				style={{
+					position: 'absolute',
+					top: 200,
+					left: 80,
+					right: 80,
+					height: 700,
 					display: 'grid',
 					gridTemplateColumns: 'repeat(3, 1fr)',
+					gridTemplateRows: 'repeat(3, 1fr)',
 					gap: 32,
-					width: '100%',
-					maxWidth: 1600,
-					marginTop: 120,
 				}}
 			>
 				{VERSION_HISTORY.map((version, index) => (
@@ -165,7 +166,11 @@ export const Scene2VersionHistory: React.FC = () => {
 			<div
 				style={{
 					position: 'absolute',
-					bottom: 100,
+					top: 1000,
+					left: 0,
+					right: 0,
+					display: 'flex',
+					justifyContent: 'center',
 					opacity: summaryOpacity,
 				}}
 			>

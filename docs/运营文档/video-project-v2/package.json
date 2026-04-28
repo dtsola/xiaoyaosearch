@@ -27,7 +27,8 @@
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "render": "remotion render ProductPromoV2 out/video.mp4 --chrome-executable-path=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --overwrite --concurrency=1 --timeout=120000"
   },
   "sideEffects": [
     "*.css"

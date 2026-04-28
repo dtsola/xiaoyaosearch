@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小遥搜索 v2.0 - 产品宣传海报</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ant-design-vue@4.2.3/dist/reset.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ant-design-vue@4.2.3/dist/antd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* 小遥搜索设计系统 - Notion温暖明亮风格 */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f7f6f3;
+      --text-primary: rgba(0, 0, 0, 0.92);
+      --text-secondary: rgba(0, 0, 0, 0.68);
+      --text-tertiary: rgba(0, 0, 0, 0.45);
+      --brand-blue: #0075de;
+      --brand-blue-hover: #005fb8;
+      --brand-blue-light: #e8f4fd;
+      --brand-blue-lighter: #f0f7ff;
+      --border-standard: 1px solid rgba(0, 0, 0, 0.08);
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+      --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.06);
+      --radius-xl: 12px;
+      --radius-lg: 10px;
+      --radius-md: 6px;
+      --radius-sm: 4px;
+      --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+      --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .poster-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: var(--bg-primary);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-elevated);
+      overflow: hidden;
+    }
+
+    /* 应用介绍 */
+    .about-header {
+      text-align: center;
+      padding: 40px 60px 30px;
+      border-bottom: var(--border-standard);
+    }
+
+    .app-logo {
+      margin-bottom: 16px;
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--brand-blue);
+      letter-spacing: -0.25px;
+    }
+
+    .app-icon {
+      width: 256px;
+      height: 256px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app-icon i {
+      width: 64px;
+      height: 64px;
+      color: var(--brand-blue);
+    }
+
+    .app-description {
+      max-width: 600px;
+      margin: 0 auto 16px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    .tagline {
+      margin-top: 16px;
+    }
+
+    .highlight {
+      color: var(--brand-blue);
+      font-weight: 600;
+      font-size: 18px;
+      letter-spacing: 0.25px;
+    }
+
+    /* 核心特性展示 */
+    .features-showcase {
+      padding: 30px 60px;
+    }
+
+    .features-title {
+      text-align: center;
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 28px;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .feature-block {
+      text-align: center;
+      padding: 24px 20px;
+      border-radius: var(--radius-xl);
+      border: var(--border-standard);
+      background: var(--bg-primary);
+      transition: var(--transition-base);
+    }
+
+    .feature-block:hover {
+      box-shadow: var(--shadow-elevated);
+      transform: translateY(-4px);
+      border-color: var(--brand-blue-light);
+    }
+
+    .feature-block .feature-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 16px;
+      background: var(--brand-blue-light);
+      border-radius: 50%;
+      font-size: 24px;
+      color: var(--brand-blue);
+    }
+
+    .feature-block .feature-icon i {
+      width: 32px;
+      height: 32px;
+      color: var(--brand-blue);
+    }
+
+    .feature-block h4 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      margin: 0 0 8px;
+      color: var(--text-primary);
+      font-size: 18px;
+    }
+
+    .feature-block p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* 技术特色 */
+    .tech-highlight {
+      padding: 0 60px 30px;
+    }
+
+    .highlight-card {
+      border-radius: var(--radius-xl);
+      border: var(--border-standard);
+      text-align: center;
+      background: var(--bg-secondary);
+      padding: 30px;
+    }
+
+    .highlight-card h4 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      margin: 0 0 12px;
+      color: var(--brand-blue);
+      font-size: 24px;
+    }
+
+    .highlight-card p {
+      margin: 0 0 20px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-size: 16px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .tech-tags {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tech-tag {
+      padding: 6px 16px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: default;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+      .about-header {
+        padding: 30px 30px 20px;
+      }
+
+      .features-showcase {
+        padding: 20px 30px;
+      }
+
+      .tech-highlight {
+        padding: 0 30px 20px;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .logo-text {
+        font-size: 24px;
+      }
+
+      .app-description {
+        font-size: 14px;
+      }
+
+      .highlight {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="poster-container">
+      <!-- 应用介绍 -->
+      <div class="about-header">
+        <div class="app-logo">
+          <div class="logo-text">小遥搜索</div>
+        </div>
+        <div class="app-icon">
+          <img src="../产品文档/logo/logo_256x256.png" alt="小遥搜索Logo" width="256" height="256" />
+        </div>
+        <p class="app-description">
+          支持多模态AI智能搜索的跨平台本地桌面应用（Windows/MacOS/Linux），通过语音、文本、图像多种输入方式，支持本地Ollama和云端OpenAI兼容大模型，为知识工作者提供更智能的文件检索体验。
+        </p>
+        <div class="tagline">
+          <span class="highlight">本地优先 · 云端可选 · 隐私可控</span>
+        </div>
+      </div>
+
+      <!-- 核心特性展示 -->
+      <div class="features-showcase">
+        <h3 class="features-title">核心功能介绍</h3>
+        <div class="feature-grid">
+          <div class="feature-block">
+            <div class="feature-icon">
+              <i data-lucide="mic"></i>
+            </div>
+            <h4>语音搜索</h4>
+            <p>30秒语音输入，FastWhisper本地识别</p>
+          </div>
+
+          <div class="feature-block">
+            <div class="feature-icon">
+              <i data-lucide="image"></i>
+            </div>
+            <h4>图像理解</h4>
+            <p>上传图片，CN-CLIP智能分析内容</p>
+          </div>
+
+          <div class="feature-block">
+            <div class="feature-icon">
+              <i data-lucide="brain"></i>
+            </div>
+            <h4>语义搜索</h4>
+            <p>BGE-M3/云端嵌入向量 + Ollama/云端大模型理解</p>
+          </div>
+        </div>
+
+        <!-- 技术特色 -->
+        <div class="tech-highlight">
+          <div class="highlight-card">
+            <h4>本地优先，云端可选</h4>
+            <p>
+              支持本地Ollama/BGE-M3和云端OpenAI兼容API，灵活切换。本地文件和索引数据始终存储在本地，仅搜索查询会发送到云端（使用云端模型时）。性能与隐私的权衡由您选择。
+            </p>
+            <div class="tech-tags">
+              <span class="tech-tag" style="background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff;">FastWhisper</span>
+              <span class="tech-tag" style="background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f;">Ollama</span>
+              <span class="tech-tag" style="background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591;">CN-CLIP</span>
+              <span class="tech-tag" style="background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7;">BGE-M3</span>
+              <span class="tech-tag" style="background: #e6fffb; color: #13c2c2; border: 1px solid #87e8de;">OpenAI API</span>
+              <span class="tech-tag" style="background: #fff0f6; color: #eb2f96; border: 1px solid #f0b1d4;">Cloud Embedding</span>
+              <span class="tech-tag" style="background: #fff2e8; color: #fa541c; border: 1px solid #ffbb96;">MCP & Agent Skills</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        onMounted(() => {
+          // 初始化Lucide图标
+          lucide.createIcons();
+        });
+
+        return {};
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

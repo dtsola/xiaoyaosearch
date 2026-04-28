@@ -1,6 +1,6 @@
 /**
  * 场景2：版本演进回顾
- * 时长：35秒 (1050帧)
+ * 时长：24.17秒 (725帧) - 与配音时长完全一致
  * 展示 v1.1.0 到 v1.9.0 共9个版本
  */
 
@@ -14,19 +14,19 @@ const VersionCard: React.FC<{
 	index: number;
 }> = ({version, index}) => {
 	const frame = useCurrentFrame();
-	const startFrame = 150 + index * 90;
+	const startFrame = 120 + index * 60; // 从120帧开始，每60帧一个
 
 	// 计算动画状态
 	const opacity = frame < startFrame
 		? 0
-		: frame < startFrame + 30
-			? (frame - startFrame) / 30
+		: frame < startFrame + 25
+			? (frame - startFrame) / 25
 			: 1;
 
 	const translateY = frame < startFrame
 		? -50
-		: frame < startFrame + 30
-			? -50 + ((frame - startFrame) / 30) * 50
+		: frame < startFrame + 25
+			? -50 + ((frame - startFrame) / 25) * 50
 			: 0;
 
 	return (
@@ -80,14 +80,14 @@ const VersionCard: React.FC<{
 export const Scene2VersionHistory: React.FC = () => {
 	const frame = useCurrentFrame();
 
-	// 开场过渡（5秒 = 150帧）
-	const {opacity: titleOpacity} = useFadeIn(0, 30);
-	const {opacity: subtitleOpacity} = useFadeIn(30, 30);
+	// 开场过渡（2秒 = 60帧）
+	const {opacity: titleOpacity} = useFadeIn(0, 20);
+	const {opacity: subtitleOpacity} = useFadeIn(20, 20);
 
-	// 底部总结的动画
-	const summaryOpacity = frame >= 900
-		? (frame >= 900 && frame < 930
-			? (frame - 900) / 30
+	// 底部总结的动画（最后30帧）
+	const summaryOpacity = frame >= 695
+		? (frame >= 695 && frame < 710
+			? (frame - 695) / 15
 			: 1)
 		: 0;
 

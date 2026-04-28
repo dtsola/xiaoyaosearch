@@ -1,7 +1,7 @@
 /**
  * 场景3：v2.0.0 UI 视觉系统全面升级 + 页面展示
- * 时长：80秒 (2400帧)
- * 重点场景，展示所有升级后的页面
+ * 时长：约46秒 (1369帧)
+ * 与配音子步骤同步
  */
 
 import {AbsoluteFill, Img, staticFile, useCurrentFrame} from 'remotion';
@@ -11,34 +11,25 @@ import {COLORS, FONTS, UI_PAGES} from '../types/video';
 // UI页面展示卡片组件
 const UIPageCard: React.FC<{
 	page: typeof UI_PAGES[number];
-	index: number;
-}> = ({page, index}) => {
+	showHighlights: boolean;
+}> = ({page, showHighlights}) => {
 	const frame = useCurrentFrame();
-	const progressInPage = frame % 300;
+	const progressInPage = frame % 150; // 假设每个页面最多150帧
 
 	// 截图显示动画（前30帧）
 	const imageOpacity = progressInPage < 30 ? progressInPage / 30 : 1;
 	const imageScale = progressInPage < 30 ? 0.95 + (progressInPage / 30) * 0.05 : 1;
 
-	// 页面名称动画（0-20帧）
-	const nameOpacity = progressInPage >= 0 && progressInPage < 20 ? progressInPage / 20 : 1;
-	const nameTransform = progressInPage >= 0 && progressInPage < 20
-		? `translateY(20px)`
-		: 'translateY(0)';
+	// 页面名称动画
+	const nameOpacity = progressInPage < 20 ? progressInPage / 20 : 1;
 
-	// 描述动画（10-30帧）
+	// 描述动画
 	const descOpacity = progressInPage >= 10 && progressInPage < 30
 		? (progressInPage - 10) / 20
 		: progressInPage >= 30 ? 1 : 0;
-	const descTransform = progressInPage >= 10 && progressInPage < 30
-		? `translateY(20px)`
-		: 'translateY(0)';
 
-	// 设计亮点动画（60+帧）
-	const highlightsOpacity = progressInPage >= 60 ? 1 : 0;
-	const highlightsTransform = progressInPage >= 60 && progressInPage < 80
-		? `translateY(10px)`
-		: 'translateY(0)';
+	// 设计亮点动画
+	const highlightsOpacity = showHighlights && progressInPage >= 60 ? 1 : 0;
 
 	return (
 		<>
@@ -91,7 +82,6 @@ const UIPageCard: React.FC<{
 						color: COLORS.brandBlue,
 						marginBottom: 16,
 						opacity: nameOpacity,
-						transform: nameTransform,
 					}}
 				>
 					{page.name}
@@ -105,158 +95,80 @@ const UIPageCard: React.FC<{
 						lineHeight: 1.6,
 						marginBottom: 32,
 						opacity: descOpacity,
-						transform: descTransform,
 					}}
 				>
 					{page.desc}
 				</div>
 
 				{/* 设计亮点 */}
-				<div
-					style={{
-						padding: 24,
-						background: COLORS.bgSecondary,
-						borderRadius: 8,
-						border: `1px solid ${COLORS.borderStandard}`,
-						opacity: highlightsOpacity,
-						transform: highlightsTransform,
-					}}
-				>
+				{showHighlights && (
 					<div
 						style={{
-							fontSize: FONTS.caption,
-							color: COLORS.textTertiary,
-							marginBottom: 8,
-							textTransform: 'uppercase',
-							letterSpacing: '0.05em',
+							padding: 24,
+							background: COLORS.bgSecondary,
+							borderRadius: 8,
+							border: `1px solid ${COLORS.borderStandard}`,
+							opacity: highlightsOpacity,
 						}}
 					>
-						设计亮点
+						<div
+							style={{
+								fontSize: FONTS.caption,
+								color: COLORS.textTertiary,
+								marginBottom: 8,
+								textTransform: 'uppercase',
+								letterSpacing: '0.05em',
+							}}
+						>
+							设计亮点
+						</div>
+						<div
+							style={{
+								fontSize: FONTS.body,
+								color: COLORS.textPrimary,
+								fontWeight: 500,
+							}}
+						>
+							纯白背景 + 品牌蓝色
+						</div>
+						<div
+							style={{
+								fontSize: FONTS.body,
+								color: COLORS.textPrimary,
+								fontWeight: 500,
+							}}
+						>
+							多层阴影堆叠
+						</div>
 					</div>
-					<div
-						style={{
-							fontSize: FONTS.body,
-							color: COLORS.textPrimary,
-							fontWeight: 500,
-						}}
-					>
-						纯白背景 + 品牌蓝色
-					</div>
-					<div
-						style={{
-							fontSize: FONTS.body,
-							color: COLORS.textPrimary,
-							fontWeight: 500,
-						}}
-					>
-						多层阴影堆叠
-					</div>
-				</div>
+				)}
 			</div>
 		</>
-	);
-};
-
-// 缩略图组件
-const ThumbnailCard: React.FC<{
-	page: typeof UI_PAGES[number];
-	index: number;
-}> = ({page, index}) => {
-	const frame = useCurrentFrame();
-	const startFrame = 60 + index * 15;
-	const opacity = frame >= startFrame && frame < startFrame + 20
-		? (frame - startFrame) / 20
-		: frame >= startFrame + 20 ? 1 : 0;
-
-	return (
-		<div
-			style={{
-				opacity,
-			}}
-		>
-			<div
-				style={{
-					fontSize: FONTS.caption,
-					color: COLORS.textSecondary,
-					marginBottom: 8,
-					textAlign: 'center',
-				}}
-			>
-				{page.name}
-			</div>
-			<Img
-				src={staticFile(`images/${page.image}`)}
-				style={{
-					width: '100%',
-					borderRadius: 8,
-					border: `1px solid ${COLORS.borderStandard}`,
-				}}
-			/>
-		</div>
-	);
-};
-
-// 总结部分组件
-const SummarySection: React.FC = () => {
-	const titleOpacity = useFadeIn(0, 30).opacity;
-	const gridOpacity = useFadeIn(30, 30).opacity;
-
-	return (
-		<div
-			style={{
-				position: 'absolute',
-				top: 200,
-				left: 80,
-				right: 80,
-				bottom: 100,
-				display: 'flex',
-				flexDirection: 'column',
-				justifyContent: 'center',
-				alignItems: 'center',
-			}}
-		>
-			<div
-				style={{
-					fontSize: FONTS.title,
-					fontWeight: 700,
-					color: COLORS.textPrimary,
-					textAlign: 'center',
-					marginBottom: 32,
-					opacity: titleOpacity,
-				}}
-			>
-				每一处细节都经过精心打磨
-			</div>
-
-			{/* 所有页面缩略图网格 */}
-			<div
-				style={{
-					display: 'grid',
-					gridTemplateColumns: 'repeat(4, 1fr)',
-					gap: 24,
-					opacity: gridOpacity,
-				}}
-			>
-				{UI_PAGES.map((page, index) => (
-					<ThumbnailCard
-						key={page.name}
-						page={page}
-						index={index}
-					/>
-				))}
-			</div>
-		</div>
 	);
 };
 
 export const Scene3UIUpgrade: React.FC = () => {
 	const frame = useCurrentFrame();
 
-	// 顶部标题动画
-	const titleOpacity = useFadeIn(0, 30).opacity;
+	// 根据配音时长划分时间段
+	// 开场: 0-325帧
+	// 搜索首页: 325-474帧 (149帧)
+	// 文本搜索: 474-601帧 (127帧)
+	// 语音搜索: 601-736帧 (135帧)
+	// 图片搜索: 736-882帧 (146帧)
+	// 索引管理: 882-1016帧 (134帧)
+	// 设置页面: 1016-1146帧 (130帧)
+	// 术语库管理: 1146-1274帧 (128帧)
+	// 结尾: 1274-1369帧 (95帧)
 
-	// 判断是否是总结部分
-	const isSummary = frame >= 2100;
+	const currentPageIndex = Math.min(
+		Math.floor((frame - 325) / 149),
+		UI_PAGES.length - 1
+	);
+
+	const isIntro = frame < 325;
+	const isOutro = frame >= 1274;
+	const showHighlights = frame < 882; // 前4个页面显示设计亮点
 
 	return (
 		<AbsoluteFill
@@ -274,7 +186,7 @@ export const Scene3UIUpgrade: React.FC = () => {
 					display: 'flex',
 					justifyContent: 'space-between',
 					alignItems: 'center',
-					opacity: titleOpacity,
+					opacity: useFadeIn(0, 30).opacity,
 				}}
 			>
 				<div>
@@ -321,14 +233,108 @@ export const Scene3UIUpgrade: React.FC = () => {
 				</div>
 			</div>
 
+			{/* 开场部分 */}
+			{isIntro && (
+				<div
+					style={{
+						position: 'absolute',
+						top: 200,
+						left: 80,
+						right: 80,
+						bottom: 100,
+						display: 'flex',
+						justifyContent: 'center',
+						alignItems: 'center',
+						opacity: useFadeIn(30, 30).opacity,
+					}}
+				>
+					<div
+						style={{
+							fontSize: FONTS.title,
+							fontWeight: 700,
+							color: COLORS.textPrimary,
+							textAlign: 'center',
+						}}
+					>
+						v2.0.0 正式发布！这是小遥搜索历史上最大规模的 UI 视觉升级。采用 Notion 温暖明亮设计风格。
+					</div>
+				</div>
+			)}
+
 			{/* 页面展示部分 */}
-			{!isSummary ? (
+			{!isIntro && !isOutro && (
 				<UIPageCard
-					page={UI_PAGES[Math.floor(frame / 300)] || UI_PAGES[0]}
-					index={0}
+					page={UI_PAGES[currentPageIndex]}
+					showHighlights={showHighlights}
 				/>
-			) : (
-				<SummarySection />
+			)}
+
+			{/* 结尾部分 */}
+			{isOutro && (
+				<div
+					style={{
+						position: 'absolute',
+						top: 200,
+						left: 80,
+						right: 80,
+						bottom: 100,
+						display: 'flex',
+						flexDirection: 'column',
+						justifyContent: 'center',
+						alignItems: 'center',
+						opacity: useFadeIn(0, 30).opacity,
+					}}
+				>
+					<div
+						style={{
+							fontSize: FONTS.title,
+							fontWeight: 700,
+							color: COLORS.textPrimary,
+							textAlign: 'center',
+							marginBottom: 32,
+						}}
+					>
+						每一处细节都经过精心打磨
+					</div>
+
+					{/* 所有页面缩略图网格 */}
+					<div
+						style={{
+							display: 'grid',
+							gridTemplateColumns: 'repeat(4, 1fr)',
+							gap: 24,
+							opacity: useFadeIn(30, 30).opacity,
+						}}
+					>
+						{UI_PAGES.map((page, index) => (
+							<div
+								key={page.name}
+								style={{
+									textAlign: 'center',
+								}}
+							>
+								<Img
+									src={staticFile(`images/${page.image}`)}
+									style={{
+										width: '100%',
+										borderRadius: 8,
+										border: `1px solid ${COLORS.borderStandard}`,
+										opacity: 0.8,
+									}}
+								/>
+								<div
+									style={{
+										fontSize: FONTS.caption,
+										color: COLORS.textSecondary,
+										marginTop: 8,
+									}}
+								>
+									{page.name}
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
 			)}
 		</AbsoluteFill>
 	);

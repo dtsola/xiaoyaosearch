@@ -1,6 +1,6 @@
 /**
  * 场景1：开场引入
- * 时长：15秒 (450帧)
+ * 时长：12秒 (360帧) - 与配音时长一致
  * 前3秒抓住用户注意力
  */
 
@@ -11,7 +11,7 @@ import {COLORS, FONTS} from '../types/video';
 export const Scene1Opening: React.FC = () => {
 	const {transform: imageTransform} = useScaleIn(0, 90, 0.9);
 	const {opacity: taglineOpacity} = useFadeIn(120, 30);
-	const {opacity: versionOpacity} = useFadeIn(390, 30);
+	const {opacity: versionOpacity} = useFadeIn(270, 30); // 从270帧（9秒）开始
 
 	// 主标题打字机效果（前3秒）
 	const mainTitle = useTypewriterValue('本地 AI 搜索', 8, 0);
@@ -93,7 +93,7 @@ export const Scene1Opening: React.FC = () => {
 					{developerTagline}
 				</div>
 
-				{/* 产品介绍（6-13秒） */}
+				{/* 产品介绍（6-9秒） */}
 				<div
 					style={{
 						fontSize: FONTS.body,
@@ -106,7 +106,7 @@ export const Scene1Opening: React.FC = () => {
 					支持语音、文本、图片三种输入，深度检索本地文档、音视频内容。
 				</div>
 
-				{/* 版本发布提示（最后2秒） */}
+				{/* 版本发布提示（最后3秒，9-12秒） */}
 				<div
 					style={{
 						marginTop: 40,
@@ -114,6 +114,7 @@ export const Scene1Opening: React.FC = () => {
 						background: COLORS.brandBlue,
 						borderRadius: 8,
 						opacity: versionOpacity,
+						boxShadow: '0 8px 32px rgba(0,117,222,0.3)',
 					}}
 				>
 					<div

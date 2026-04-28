@@ -21,7 +21,7 @@ export const Scene1Opening: React.FC = () => {
 	return (
 		<AbsoluteFill
 			style={{
-				background: `linear-gradient(135deg, ${COLORS.gradientStart} 0%, ${COLORS.gradientEnd} 100%)`,
+				background: `linear-gradient(135deg, #e8f4fc 0%, #d0e8f7 40%, #b8ddf3 100%)`,
 				justifyContent: 'center',
 				alignItems: 'center',
 			}}
@@ -31,7 +31,7 @@ export const Scene1Opening: React.FC = () => {
 				style={{
 					position: 'absolute',
 					inset: 0,
-					opacity: 0.15,
+					opacity: 0.30,
 					transform: imageTransform,
 				}}
 			>

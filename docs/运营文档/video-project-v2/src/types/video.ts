@@ -94,7 +94,7 @@ export const UI_PAGES = [
   { name: '语音搜索', image: '搜索界面-语音搜索.png', desc: '30秒内语音录制，自动转文字' },
   { name: '图片搜索', image: '搜索界面-图片搜索.png', desc: '上传图片即可搜索，AI理解图像' },
   { name: '索引管理', image: '索引管理界面.png', desc: '实时状态监控，一键重建索引' },
-  { name: '设置页面', image: '设置界面.png', desc: 'AI模型配置，数据源管理' },
+  { name: '设置页面', image: '设置界面.png', desc: 'AI模型配置，多模态管理' },
   { name: '术语库管理', image: '术语库管理界面.png', desc: '多术语库集合，同义词扩展' },
 ] as const;
 

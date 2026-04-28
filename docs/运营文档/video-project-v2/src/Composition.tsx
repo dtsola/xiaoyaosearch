@@ -94,8 +94,8 @@ export const ProductPromoV2: React.FC = () => {
 				<Audio src={staticFile('audio/scene4.mp3')} volume={1.0} />
 			</Sequence>
 
-			{/* 场景5配音 (2720-3070帧) - 11.69秒 */}
-			<Sequence from={2720} durationInFrames={350} layout="none">
+			{/* 场景5配音 (2720-3080帧) - 12秒 */}
+			<Sequence from={2720} durationInFrames={370} layout="none">
 				<Audio src={staticFile('audio/scene5.mp3')} volume={1.0} />
 			</Sequence>
 
@@ -145,8 +145,8 @@ export const ProductPromoV2: React.FC = () => {
 					timing={linearTiming({durationInFrames: 15})}
 				/>
 
-				{/* 场景5：结尾 (350帧) - 与配音时长一致 */}
-				<TransitionSeries.Sequence durationInFrames={350}>
+				{/* 场景5：结尾 (450帧) - 12秒 */}
+				<TransitionSeries.Sequence durationInFrames={450}>
 					<Scene5Outro />
 				</TransitionSeries.Sequence>
 			</TransitionSeries>

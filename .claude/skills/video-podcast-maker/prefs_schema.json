@@ -1,0 +1,481 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://video-podcast-maker/prefs_schema.json",
+  "title": "User Preferences Schema",
+  "description": "Schema for learnable user preferences in video-podcast-maker",
+  "type": "object",
+  "required": ["version", "updated_at"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    },
+    "global": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "type": "string",
+          "enum": ["bilibili", "youtube", "xiaohongshu", "douyin", "weixin-channels"],
+          "default": "bilibili",
+          "description": "Target video platform"
+        },
+        "language": {
+          "type": "string",
+          "enum": ["zh-CN", "en-US"],
+          "default": "zh-CN",
+          "description": "Content language (affects script template, TTS voice, subtitle font)"
+        },
+        "cta": {
+          "type": "object",
+          "description": "Call-to-action configuration for outro",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["auto", "animation", "text", "custom"],
+              "default": "auto",
+              "description": "CTA mode: auto (platform default), animation, text with icons, or custom"
+            },
+            "text": {
+              "type": ["string", "null"],
+              "default": null,
+              "description": "Custom CTA text. Null = use platform+language default"
+            },
+            "animation": {
+              "type": ["string", "null"],
+              "default": null,
+              "description": "Custom animation file path in assets/. Null = platform default"
+            }
+          }
+        },
+        "subtitle": {
+          "type": "object",
+          "description": "Subtitle burning preferences for FFmpeg",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether to burn subtitles into final video"
+            },
+            "fontName": {
+              "type": "string",
+              "default": "auto",
+              "description": "Subtitle font. 'auto' resolves by language: zh-CN=PingFang SC, en-US=Arial"
+            },
+            "fontSize": {
+              "type": "number",
+              "minimum": 10,
+              "maximum": 40,
+              "default": 20,
+              "description": "Subtitle font size (for 4K output)"
+            },
+            "primaryColor": {
+              "type": "string",
+              "default": "&H00333333",
+              "description": "Subtitle text color (ASS format BBGGRR)"
+            },
+            "outlineColor": {
+              "type": "string",
+              "default": "&H00FFFFFF",
+              "description": "Subtitle outline color (ASS format BBGGRR)"
+            },
+            "bold": {
+              "type": "boolean",
+              "default": false
+            },
+            "outline": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5,
+              "default": 2,
+              "description": "Outline thickness in pixels"
+            }
+          }
+        },
+        "visual": {
+          "type": "object",
+          "properties": {
+            "theme": {
+              "type": "string",
+              "enum": ["light", "dark", "auto"],
+              "default": "light"
+            },
+            "primaryColor": {
+              "type": "string",
+              "description": "Primary brand color (hex or CSS color)"
+            },
+            "backgroundColor": {
+              "type": "string",
+              "description": "Background color (hex or CSS color)"
+            },
+            "accentColor": {
+              "type": "string",
+              "description": "Accent color for highlights (hex or CSS color)"
+            },
+            "preferredComponents": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "List of preferred visual components"
+            },
+            "titlePosition": {
+              "type": "string",
+              "enum": ["top-center", "top-left", "center"],
+              "default": "top-center"
+            },
+            "progressBar": {
+              "oneOf": [
+                { "type": "boolean" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "enabled": { "type": "boolean", "default": true },
+                    "height": { "type": "number", "minimum": 2, "maximum": 20, "default": 6 },
+                    "fontSize": { "type": "number", "minimum": 10, "maximum": 30, "default": 18 },
+                    "activeColor": { "type": "string", "default": "auto", "description": "'auto' = follows primaryColor" },
+                    "position": { "type": "string", "enum": ["bottom"], "default": "bottom" }
+                  }
+                }
+              ],
+              "default": true,
+              "description": "Chapter progress bar config (boolean for back-compat, or object)"
+            },
+            "typography": {
+              "type": "object",
+              "properties": {
+                "heroTitle": {
+                  "type": "number",
+                  "minimum": 72,
+                  "default": 96
+                },
+                "sectionTitle": {
+                  "type": "number",
+                  "minimum": 60,
+                  "default": 72
+                },
+                "cardTitle": {
+                  "type": "number",
+                  "minimum": 24,
+                  "default": 36
+                },
+                "bodyText": {
+                  "type": "number",
+                  "minimum": 24,
+                  "default": 28
+                },
+                "caption": {
+                  "type": "number",
+                  "minimum": 18,
+                  "default": 22
+                },
+                "scalePreference": {
+                  "type": "number",
+                  "minimum": 0.5,
+                  "maximum": 2.0,
+                  "default": 1.0
+                }
+              }
+            },
+            "layout": {
+              "type": "object",
+              "properties": {
+                "textAlign": {
+                  "type": "string",
+                  "enum": ["center", "left"],
+                  "default": "center"
+                },
+                "contentWidth": {
+                  "type": "number",
+                  "minimum": 0.5,
+                  "maximum": 1.0,
+                  "default": 0.85,
+                  "description": "Content width as fraction of screen"
+                },
+                "cardPadding": {
+                  "type": "number",
+                  "minimum": 0,
+                  "default": 40
+                }
+              }
+            },
+            "spacing": {
+              "type": "object",
+              "properties": {
+                "sectionPadding": {
+                  "type": "number",
+                  "minimum": 0,
+                  "default": 60
+                },
+                "itemGap": {
+                  "type": "number",
+                  "minimum": 0,
+                  "default": 24
+                },
+                "marginBottom": {
+                  "type": "number",
+                  "minimum": 0,
+                  "default": 100,
+                  "description": "Bottom margin reserved for subtitles"
+                }
+              }
+            }
+          }
+        },
+        "tts": {
+          "type": "object",
+          "properties": {
+            "backend": {
+              "type": "string",
+              "enum": ["azure", "doubao", "cosyvoice", "edge", "elevenlabs", "google", "openai"],
+              "default": "edge"
+            },
+            "rate": {
+              "type": "string",
+              "pattern": "^[+-]?\\d+%$",
+              "default": "+0%",
+              "description": "Speech rate adjustment (e.g. +5%, -10%)"
+            },
+            "voices": {
+              "type": "object",
+              "description": "Per-backend voice identifiers",
+              "properties": {
+                "azure": {
+                  "type": "string",
+                  "default": "zh-CN-XiaoxiaoNeural"
+                },
+                "edge": {
+                  "type": "string",
+                  "default": "zh-CN-XiaoxiaoNeural"
+                },
+                "doubao": {
+                  "type": "string",
+                  "default": "BV001_streaming"
+                },
+                "cosyvoice": {
+                  "type": "string",
+                  "default": "longxiaochun"
+                },
+                "elevenlabs": {
+                  "type": "string",
+                  "default": "21m00Tcm4TlvDq8ikWAM",
+                  "description": "ElevenLabs voice ID (default: Rachel)"
+                },
+                "google": {
+                  "type": "string",
+                  "default": "en-US-Neural2-F",
+                  "description": "Google Cloud TTS voice name"
+                },
+                "openai": {
+                  "type": "string",
+                  "default": "alloy",
+                  "description": "OpenAI TTS voice name"
+                }
+              }
+            }
+          }
+        },
+        "bgm": {
+          "type": "object",
+          "description": "Background music preferences",
+          "properties": {
+            "volume": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.3,
+              "default": 0.05,
+              "description": "BGM volume (0-0.3, used in FFmpeg mixing and Remotion bgmVolume)"
+            },
+            "track": {
+              "type": "string",
+              "default": "perfect-beauty",
+              "description": "Default BGM track name (key in tracks object)"
+            },
+            "tracks": {
+              "type": "object",
+              "description": "Named BGM tracks (name → filename in assets/)",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {
+                "perfect-beauty": "perfect-beauty-191271.mp3",
+                "calm-piano": "snow-stevekaldes-piano-397491.mp3"
+              }
+            }
+          }
+        },
+        "content": {
+          "type": "object",
+          "properties": {
+            "tone": {
+              "type": "string",
+              "enum": ["professional", "casual", "energetic"],
+              "default": "professional"
+            },
+            "verbosity": {
+              "type": "string",
+              "enum": ["concise", "balanced", "detailed"],
+              "default": "balanced"
+            },
+            "sectionCount": {
+              "type": "number",
+              "minimum": 3,
+              "maximum": 15,
+              "default": 6
+            },
+            "outroStyle": {
+              "type": "string",
+              "enum": ["standard", "minimal"],
+              "default": "standard"
+            },
+            "chapters": {
+              "type": "boolean",
+              "default": true,
+              "description": "Include chapter timestamps in publish_info.md"
+            }
+          }
+        }
+      }
+    },
+    "topic_patterns": {
+      "type": "object",
+      "description": "Topic-specific preference overrides",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "visual": {
+            "$ref": "#/properties/global/properties/visual"
+          },
+          "tts": {
+            "$ref": "#/properties/global/properties/tts"
+          },
+          "content": {
+            "$ref": "#/properties/global/properties/content"
+          }
+        }
+      }
+    },
+    "style_profiles": {
+      "type": "object",
+      "description": "User-defined style profiles, each linking design preferences to reference videos",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["description", "props_override", "references", "created_at", "updated_at"],
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this style"
+          },
+          "props_override": {
+            "type": "object",
+            "description": "Remotion videoSchema prop overrides (primaryColor, backgroundColor, etc.)",
+            "additionalProperties": true
+          },
+          "preferred_layouts": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Preferred section layout component names (CenteredShowcase, SplitLayout, etc.)"
+          },
+          "preferred_backgrounds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["gradient", "shapes", "grid", "clean"]
+            }
+          },
+          "animation_feel": {
+            "type": "string",
+            "enum": ["gentle", "snappy", "bouncy"]
+          },
+          "density": {
+            "type": "string",
+            "enum": ["spacious", "balanced", "dense"]
+          },
+          "references": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Reference IDs linked to this profile"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    },
+    "design_references": {
+      "type": "object",
+      "description": "Index of analyzed design references (data stored in design_references/ directory)",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "analyzed_at"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative path to reference directory"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the reference video"
+          },
+          "source_url": {
+            "type": "string",
+            "description": "Original URL if applicable"
+          },
+          "analyzed_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "learning_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "source", "change"],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["explicit", "implicit", "feedback"],
+            "description": "How the preference was learned"
+          },
+          "change": {
+            "type": "object",
+            "required": ["path", "to"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "JSON path to the changed preference"
+              },
+              "from": {
+                "description": "Previous value (null if new)"
+              },
+              "to": {
+                "description": "New value"
+              }
+            }
+          },
+          "context": {
+            "type": "string",
+            "description": "Optional context about why change was made"
+          }
+        }
+      }
+    }
+  }
+}

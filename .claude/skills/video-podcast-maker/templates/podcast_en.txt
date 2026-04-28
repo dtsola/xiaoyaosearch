@@ -1,0 +1,63 @@
+# Podcast Script Template (English)
+# Each [SECTION:xxx] marks an independent video segment
+# TTS generates audio per section, timing.json records duration
+
+[SECTION:hero]
+# Hook - grab attention, pose a question or scenario
+Welcome! Today we're diving into a topic that many of you have been asking about.
+
+Have you ever found yourself in this situation? (describe the pain point)
+
+Don't worry — by the end of this video, you'll have a clear answer.
+
+[SECTION:overview]
+# Overview - quick roadmap of what we'll cover
+Before we jump in, here's what we'll go through today.
+
+First, we'll look at (background context).
+Second, we'll compare (options/approaches).
+Third, I'll give you my (conclusion/recommendation).
+
+Ready? Let's get started!
+
+[SECTION:content-1]
+# Content block 1 - add multiple content sections as needed
+Let's start with (first key point).
+
+Here are the key takeaways:
+- Point one
+- Point two
+- Point three
+
+[SECTION:content-2]
+# Content block 2 - comparison, deep analysis, etc.
+Now let's compare (Option A) and (Option B).
+
+From (perspective 1)...
+From (perspective 2)...
+
+[SECTION:content-3]
+# Content block 3 - continue or pivot to new subtopic
+At this point, you might be wondering...
+
+Great question! The answer is...
+
+[SECTION:summary]
+# Summary - recap and conclusion
+Alright, let's quickly recap what we covered today.
+
+We talked about (key points recap).
+
+My recommendation is (final conclusion).
+
+[SECTION:references]
+# References - list data sources
+The data and sources mentioned in this video:
+- Source 1
+- Source 2
+- Official documentation
+
+[SECTION:outro]
+# Call to action
+If you found this helpful, hit like and subscribe!
+Drop a comment below with your thoughts, and I'll see you in the next one!

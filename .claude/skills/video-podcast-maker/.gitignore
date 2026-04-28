@@ -1,0 +1,71 @@
+# Environment
+.env
+.DS_Store
+
+# Superpowers (plans/specs)
+docs/superpowers/
+
+# Examples
+examples/
+
+# Claude
+.playwright-mcp/
+suggestions.md
+
+# Node
+node_modules/
+package-lock.json
+dist/
+out/
+bundle/
+
+# Design references
+design_references/
+
+# Video outputs
+videos/
+*.wav
+*.mp4
+*.srt
+
+# Keep assets
+!assets/*.mp4
+!assets/*.mp3
+
+# User preferences (learned, auto-created from template)
+user_prefs.json
+
+# Global phoneme dictionary (user-customized, auto-created from template)
+phonemes.json
+
+# Design reference binary assets (frames, covers)
+design_references/*/frames/
+design_references/*/cover.*
+
+# Update check throttle
+.last_update_check
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Temp files
+part_*.wav
+concat_list.txt
+
+# Internal docs (not for users)
+docs/
+
+# Runtime Remotion source (copies of templates + per-video compositions)
+src/
+
+# Worktrees
+.worktrees/
+logs/
+public/
+CLAUDE.md
+
+# Local dev (pytest path setup, not needed by end users)
+conftest.py
+tests/

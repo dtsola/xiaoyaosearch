@@ -1,0 +1,112 @@
+{
+  "version": "1.6",
+  "updated_at": null,
+  "global": {
+    "platform": "bilibili",
+    "language": "zh-CN",
+    "cta": {
+      "type": "auto",
+      "text": null,
+      "animation": null
+    },
+    "subtitle": {
+      "enabled": true,
+      "fontName": "auto",
+      "fontSize": 20,
+      "primaryColor": "&H00333333",
+      "outlineColor": "&H00FFFFFF",
+      "bold": false,
+      "outline": 2,
+      "alignment": 2,
+      "marginV": 6
+    },
+    "visual": {
+      "theme": "light",
+      "primaryColor": "#4f6ef7",
+      "backgroundColor": "#ffffff",
+      "accentColor": "#FF6B6B",
+      "preferredComponents": [],
+      "titlePosition": "top-center",
+      "progressBar": {
+        "enabled": true,
+        "height": 6,
+        "fontSize": 18,
+        "activeColor": "auto",
+        "position": "bottom"
+      },
+      "typography": {
+        "heroTitle": 96,
+        "sectionTitle": 80,
+        "cardTitle": 38,
+        "bodyText": 32,
+        "caption": 24,
+        "scalePreference": 1.0
+      },
+      "layout": {
+        "textAlign": "center",
+        "contentWidth": 0.9,
+        "cardPadding": 36
+      },
+      "spacing": {
+        "sectionPadding": 60,
+        "itemGap": 28,
+        "marginBottom": 100
+      }
+    },
+    "tts": {
+      "backend": "edge",
+      "rate": "+5%",
+      "voices": {
+        "azure": "zh-CN-XiaoxiaoNeural",
+        "edge": "zh-CN-XiaoxiaoNeural",
+        "doubao": "BV001_streaming",
+        "cosyvoice": "longxiaochun",
+        "elevenlabs": "21m00Tcm4TlvDq8ikWAM",
+        "google": "en-US-Neural2-F",
+        "openai": "alloy"
+      }
+    },
+    "bgm": {
+      "volume": 0.05,
+      "track": "perfect-beauty",
+      "tracks": {
+        "perfect-beauty": "perfect-beauty-191271.mp3",
+        "calm-piano": "snow-stevekaldes-piano-397491.mp3"
+      }
+    },
+    "content": {
+      "tone": "professional",
+      "verbosity": "balanced",
+      "sectionCount": 5,
+      "outroStyle": "standard",
+      "chapters": true,
+      "heroOpening": null,
+      "outroClosing": null
+    }
+  },
+  "topic_patterns": {
+    "tech": {
+      "visual": { "primaryColor": "#4f6ef7", "theme": "light" },
+      "content": { "tone": "professional" }
+    },
+    "finance": {
+      "visual": { "primaryColor": "#1a1a2e", "theme": "dark" },
+      "content": { "tone": "professional" }
+    },
+    "education": {
+      "visual": { "primaryColor": "#22c55e", "theme": "light" },
+      "content": { "tone": "casual" }
+    },
+    "lifestyle": {
+      "visual": { "primaryColor": "#FF6B6B", "theme": "light" },
+      "content": { "tone": "casual" }
+    },
+    "news": {
+      "visual": { "primaryColor": "#dc2626", "theme": "light" },
+      "content": { "tone": "professional", "verbosity": "concise" }
+    }
+  },
+  "style_profiles": {},
+  "design_references": {},
+  "learning_history": []
+}

@@ -7,10 +7,11 @@
   "private": true,
   "dependencies": {
     "@remotion/cli": "4.0.417",
+    "@remotion/tailwind-v4": "4.0.417",
+    "@remotion/transitions": "^4.0.452",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "4.0.417",
-    "@remotion/tailwind-v4": "4.0.417",
     "tailwindcss": "4.0.0"
   },
   "devDependencies": {

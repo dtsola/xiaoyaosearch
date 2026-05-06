@@ -15,20 +15,25 @@
     采用 Vibe Design的方式，视觉风格、交互设计
     ---
     Windows平台命令行窗口隐藏、语音唤醒（优先级不高）
+        @scripts/startup.bat 启动成功后，隐藏命令行窗口；
+        关闭前端窗口，同时关闭前后端。
 ）
 - 搜索增强（
     文件增加自定义元数据，增强检索能力
 ）
 
-
---- 优先 ⭐️
-- UI&UX优化（
-    Windows平台命令行窗口隐藏 - 
-        @scripts/startup.bat 启动成功后，隐藏命令行窗口；
-        关闭前端窗口，同时关闭前后端。
-）
 - 浏览器数据插件
 - 浏览器导出工具
+
+
+
+--- 优先 ⭐️
+- 全部模型支持 外部API方式
+    已支持外部API - 目前 LLM（本地支持 Ollama、远程支持OpenAI标准格式模型）、
+    已支持外部API - 文本嵌入模型（本地支持 transformers 格式文本嵌入模型、远程支持OpenAI标准格式模型）
+    未支持外部API - OCR模型（本地支持 paddleocr 模型、远程支持待定（阿里云OCR API））
+    未支持外部API - 多模态嵌入模型（本地支持 Chinese-CLIP 模型，远程支持待定（阿里云多模态嵌入 multimodal-embedding-v1 API））
+    未支持外部API - 语音识别模型（本地支持 faster-whisper、远程支持待定（阿里云语音识别 API））
 
 
 --- 已完成

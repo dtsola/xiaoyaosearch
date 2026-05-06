@@ -34,6 +34,7 @@
     未支持外部API - OCR模型（本地支持 paddleocr 模型、远程支持待定（阿里云OCR API））
     未支持外部API - 多模态嵌入模型（本地支持 Chinese-CLIP 模型，远程支持待定（阿里云多模态嵌入 multimodal-embedding-v1 API））
     未支持外部API - 语音识别模型（本地支持 faster-whisper、远程支持待定（阿里云语音识别 API））
+- 全外部模型API配置教程 （全部以 阿里云 为例）
 
 
 --- 已完成

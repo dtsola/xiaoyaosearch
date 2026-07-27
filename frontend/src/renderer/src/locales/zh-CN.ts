@@ -491,6 +491,11 @@ export default {
     // 新增：OpenAI 兼容配置
     openaiCompatibleService: 'OpenAI 兼容服务',
     openaiCompatibleDesc: '使用兼容 OpenAI API 标准的云端大语言模型',
+    cloudProviderPreset: '云端服务商',
+    cloudProviderOpenAI: 'OpenAI',
+    cloudProviderAtlasCloud: 'Atlas Cloud',
+    cloudProviderCustom: '自定义 OpenAI 兼容服务',
+    cloudProviderPresetHelp: '选择预设会自动填充端点地址和推荐模型，仍可手动修改',
 
     // 新增：云端服务说明
     cloudServiceInfo: {
@@ -505,7 +510,8 @@ export default {
     // 通用配置项
     modelName: '模型名称',
     modelNamePlaceholder: '例如: qwen2.5:1.5b',
-    modelNamePlaceholderCloud: '例如: gpt-3.5-turbo、qwen-turbo、deepseek-chat',
+    modelNamePlaceholderCloud:
+      '例如: gpt-3.5-turbo、deepseek-ai/deepseek-v4-pro、deepseek-chat',
     modelNameHelp: '输入已安装的Ollama模型名称，支持任何格式',
     modelNameHelpCloud: '输入云端模型名称，如 gpt-3.5-turbo、qwen-turbo、deepseek-chat 等',
 

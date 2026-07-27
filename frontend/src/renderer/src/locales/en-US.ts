@@ -488,6 +488,12 @@ export default {
 
     openaiCompatibleService: 'OpenAI Compatible Service',
     openaiCompatibleDesc: 'Use cloud LLM that is compatible with OpenAI API standard',
+    cloudProviderPreset: 'Cloud Provider',
+    cloudProviderOpenAI: 'OpenAI',
+    cloudProviderAtlasCloud: 'Atlas Cloud',
+    cloudProviderCustom: 'Custom OpenAI-compatible service',
+    cloudProviderPresetHelp:
+      'Selecting a preset fills the endpoint and recommended model; both remain editable',
 
     // Cloud Service Info
     cloudServiceInfo: {
@@ -501,7 +507,8 @@ export default {
 
     modelName: 'Model Name',
     modelNamePlaceholder: 'e.g.: qwen2.5:1.5b',
-    modelNamePlaceholderCloud: 'e.g. gpt-3.5-turbo, qwen-turbo, deepseek-chat',
+    modelNamePlaceholderCloud:
+      'e.g. gpt-3.5-turbo, deepseek-ai/deepseek-v4-pro, deepseek-chat',
     modelNameHelp: 'Enter installed Ollama model name, any format supported',
     modelNameHelpCloud: 'Enter cloud model name, e.g. gpt-3.5-turbo, qwen-turbo, deepseek-chat, etc.',
 

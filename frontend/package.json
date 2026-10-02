@@ -5,6 +5,7 @@
   "main": "./out/main/index.js",
   "author": "www.dtsola.com",
   "homepage": "https://www.dtsola.com",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts,.vue --fix",

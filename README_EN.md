@@ -11,7 +11,7 @@ English | [简体中文](README.md)
 XiaoyaoSearch is a cross-platform local desktop application (Windows/MacOS/Linux) designed for knowledge workers, content creators, and technical developers. Through integrated AI models, it supports multiple input methods including voice input (within 30 seconds), text input, and image input, converting user queries into semantic meaning for intelligent search and deep retrieval of local files.
 
 ## ⭐️ Important Notes
-- This project is completely free for non-commercial use, allowing modification and distribution (subject to preserving copyright notices and agreement); commercial use requires authorization. See [XiaoyaoSearch Software License Agreement](LICENSE_EN) for details
+- This project adopts a **dual licensing** model: [AGPL-3.0](LICENSE) open source license (free, modifications must be open-sourced under the same license) + commercial license (closed-source commercial use allowed). See the [License & Commercial Authorization](#-license--commercial-authorization) section for details
 - This project is entirely implemented through Vibe Coding, providing all source code and development documentation (context) for everyone to learn and exchange
   ![Development Documentation](docs/产品文档/产品截图/开发文档.png)
 
@@ -150,8 +150,7 @@ xiaoyaosearch/
 │   ├── models/                   # Model files
 │   └── logs/                   # Log files
 ├── .claude/                       # Claude assistant configuration
-├── LICENSE                        # Software license agreement (Chinese)
-├── LICENSE_EN                     # Software license agreement (English)
+├── LICENSE                        # License (AGPL-3.0)
 ├── README.md                      # Project description (Chinese)
 └── README_EN.md                   # Project description (English)
 ```
@@ -652,6 +651,51 @@ Thanks to the following people for their contributions to this project:
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://github.com/jidingliu">@jidingliu</a>
 </p>
+
+---
+
+## 📄 License & Commercial Authorization
+
+This project adopts a **dual licensing** model: open source license + commercial license. You are free to choose either option based on your own situation.
+
+### Option 1: Open Source License (AGPL-3.0) — Free ✅
+
+This project is open sourced under the [AGPL-3.0-or-later](LICENSE) license. You may use, modify, and distribute it for free, subject to the following core obligations:
+
+- ✅ Personal learning, research, modification, and distribution are allowed (including internal use in commercial environments)
+- ⚠️ When distributing modified versions, all modifications must be open-sourced under the same AGPL-3.0 license
+- ⚠️ If you provide network services (SaaS) based on a modified version, you must make the complete modified source code available to network users
+- ⚠️ Original copyright notices and a copy of the license must be preserved
+
+**In short**: as long as you are willing to open-source your modifications under the same license, AGPL-3.0 is completely free to use.
+
+### Option 2: Commercial License — Paid 💼
+
+If you cannot fulfill the open-source obligations of AGPL-3.0, you may purchase a commercial license for more flexible rights:
+
+- ✅ Exemption from AGPL-3.0 open-source obligations — modified versions may remain closed-source
+- ✅ Integration into commercial products for sale or distribution
+- ✅ SaaS services based on this software without disclosing source code
+- ✅ Priority technical support
+- ✅ Customized development negotiation
+
+**Commercial License Contact**:
+
+- Website: https://www.dtsola.com
+- WeChat: dtsola (Note: XiaoyaoSearch Commercial License)
+
+### ❓ How to Choose
+
+| Use Case | Recommended Option |
+|----------|-------------------|
+| Personal learning, research, daily use | AGPL-3.0 (free) |
+| Modifications for personal use only, no distribution or service | AGPL-3.0 (free) |
+| Distribute modifications, willing to open-source equally | AGPL-3.0 (free) |
+| Enterprise internal use (open-source obligations acceptable) | AGPL-3.0 (free) |
+| Closed-source modifications required | Commercial License |
+| Integration into commercial products for sale | Commercial License |
+| SaaS services without disclosing source code | Commercial License |
+| Priority technical support or custom development needed | Commercial License |
 
 ---
 

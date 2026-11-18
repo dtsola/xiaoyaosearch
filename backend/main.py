@@ -12,6 +12,31 @@ backend_dir = Path(__file__).parent.absolute()
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
+# 显式加载 backend/.env 到进程环境变量
+# pydantic-settings 读取 .env 只填充 settings 对象，不会写回 os.environ，
+# 因此必须在这里加载，否则下方 os.getenv 读不到 API_HOST/API_PORT 等配置，
+# 只会使用代码中的默认值
+from dotenv import load_dotenv
+
+_dotenv_path = backend_dir / ".env"
+if _dotenv_path.exists():
+    load_dotenv(_dotenv_path)
+
+
+def get_api_address() -> tuple[str, int]:
+    """
+    获取后端 API 的监听地址与端口
+
+    优先读取 .env 中的 API_HOST / API_PORT，避免日志和启动参数里硬编码端口。
+    返回值同时用于启动 uvicorn 和打印访问地址，保证两者始终一致。
+    """
+    host = os.getenv("API_HOST", "127.0.0.1")
+    try:
+        port = int(os.getenv("API_PORT", "8000"))
+    except ValueError:
+        port = 8000
+    return host, port
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -166,7 +191,8 @@ async def lifespan(app: FastAPI):
                 app.state.mcp_app = mcp_app
 
                 logger.info("✅ FastMCP 服务器初始化完成")
-                logger.info(f"📡 MCP 端点: http://127.0.0.1:8000/mcp")
+                mcp_host, mcp_port = get_api_address()
+                logger.info(f"📡 MCP 端点: http://{mcp_host}:{mcp_port}/mcp")
             else:
                 app.state.mcp_server = None
                 app.state.mcp_app = None
@@ -212,8 +238,9 @@ async def lifespan(app: FastAPI):
         # =====================================
 
         logger.info("✅ 小遥搜索服务启动完成")
-        logger.info(f"📖 API文档: http://127.0.0.1:8000/docs")
-        logger.info(f"📋 ReDoc文档: http://127.0.0.1:8000/redoc")
+        doc_host, doc_port = get_api_address()
+        logger.info(f"📖 API文档: http://{doc_host}:{doc_port}/docs")
+        logger.info(f"📋 ReDoc文档: http://{doc_host}:{doc_port}/redoc")
 
     except Exception as e:
         logger.error(f"❌ 服务启动失败: {str(e)}")
@@ -315,10 +342,15 @@ if __name__ == "__main__":
     import uvicorn
 
     # 从环境变量获取配置
-    host = os.getenv("API_HOST", "127.0.0.1")
-    port = int(os.getenv("API_PORT", "8000"))
+    host, port = get_api_address()
     reload = os.getenv("API_RELOAD", "true").lower() == "true"
-    log_level = os.getenv("LOG_LEVEL", "info")
+
+    # uvicorn 只接受小写日志级别（info/debug/warning/error/critical/trace），
+    # 而 .env 中惯例写大写（如 LOG_LEVEL=INFO），这里统一归一化并做兜底校验
+    log_level = os.getenv("LOG_LEVEL", "info").strip().lower()
+    if log_level not in {"critical", "error", "warning", "info", "debug", "trace"}:
+        logger.warning(f"无效的日志级别: {log_level!r}，已回退为 info")
+        log_level = "info"
 
     logger.info(f"🚀 启动服务: http://{host}:{port}")
     logger.info(f"🔄 热重载: {'开启' if reload else '关闭'}")

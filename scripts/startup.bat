@@ -25,6 +25,19 @@ set "BACKEND_DIR=%PROJECT_ROOT%\backend"
 set "FRONTEND_DIR=%PROJECT_ROOT%\frontend"
 
 REM ============================================
+REM 0. 从 backend\.env 读取 API 地址与端口
+REM    避免健康检查里硬编码 8000，与后端实际监听不一致
+REM ============================================
+set "API_HOST=127.0.0.1"
+set "API_PORT=8000"
+if exist "%BACKEND_DIR%\.env" (
+    for /f "usebackq eol=# tokens=1,* delims==" %%A in ("%BACKEND_DIR%\.env") do (
+        if /i "%%A"=="API_HOST" set "API_HOST=%%B"
+        if /i "%%A"=="API_PORT" set "API_PORT=%%B"
+    )
+)
+
+REM ============================================
 REM 1. 配置环境变量
 REM ============================================
 echo 配置环境变量...
@@ -51,7 +64,7 @@ echo.
 REM ============================================
 REM 3. 等待后端启动完成
 REM ============================================
-echo 等待后端服务就绪...
+echo 等待后端服务就绪（%API_HOST%:%API_PORT%）...
 
 set /a MAX_WAIT=30
 set /a WAIT_COUNT=0
@@ -61,14 +74,14 @@ timeout /t 1 /nobreak >nul
 set /a WAIT_COUNT+=1
 
 REM 检测方式1：HTTP健康检查
-curl -s http://127.0.0.1:8000/ >nul 2>&1
+curl -s http://%API_HOST%:%API_PORT%/ >nul 2>&1
 if %errorlevel% equ 0 (
     echo   [OK] 后端服务已就绪
     goto :backend_ready
 )
 
 REM 检测方式2：端口检查
-netstat -ano | find ":8000" | find "LISTENING" >nul 2>&1
+netstat -ano | find ":%API_PORT%" | find "LISTENING" >nul 2>&1
 if %errorlevel% equ 0 (
     echo   [OK] 后端端口已监听
     goto :backend_ready

@@ -13,7 +13,6 @@ from pathlib import Path
 import numpy as np
 import faiss
 
-from app.services.clip_service import get_clip_service
 from app.core.logging_config import get_logger
 from app.utils.enum_helpers import get_enum_value
 
@@ -56,8 +55,16 @@ class ImageSearchService:
         try:
             logger.info("初始化图像搜索服务")
 
-            # 获取CLIP服务
-            self.clip_service = get_clip_service()
+            # 从AI模型管理器获取已注册的视觉模型实例
+            # 这样图片搜索与设置页面中的视觉模型配置保持一致，
+            # 不会再出现"改了视觉模型但图片搜索仍用默认模型"的问题
+            from app.services.ai_model_manager import ai_model_service
+            vision_model = await ai_model_service.get_model("vision")
+            if vision_model is None:
+                raise Exception("未找到可用的视觉模型，请先在设置中配置图像理解模型")
+
+            self.clip_service = vision_model
+            logger.info(f"图像搜索使用视觉模型: {vision_model.model_name}")
 
             # 确保索引目录存在
             os.makedirs(os.path.dirname(self.index_path), exist_ok=True)

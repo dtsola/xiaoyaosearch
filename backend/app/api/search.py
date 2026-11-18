@@ -204,14 +204,19 @@ async def search_files(
         # 记录LLM查询增强
         if len(all_queries) > 1:
             llm_model = await ai_model_service.get_model("llm")
-            llm_model_name = llm_model.model_name if llm_model else "qwen2.5:1.5b"
-            ai_models_used.append(f"{llm_model_name}(LLM增强)")
+            if llm_model:
+                ai_models_used.append(f"{llm_model.model_name}(LLM增强)")
+            else:
+                # 不记录虚构的模型名，避免搜索历史与实际调用不一致
+                logger.warning("LLM增强已生效，但未获取到LLM模型实例，跳过模型名记录")
 
         # 根据搜索类型记录使用的AI模型
         if is_semantic_search(request.search_type) or is_hybrid_search(request.search_type):
             embedding_model = await ai_model_service.get_model("embedding")
-            embedding_model_name = embedding_model.model_name if embedding_model else "BGE-M3"
-            ai_models_used.append(embedding_model_name)
+            if embedding_model:
+                ai_models_used.append(embedding_model.model_name)
+            else:
+                logger.warning("语义检索已执行，但未获取到嵌入模型实例，跳过模型名记录")
 
         # 如果是混合搜索，还有全文搜索
         if is_hybrid_search(request.search_type):
@@ -489,14 +494,19 @@ async def multimodal_search(
                 # 记录LLM查询增强
                 if enhanced_query != converted_text:
                     llm_model = await ai_model_service.get_model("llm")
-                    llm_model_name = llm_model.model_name if llm_model else "qwen2.5:1.5b"
-                    ai_models_used.append(f"{llm_model_name}(LLM增强)")
+                    if llm_model:
+                        ai_models_used.append(f"{llm_model.model_name}(LLM增强)")
+                    else:
+                        # 不记录虚构的模型名，避免搜索历史与实际调用不一致
+                        logger.warning("LLM增强已生效，但未获取到LLM模型实例，跳过模型名记录")
 
                 # 根据搜索类型记录使用的AI模型
                 if is_semantic_search(search_type) or is_hybrid_search(search_type):
                     embedding_model = await ai_model_service.get_model("embedding")
-                    embedding_model_name = embedding_model.model_name if embedding_model else "BGE-M3"
-                    ai_models_used.append(embedding_model_name)
+                    if embedding_model:
+                        ai_models_used.append(embedding_model.model_name)
+                    else:
+                        logger.warning("语义检索已执行，但未获取到嵌入模型实例，跳过模型名记录")
 
                 # 如果是混合搜索，还有全文搜索
                 if is_hybrid_search(search_type):

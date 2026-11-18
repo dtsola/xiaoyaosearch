@@ -678,20 +678,7 @@ def create_clip_service(config: Dict[str, Any] = None) -> CLIPVisionService:
     return CLIPVisionService(config or {})
 
 
-# 全局CLIP服务实例
-_clip_service = None
-
-
-def get_clip_service() -> CLIPVisionService:
-    """
-    获取CLIP图像理解服务实例（单例模式）
-
-    Returns:
-        CLIPVisionService: CLIP服务实例
-    """
-    global _clip_service
-
-    if _clip_service is None:
-        _clip_service = create_clip_service()
-
-    return _clip_service
+# 说明：原先的 get_clip_service() 单例已移除。
+# 它创建实例时不传任何配置，会绕过数据库中保存的视觉模型配置，
+# 且缺少 model_path 时会走联网下载。需要视觉模型时请统一使用
+# ai_model_service.get_model("vision") 获取已注册的实例。

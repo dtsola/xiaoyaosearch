@@ -112,6 +112,12 @@ async def update_ai_model_config(
                     merged_config[key] = value
                     logger.info(f"更新配置参数: {key} = {value}")
 
+                # LLM 类型模型名称变化时同步 config_json，
+                # 否则 config_json 会一直保留初始化时的默认模型名（如 qwen2.5:1.5b）
+                if model_name_changed and request.model_type == 'llm':
+                    merged_config['model_name'] = request.model_name
+                    logger.info(f"同步 config 中的模型名称: {request.model_name}")
+
             # 更新现有配置
             # 如果前端传了model_name，则更新，否则保持原有
             if request.model_name and request.model_name != get_enum_value(request.model_type):
@@ -350,7 +356,8 @@ async def test_ai_model(
                     provider = model_config.provider or 'local'
                     if provider == 'local':
                         from app.services.ollama_service import create_ollama_service
-                        test_llm_service = create_ollama_service(config)
+                        # 以数据库 model_name 列为准，避免使用 config_json 中残留的默认模型名
+                        test_llm_service = create_ollama_service(config, model_config.model_name)
                     elif provider == 'cloud':
                         from app.services.openai_llm_service import create_openai_compatible_service
                         # 确保 config 包含 model 字段（从 model_name 映射）

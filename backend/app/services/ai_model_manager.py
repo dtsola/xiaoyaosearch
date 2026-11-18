@@ -216,7 +216,8 @@ class AIModelService:
                         if provider == "local":
                             # 创建本地 Ollama 大语言模型服务
                             from app.services.ollama_service import create_ollama_service
-                            llm_service = create_ollama_service(config)
+                            # 以数据库 model_name 列为准，避免使用 config_json 中残留的默认模型名
+                            llm_service = create_ollama_service(config, model_config.get("model_name"))
                         elif provider == "cloud":
                             # 创建 OpenAI 兼容大语言模型服务
                             from app.services.openai_llm_service import create_openai_compatible_service
@@ -588,7 +589,8 @@ class AIModelService:
             elif model_type == "llm":
                 # 根据 provider 创建不同的 LLM 服务
                 if provider == "local":
-                    model = create_ollama_service(config)
+                    # 以数据库 model_name 列为准，避免使用 config_json 中残留的默认模型名
+                    model = create_ollama_service(config, model_config.get("model_name"))
                 elif provider == "cloud":
                     from app.services.openai_llm_service import create_openai_compatible_service
                     # 确保 config 包含 model 字段（从 model_name 映射）
@@ -819,7 +821,8 @@ class AIModelService:
                 # 根据 provider 创建不同的 LLM 服务
                 provider = new_model_config.get("provider", "local")
                 if provider == "local":
-                    new_model = create_ollama_service(config)
+                    # 以数据库 model_name 列为准，避免使用 config_json 中残留的默认模型名
+                    new_model = create_ollama_service(config, new_model_config.get("model_name"))
                 elif provider == "cloud":
                     from app.services.openai_llm_service import create_openai_compatible_service
                     # 确保 config 包含 model 字段（从 model_name 映射）

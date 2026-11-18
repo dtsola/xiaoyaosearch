@@ -493,14 +493,24 @@ class OllamaLLMService(BaseAIModel):
 
 
 # 创建Ollama服务实例的工厂函数
-def create_ollama_service(config: Dict[str, Any] = None) -> OllamaLLMService:
+def create_ollama_service(config: Dict[str, Any] = None,
+                          model_name: Optional[str] = None) -> OllamaLLMService:
     """
     创建Ollama大语言模型服务实例
 
     Args:
         config: 模型配置参数
+        model_name: 数据库 ai_models.model_name 列中的模型名称
 
     Returns:
         OllamaLLMService: Ollama服务实例
+
+    Note:
+        数据库中的 model_name 列是模型名称的唯一事实来源，
+        config_json 里的 model_name 可能仍是初始化时的默认值（如 qwen2.5:1.5b），
+        若不覆盖，用户在前端改了模型名后，测试和实际调用仍会使用旧模型。
     """
-    return OllamaLLMService(config or {})
+    merged_config = dict(config) if isinstance(config, dict) else {}
+    if model_name:
+        merged_config["model_name"] = model_name
+    return OllamaLLMService(merged_config)

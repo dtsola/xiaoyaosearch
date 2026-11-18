@@ -9,6 +9,7 @@ venv/
 dist/
 build/
 release/
+*.tsbuildinfo
 
 # 数据目录（包含敏感数据）
 data/database/

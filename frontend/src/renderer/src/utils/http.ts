@@ -8,9 +8,18 @@ const t = (key: string, params?: Record<string, any>): string => {
   return i18n.global.t(key, params)
 }
 
+// 后端 API 地址
+// 可通过项目根目录的 .env 文件中的 VITE_API_BASE_URL 覆盖（需与后端 .env 的 API_PORT 保持一致），
+// 未配置时回退到默认地址；固定使用 IPv4 避免 localhost 解析到 IPv6 导致连接失败
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+
+if (import.meta.env.DEV) {
+  console.log('[http] 后端 API 地址:', API_BASE_URL)
+}
+
 // 创建 axios 实例
 const http: AxiosInstance = axios.create({
-  baseURL: 'http://127.0.0.1:8000', // 后端 API 地址，使用IPv4确保连接
+  baseURL: API_BASE_URL,
   timeout: 600000, // 10分钟超时
   headers: {
     'Content-Type': 'application/json',
@@ -86,7 +95,7 @@ http.interceptors.response.use(
 export const testConnection = async (): Promise<boolean> => {
   try {
     console.log('测试网络连接到后端...')
-    const response = await axios.get('http://127.0.0.1:8000/', {
+    const response = await axios.get(`${API_BASE_URL}/`, {
       timeout: 5000,
       proxy: false
     })

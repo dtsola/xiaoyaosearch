@@ -76,6 +76,10 @@ class ChunkConfig(BaseSettings):
     chunk_search_multiplier: float = Field(default=3.0, description="分块搜索结果倍数")
     chunk_min_relevance: float = Field(default=0.3, description="最小分块相关性阈值")
 
+    # 流式构建配置
+    embedding_batch_size: int = Field(default=256, description="单次向量推理的批大小（GPU 建议 256，CPU 建议 32）")
+    pipeline_batch_chunks: int = Field(default=4096, description="流式构建时每批处理的分块数上限")
+
     class Config:
         env_prefix = "CHUNK_"
 

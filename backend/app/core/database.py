@@ -3,10 +3,10 @@
 提供SQLite数据库连接和会话管理
 """
 import os
-from sqlalchemy import create_engine, MetaData, text
+from sqlalchemy import create_engine, MetaData, text, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import NullPool
 from typing import Generator
 import logging
 
@@ -19,15 +19,32 @@ DATABASE_PATH = os.getenv("DATABASE_PATH", "../data/database/xiaoyao_search.db")
 os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
 
 # 创建数据库引擎
+# 注意：索引任务在独立线程中执行，必须每个会话使用独立连接（NullPool），
+# 否则多个线程共用 StaticPool 的同一个连接会导致事务错乱。
 engine = create_engine(
     f"sqlite:///{DATABASE_PATH}",
     connect_args={
         "check_same_thread": False,  # SQLite多线程访问
         "timeout": 30  # 查询超时时间
     },
-    poolclass=StaticPool,  # 静态连接池
+    poolclass=NullPool,
     echo=os.getenv("LOG_LEVEL") == "debug"  # 调试模式下打印SQL
 )
+
+
+@event.listens_for(engine, "connect")
+def _set_sqlite_pragma(dbapi_connection, connection_record):
+    """启用 WAL，让索引写入与搜索读取可以并发"""
+    cursor = dbapi_connection.cursor()
+    try:
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.execute("PRAGMA foreign_keys=OFF")
+    except Exception as e:
+        logger.warning(f"设置 SQLite PRAGMA 失败: {e}")
+    finally:
+        cursor.close()
 
 # 创建会话工厂
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

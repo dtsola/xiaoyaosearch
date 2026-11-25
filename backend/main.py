@@ -85,6 +85,29 @@ async def lifespan(app: FastAPI):
         init_database()
         logger.info("数据库初始化完成")
 
+        # 清理上次进程遗留的未完成任务（进程重启后不可能还有协程在跑）
+        try:
+            from datetime import datetime
+            from app.core.database import SessionLocal
+            from app.models.index_job import IndexJobModel
+
+            db = SessionLocal()
+            try:
+                stale_jobs = db.query(IndexJobModel).filter(
+                    IndexJobModel.status.in_(['pending', 'processing'])
+                ).all()
+                for job in stale_jobs:
+                    job.status = 'failed'
+                    job.error_message = '服务重启，任务中断'
+                    job.completed_at = datetime.now()
+                if stale_jobs:
+                    db.commit()
+                    logger.warning(f"已清理 {len(stale_jobs)} 个因服务重启中断的索引任务")
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"清理中断的索引任务失败: {e}")
+
         # ========== 插件系统初始化 ==========
         logger.info("初始化插件系统...")
         try:

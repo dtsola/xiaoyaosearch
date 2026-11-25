@@ -5,6 +5,7 @@
 import os
 import asyncio
 import threading
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header
 from sqlalchemy.orm import Session
@@ -27,6 +28,52 @@ from app.services.file_index_service import FileIndexService, get_file_index_ser
 router = APIRouter(prefix="/api/index", tags=["索引管理"])
 logger = get_logger(__name__)
 settings = get_settings()
+
+
+def _ensure_index_not_running(locale: str) -> None:
+    """检查是否已有索引任务在运行，避免同一任务被重复启动"""
+    try:
+        if get_file_index_service().index_status.get('is_building'):
+            raise ValidationException(i18n.t('index.index_already_running', locale))
+    except ValidationException:
+        raise
+    except Exception as e:
+        logger.warning(f"检查索引运行状态失败: {e}")
+
+
+def _is_stale_pending(job) -> bool:
+    """判断是否为长期未启动的排队任务（线程没能启动时避免永久锁死）"""
+    if job.status != get_enum_value(JobStatus.PENDING):
+        return False
+    if not job.created_at:
+        return False
+    return datetime.now() - job.created_at > timedelta(minutes=10)
+
+
+def run_full_index_task_in_thread(index_id: int, folder_path: str, recursive: bool = True, file_types=None):
+    """同步包装：让 BackgroundTasks 在线程池中执行，避免阻塞事件循环"""
+    try:
+        asyncio.run(run_full_index_task(index_id, folder_path, recursive, file_types))
+    except Exception as e:
+        logger.error(f"完整索引任务线程执行异常: id={index_id}, 错误: {e}")
+
+
+def run_incremental_index_task_in_thread(index_id: int, folder_path: str, recursive: bool = True, file_types=None):
+    """同步包装：让 BackgroundTasks 在线程池中执行，避免阻塞事件循环"""
+    try:
+        asyncio.run(run_incremental_index_task(index_id, folder_path, recursive, file_types))
+    except Exception as e:
+        logger.error(f"增量索引任务线程执行异常: id={index_id}, 错误: {e}")
+
+
+def _reload_search_caches() -> None:
+    """索引完成后刷新搜索服务缓存，让新索引立即生效"""
+    try:
+        from app.services.chunk_search_service import reload_chunk_search_service
+        reload_chunk_search_service()
+        logger.info("搜索服务缓存已刷新")
+    except Exception as e:
+        logger.warning(f"刷新搜索服务缓存失败: {e}")
 
 # 全局文件索引服务实例（单例）
 _file_index_service: Optional[FileIndexService] = None
@@ -85,14 +132,23 @@ async def create_index(
         if not os.path.isdir(request.folder_path):
             raise ValidationException(i18n.t('index.path_not_directory', locale, path=request.folder_path))
 
-        # 检查是否有正在运行的索引任务
+        # 同一时间只允许一个索引任务，避免重复点击创建多个任务
+        _ensure_index_not_running(locale)
+
+        # 查找该路径最近一次任务
         existing_job = db.query(IndexJobModel).filter(
-            IndexJobModel.folder_path == request.folder_path,
-            IndexJobModel.status.in_([get_enum_value(JobStatus.PENDING), get_enum_value(JobStatus.PROCESSING)])
-        ).first()
+            IndexJobModel.folder_path == request.folder_path
+        ).order_by(IndexJobModel.created_at.desc()).first()
+
+        if existing_job and existing_job.status in (
+            get_enum_value(JobStatus.PENDING),
+            get_enum_value(JobStatus.PROCESSING)
+        ) and not _is_stale_pending(existing_job):
+            # 正在排队/运行的任务直接拒绝，不能重置后再启动第二个执行体
+            raise ValidationException(i18n.t('index.index_already_running', locale))
 
         if existing_job:
-            # 如果存在旧任务，需要重置状态和进度
+            # 复用已结束（或长时间未启动）的任务记录，重置状态和进度
             # 这样可以避免显示旧任务的过期进度（如 84% 230/271）
             logger.info(f"发现旧的索引任务，重置状态: id={existing_job.id}")
 
@@ -106,9 +162,9 @@ async def create_index(
             db.commit()
             db.refresh(existing_job)
 
-            # 启动后台任务执行索引
+            # 启动后台任务执行索引（线程池执行，避免阻塞事件循环）
             background_tasks.add_task(
-                run_full_index_task,
+                run_full_index_task_in_thread,
                 existing_job.id,
                 request.folder_path,
                 request.recursive,
@@ -130,9 +186,9 @@ async def create_index(
         db.commit()
         db.refresh(index_job)
 
-        # 添加后台任务
+        # 添加后台任务（线程池执行，避免阻塞事件循环）
         background_tasks.add_task(
-            run_full_index_task,
+            run_full_index_task_in_thread,
             index_job.id,
             request.folder_path,
             request.recursive,
@@ -175,14 +231,22 @@ async def update_index(
         if not os.path.exists(request.folder_path):
             raise ValidationException(i18n.t('index.path_not_exist', locale, path=request.folder_path))
 
-        # 检查是否有正在运行的索引任务
+        # 同一时间只允许一个索引任务
+        _ensure_index_not_running(locale)
+
+        # 查找该路径最近一次任务
         existing_job = db.query(IndexJobModel).filter(
-            IndexJobModel.folder_path == request.folder_path,
-            IndexJobModel.status.in_([get_enum_value(JobStatus.PENDING), get_enum_value(JobStatus.PROCESSING)])
-        ).first()
+            IndexJobModel.folder_path == request.folder_path
+        ).order_by(IndexJobModel.created_at.desc()).first()
+
+        if existing_job and existing_job.status in (
+            get_enum_value(JobStatus.PENDING),
+            get_enum_value(JobStatus.PROCESSING)
+        ) and not _is_stale_pending(existing_job):
+            raise ValidationException(i18n.t('index.index_already_running', locale))
 
         if existing_job:
-            # 如果存在旧任务，需要重置状态和进度
+            # 复用已结束（或长时间未启动）的任务记录，重置状态和进度
             logger.info(f"发现旧的增量索引任务，重置状态: id={existing_job.id}, old_status={existing_job.status}")
 
             # 重置任务状态和进度
@@ -195,9 +259,9 @@ async def update_index(
             db.commit()
             db.refresh(existing_job)
 
-            # 启动后台任务执行索引
+            # 启动后台任务执行索引（线程池执行，避免阻塞事件循环）
             background_tasks.add_task(
-                run_incremental_index_task,
+                run_incremental_index_task_in_thread,
                 existing_job.id,
                 request.folder_path,
                 request.recursive,
@@ -219,9 +283,9 @@ async def update_index(
         db.commit()
         db.refresh(index_job)
 
-        # 添加后台任务
+        # 添加后台任务（线程池执行，避免阻塞事件循环）
         background_tasks.add_task(
-            run_incremental_index_task,
+            run_incremental_index_task_in_thread,
             index_job.id,
             request.folder_path,
             request.recursive,
@@ -783,6 +847,7 @@ async def run_full_index_task(
             index_job.error_count = result.get('failed_files', 0)
             index_job.complete_job()
             task_logger.info(f"完整索引任务完成: id={index_id}, 成功索引 {index_job.processed_files} 个文件")
+            _reload_search_caches()
         else:
             index_job.fail_job(result.get('error', '未知错误'))
             task_logger.error(f"完整索引任务失败: id={index_id}, 错误: {result.get('error')}")
@@ -906,6 +971,7 @@ async def run_incremental_index_task(
             index_job.error_count = 0  # 增量更新通常不会有错误
             index_job.complete_job()
             task_logger.info(f"增量索引任务完成: id={index_id}, 处理 {index_job.processed_files} 个变更文件")
+            _reload_search_caches()
         else:
             index_job.fail_job(result.get('error', '未知错误'))
             task_logger.error(f"增量索引任务失败: id={index_id}, 错误: {result.get('error')}")
@@ -940,6 +1006,9 @@ async def rebuild_all_indexes(
     logger.info("开始全量重建所有索引")
 
     try:
+        # 有任务在跑时禁止清空索引，否则会破坏正在使用的索引
+        _ensure_index_not_running(locale)
+
         # 1. 清空索引
         index_service = get_file_index_service()
         clear_result = index_service.clear_index()
@@ -983,9 +1052,9 @@ async def rebuild_all_indexes(
 
             created_jobs.append(index_job)
 
-            # 5. 添加到后台任务队列（自动排队）
+            # 5. 添加到后台任务队列（线程池执行，避免阻塞事件循环）
             background_tasks.add_task(
-                run_full_index_task,
+                run_full_index_task_in_thread,
                 index_job.id,
                 folder_path,
                 recursive=True,

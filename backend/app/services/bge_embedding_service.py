@@ -160,16 +160,30 @@ class BGEEmbeddingService(BaseAIModel):
             )
 
             # 加载模型
-            self.model = AutoModel.from_pretrained(
-                model_name,
-                cache_dir=cache_dir,
-                trust_remote_code=True,
-                torch_dtype=torch.float16 if self.device.type == "cuda" else torch.float32
-            )
+            load_kwargs = {
+                "cache_dir": cache_dir,
+                "trust_remote_code": True,
+                "torch_dtype": torch.float16 if self.device.type == "cuda" else torch.float32
+            }
+            try:
+                # transformers 4.36+ 支持指定注意力实现，sdpa 在 GPU 上更快
+                self.model = AutoModel.from_pretrained(model_name, attn_implementation="sdpa", **load_kwargs)
+            except Exception as attn_error:
+                logger.debug(f"当前模型/版本不支持 attn_implementation，回退默认实现: {attn_error}")
+                self.model = AutoModel.from_pretrained(model_name, **load_kwargs)
 
             # 移动模型到指定设备
             self.model.to(self.device)
             self.model.eval()  # 设置为评估模式
+
+            # GPU 推理优化：TF32 + cuDNN 自动调优
+            if self.device.type == "cuda":
+                try:
+                    torch.backends.cuda.matmul.allow_tf32 = True
+                    torch.backends.cudnn.allow_tf32 = True
+                    torch.backends.cudnn.benchmark = True
+                except Exception as opt_error:
+                    logger.debug(f"设置 GPU 推理优化参数失败: {opt_error}")
 
     async def unload_model(self) -> bool:
         """
@@ -243,7 +257,7 @@ class BGEEmbeddingService(BaseAIModel):
             show_progress = kwargs.get("show_progress", False)
             normalize_embeddings = kwargs.get("normalize_embeddings", self.config.get("normalize_embeddings", True))
 
-            logger.info(f"开始文本嵌入预测，文本数量: {len(texts)}，批大小: {batch_size}")
+            logger.debug(f"开始文本嵌入预测，文本数量: {len(texts)}，批大小: {batch_size}")
 
             # 在线程池中执行嵌入计算
             loop = asyncio.get_event_loop()
@@ -252,7 +266,7 @@ class BGEEmbeddingService(BaseAIModel):
             )
 
             self.record_usage()
-            logger.info(f"文本嵌入预测完成，输出形状: {embeddings.shape}")
+            logger.debug(f"文本嵌入预测完成，输出形状: {embeddings.shape}")
             return embeddings
 
         except Exception as e:
@@ -289,9 +303,9 @@ class BGEEmbeddingService(BaseAIModel):
         # BGE-M3实际输出1024维向量，更新验证逻辑
         embedding_dim = embeddings.shape[1]
         if embedding_dim == 1024:
-            logger.info(f"✅ BGE-M3正确生成 {embedding_dim} 维嵌入向量")
+            logger.debug(f"✅ BGE-M3正确生成 {embedding_dim} 维嵌入向量")
         elif embedding_dim == 768:
-            logger.info(f"✅ BGE-M3生成 {embedding_dim} 维嵌入向量（标准模式）")
+            logger.debug(f"✅ BGE-M3生成 {embedding_dim} 维嵌入向量（标准模式）")
         else:
             logger.warning(f"⚠️ BGE-M3嵌入维度异常: {embedding_dim} (期望1024维)")
 
@@ -328,7 +342,7 @@ class BGEEmbeddingService(BaseAIModel):
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
             # 推理
-            with torch.no_grad():
+            with torch.inference_mode():
                 outputs = self.model(**inputs)
 
                 # 获取CLS向量或平均池化

@@ -281,18 +281,12 @@ class AIModelService:
         if isinstance(model_type, str):
             model_type = ModelType(model_type)
 
-        # 记录调试信息
+        # 记录调试信息（避免在批量嵌入时重复格式化整个模型映射）
         model_type_str = get_enum_value(model_type)
-        logger.debug(f"获取模型类型: {model_type_str}")
-        logger.debug(f"当前默认模型映射: {self.default_models}")
-
         model_id = self.default_models.get(model_type_str)
-        logger.debug(f"找到模型ID: {model_id}")
 
         if model_id:
-            model = self.model_manager.get_model(model_id)
-            logger.debug(f"获取到模型: {model}")
-            return model
+            return self.model_manager.get_model(model_id)
 
         logger.warning(f"未找到模型类型 {model_type_str} 的默认模型")
         return None
@@ -312,11 +306,11 @@ class AIModelService:
         if not model:
             raise AIModelException("文本嵌入模型不可用")
 
-        # 添加日志显示当前使用的嵌入模型信息
+        # 添加日志显示当前使用的嵌入模型信息（DEBUG 级，避免批量嵌入时刷屏）
         provider = getattr(model, 'provider', 'unknown')
         model_name = getattr(model, 'model_name', 'unknown')
         endpoint = model.config.get('endpoint', 'N/A') if hasattr(model, 'config') else 'N/A'
-        logger.info(f"[嵌入模型] provider={provider}, model={model_name}, endpoint={endpoint}")
+        logger.debug(f"[嵌入模型] provider={provider}, model={model_name}, endpoint={endpoint}")
 
         return await model.predict(texts, **kwargs)
 
@@ -379,6 +373,45 @@ class AIModelService:
                     all_embeddings.append(dummy_embedding)
 
         return all_embeddings
+
+    async def batch_text_embedding_array(
+        self,
+        texts: List[str],
+        batch_size: int = 256,
+        **kwargs
+    ) -> np.ndarray:
+        """批量文本嵌入（返回 float32 数组版本）
+
+        与 batch_text_embedding 的区别：
+        - 直接返回 np.ndarray，避免构造数亿个 Python float 对象（内存可降低 80% 以上）
+        - 默认批大小更大，能充分利用 GPU
+
+        Args:
+            texts: 文本列表
+            batch_size: 单次推理批大小
+            **kwargs: 透传给模型的参数
+
+        Returns:
+            np.ndarray: 形状为 (n, dim) 的 float32 数组
+        """
+        if isinstance(texts, str):
+            texts = [texts]
+
+        if not texts:
+            return np.zeros((0, 1024), dtype=np.float32)
+
+        model = await self.get_model(ModelType.EMBEDDING)
+        if not model:
+            raise AIModelException("文本嵌入模型不可用")
+
+        arrays = []
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i:i + batch_size]
+            # 显式传入 batch_size，避免模型内部再次按默认的 32 拆分
+            batch_embeddings = await model.predict(batch_texts, batch_size=batch_size, **kwargs)
+            arrays.append(np.asarray(batch_embeddings, dtype=np.float32))
+
+        return np.vstack(arrays) if arrays else np.zeros((0, 1024), dtype=np.float32)
 
     async def speech_to_text(self, audio_input: Any, **kwargs) -> Dict[str, Any]:
         """

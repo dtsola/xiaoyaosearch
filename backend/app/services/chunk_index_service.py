@@ -22,6 +22,12 @@ from whoosh import index
 from whoosh import fields
 from app.services.ai_model_manager import ai_model_service
 
+
+class IndexBuildStopped(Exception):
+    """索引构建被用户停止（已完成的分批数据已落盘）"""
+    pass
+
+
 class ChunkIndexService:
     """分块索引服务
 
@@ -82,14 +88,26 @@ class ChunkIndexService:
         os.makedirs(os.path.dirname(self.chunk_faiss_index_path), exist_ok=True)
         os.makedirs(self.chunk_whoosh_index_path, exist_ok=True)
 
-    async def build_chunk_indexes(self, documents: List[Dict[str, Any]]) -> bool:
-        """构建分块索引
+    async def build_chunk_indexes(
+        self,
+        documents: List[Dict[str, Any]],
+        progress_callback: Optional[callable] = None,
+        should_stop: Optional[callable] = None,
+        rebuild: bool = False
+    ) -> bool:
+        """构建分块索引（流式分批）
 
         Args:
             documents: 文档列表（所有文档都将进行分块处理）
+            progress_callback: 进度回调 callback(stage: str, percent: float)
+            should_stop: 停止信号检查函数，返回 True 时中断
+            rebuild: True 时重建 Faiss 向量索引；False 时追加到现有索引
 
         Returns:
             bool: 构建是否成功
+
+        Raises:
+            IndexBuildStopped: 用户停止任务（已完成批次的数据已落盘）
         """
         try:
             logger.info(f"开始构建分块索引，文档数量: {len(documents)}")
@@ -108,7 +126,12 @@ class ChunkIndexService:
 
             # 2. 处理分块文档
             if chunked_docs:
-                success = await self._process_chunked_documents(chunked_docs)
+                success = await self._process_chunked_documents(
+                    chunked_docs,
+                    progress_callback=progress_callback,
+                    should_stop=should_stop,
+                    rebuild=rebuild
+                )
                 if not success:
                     logger.error("分块文档处理失败")
                     return False
@@ -135,6 +158,9 @@ class ChunkIndexService:
 
             return True
 
+        except IndexBuildStopped:
+            # 停止信号需要向上传递，交由任务层标记为“已停止”
+            raise
         except Exception as e:
             logger.error(f"构建分块索引失败: {e}")
             return False
@@ -162,87 +188,474 @@ class ChunkIndexService:
         # 所有达到分块阈值的文件都进行分块处理
         return True
 
-    async def _process_chunked_documents(self, documents: List[Dict[str, Any]]) -> bool:
-        """处理需要分块的文档
+    async def _process_chunked_documents(
+        self,
+        documents: List[Dict[str, Any]],
+        progress_callback: Optional[callable] = None,
+        should_stop: Optional[callable] = None,
+        rebuild: bool = False
+    ) -> bool:
+        """流式处理需要分块的文档
+
+        处理流程（按批推进，内存占用与总块数无关）：
+        1. 分块
+        2. 批量生成向量（float32 ndarray）
+        3. 批量写入数据库，拿到真实 chunk_id
+        4. 追加到 Faiss 向量索引
+        5. 追加到 Whoosh 全文索引，同时清理同一文件的旧文档
 
         Args:
             documents: 需要分块的文档列表
+            progress_callback: 进度回调 callback(stage: str, percent: float)
+            should_stop: 停止信号检查函数
+            rebuild: True 时重建 Faiss 索引，False 时追加
 
         Returns:
             bool: 处理是否成功
+
+        Raises:
+            IndexBuildStopped: 用户停止任务
         """
+        from app.core.config import get_settings
+        settings = get_settings()
+
+        embedding_batch_size = max(32, int(getattr(settings.chunk, 'embedding_batch_size', 256)))
+        # CPU 环境下大 batch 收益低且占用内存，限制为 32
         try:
-            logger.info(f"开始处理 {len(documents)} 个需要分块的文档")
+            import torch
+            if not torch.cuda.is_available():
+                embedding_batch_size = min(embedding_batch_size, 32)
+        except Exception:
+            embedding_batch_size = min(embedding_batch_size, 32)
 
-            # 1. 对每个文档进行分块
-            all_chunks = []
-            for doc in documents:
-                chunks = await self._chunk_document(doc)
-                all_chunks.extend(chunks)
+        pipeline_batch_chunks = max(256, int(getattr(settings.chunk, 'pipeline_batch_chunks', 4096)))
+        chunk_size = max(1, int(settings.chunk.default_chunk_size))
 
-            logger.info(f"分块完成，共生成 {len(all_chunks)} 个分块")
+        # 预估总块数，仅用于进度展示
+        estimated_total = 0
+        for doc in documents:
+            content = doc.get('content') or ''
+            if content:
+                estimated_total += max(1, len(content) // chunk_size)
+        estimated_total = max(estimated_total, 1)
 
-            # 2. 使用雪花算法生成唯一索引ID
-            faiss_index_ids = []
-            whoosh_doc_ids = []
+        logger.info(
+            f"开始处理 {len(documents)} 个需要分块的文档（流式分批，"
+            f"预计 {estimated_total} 个分块，每批约 {pipeline_batch_chunks} 块）"
+        )
 
-            if all_chunks:
-                logger.info("使用雪花算法生成唯一索引ID...")
+        # 准备 Faiss 索引（追加模式会校验元数据一致性）
+        faiss_index = None
+        faiss_ids_all: List[int] = []
+        chunk_ids_all: List[int] = []
+        if self.use_ai_models and not rebuild:
+            faiss_index, faiss_ids_all, chunk_ids_all = self._load_faiss_for_append()
 
-                # 为每个分块生成唯一的索引ID
-                for i, chunk in enumerate(all_chunks):
-                    # Faiss索引ID（不同机器ID避免重复）
-                    faiss_id = generate_snowflake_id(machine_id=1 + i % 1024)
-                    faiss_index_ids.append(faiss_id)
+        # 准备 Whoosh 索引（每批单独提交）
+        whoosh_ix = self._open_whoosh_for_write()
 
-                    # Whoosh文档ID（不同机器ID避免重复）
-                    whoosh_id = str(generate_snowflake_id(machine_id=1 + (i + 1000) % 1024))
-                    whoosh_doc_ids.append(whoosh_id)
+        cleared_file_ids = set()
+        processed_chunks = 0
+        total_saved_chunks = 0
+        batches = self._make_document_batches(documents, pipeline_batch_chunks, chunk_size)
 
-                logger.info(f"生成Faiss索引ID: {faiss_index_ids}")
-                logger.info(f"生成Whoosh文档ID: {whoosh_doc_ids}")
+        try:
+            for batch_no, doc_batch in enumerate(batches, 1):
+                if should_stop and should_stop():
+                    raise IndexBuildStopped("索引任务已被停止")
 
-            # 3. 构建分块Faiss向量索引（使用雪花ID）
-            if self.use_ai_models and all_chunks:
-                logger.info(f"开始构建分块Faiss索引，数量: {len(all_chunks)}")
-                faiss_success = await self._build_chunk_faiss_index_with_ids(all_chunks, faiss_index_ids)
-                if not faiss_success:
-                    logger.warning("分块Faiss索引构建失败，但继续构建其他索引")
-                    faiss_index_ids = []
-            else:
-                logger.info("跳过分块Faiss索引构建（条件不满足）")
-                faiss_success = True
+                # 1. 分块
+                chunks: List[Dict[str, Any]] = []
+                for doc in doc_batch:
+                    chunks.extend(await self._chunk_document(doc))
 
-            # 4. 构建分块Whoosh全文索引（使用雪花ID）
-            if all_chunks:
-                logger.info(f"开始构建分块Whoosh全文索引，分块数量: {len(all_chunks)}")
-                whoosh_success = await self._build_chunk_whoosh_index_with_ids(all_chunks, whoosh_doc_ids)
-                if not whoosh_success:
-                    logger.warning("分块Whoosh索引构建失败，但继续构建其他索引")
-                    whoosh_doc_ids = []
-            else:
-                logger.info("跳过分块Whoosh索引构建（条件不满足）")
-                whoosh_success = True
+                if not chunks:
+                    continue
 
-            # 5. 保存分块数据到数据库
-            saved_chunk_ids = await self._save_chunks_to_database(all_chunks, faiss_index_ids, whoosh_doc_ids)
-            if not saved_chunk_ids:
-                logger.warning("分块数据保存失败，但索引构建已完成")
-                db_success = False
-            else:
-                db_success = True
-                # 6. 更新索引元数据中的chunk_ids
-                if self.use_ai_models and faiss_success:
-                    await self._update_faiss_metadata_chunk_ids(saved_chunk_ids)
-                # 7. 更新Whoosh索引中的chunk_ids
-                if whoosh_success:
-                    await self._update_whoosh_chunk_ids(all_chunks, saved_chunk_ids)
+                # 过滤掉没有有效 file_id 的分块（文档未成功入库时可能出现）
+                valid_chunks = []
+                for chunk in chunks:
+                    try:
+                        int(chunk.get('file_id'))
+                        valid_chunks.append(chunk)
+                    except (TypeError, ValueError):
+                        logger.warning(f"跳过分块：缺少有效的 file_id ({chunk.get('file_name', 'unknown')})")
+                chunks = valid_chunks
+                if not chunks:
+                    continue
 
-            return faiss_success and whoosh_success and db_success
+                # 2. 生成索引ID（雪花算法）
+                faiss_ids = [generate_snowflake_id(machine_id=1 + i % 1024) for i in range(len(chunks))]
+                whoosh_ids = [str(generate_snowflake_id(machine_id=1 + (i + 1000) % 1024)) for i in range(len(chunks))]
+
+                # 3. 批量生成向量
+                def _embed_progress(current: int, total: int):
+                    if progress_callback and total > 0:
+                        overall = 72.0 + 16.0 * (processed_chunks + current) / estimated_total
+                        progress_callback("生成向量", min(overall, 88.0))
+
+                embeddings = await self._generate_chunk_embeddings_optimized(
+                    chunks,
+                    batch_size=embedding_batch_size,
+                    should_stop=should_stop,
+                    progress_callback=_embed_progress
+                )
+
+                if should_stop and should_stop():
+                    raise IndexBuildStopped("索引任务已被停止")
+
+                # 4. 先写数据库（清理同一文件的旧分块），拿到真实 chunk_id
+                file_ids = {int(c['file_id']) for c in chunks if c.get('file_id') is not None}
+                to_clear = [fid for fid in file_ids if fid not in cleared_file_ids]
+                saved_ids = self._save_chunks_bulk(chunks, faiss_ids, whoosh_ids, to_clear)
+                cleared_file_ids.update(to_clear)
+
+                if len(saved_ids) != len(chunks):
+                    logger.warning(f"分块入库数量不匹配: 期望 {len(chunks)}, 实际 {len(saved_ids)}")
+
+                # 5. 追加向量到 Faiss（只有分块与ID数量一致时才写入，避免元数据错位）
+                if (
+                    self.use_ai_models
+                    and embeddings is not None
+                    and len(embeddings) == len(chunks)
+                    and len(saved_ids) == len(chunks)
+                ):
+                    if faiss_index is None:
+                        faiss_index = faiss.IndexFlatIP(int(embeddings.shape[1]))
+                    faiss_index.add(np.ascontiguousarray(embeddings, dtype=np.float32))
+                    faiss_ids_all.extend(faiss_ids)
+                    chunk_ids_all.extend(saved_ids)
+
+                # 6. 追加到 Whoosh，先删除这些文件的旧文档
+                self._add_chunks_to_whoosh(whoosh_ix, chunks, whoosh_ids, to_clear, saved_ids)
+
+                total_saved_chunks += len(saved_ids)
+                processed_chunks += len(chunks)
+                if progress_callback:
+                    overall = 72.0 + 16.0 * min(processed_chunks / estimated_total, 1.0)
+                    progress_callback("分块与向量化", min(overall, 88.0))
+
+                logger.info(
+                    f"分块批次 {batch_no}/{len(batches)} 完成: 本批 {len(chunks)} 块，"
+                    f"累计 {processed_chunks}/{estimated_total}"
+                )
+
+            # 7. 落盘 Faiss 索引
+            if progress_callback:
+                progress_callback("写入索引文件", 90.0)
+
+            if self.use_ai_models:
+                self._write_faiss_index(faiss_index, faiss_ids_all, chunk_ids_all)
+
+            if progress_callback:
+                progress_callback("索引构建完成", 99.0)
+
+            self.index_stats['total_chunks_created'] = (
+                len(chunk_ids_all) if self.use_ai_models else total_saved_chunks
+            )
+            return True
+
+        except IndexBuildStopped:
+            # 已完成批次的数据已经落盘，保证索引与数据库一致
+            try:
+                if self.use_ai_models:
+                    self._write_faiss_index(faiss_index, faiss_ids_all, chunk_ids_all)
+            except Exception as write_error:
+                logger.error(f"停止时写入 Faiss 索引失败: {write_error}")
+            raise
 
         except Exception as e:
             logger.error(f"处理分块文档失败: {e}")
+            import traceback
+            logger.error(f"详细错误信息: {traceback.format_exc()}")
             return False
+
+    def _make_document_batches(
+        self,
+        documents: List[Dict[str, Any]],
+        max_chunks_per_batch: int,
+        chunk_size: int
+    ) -> List[List[Dict[str, Any]]]:
+        """按预估块数把文档切成若干批，单个超大文档独立成批"""
+        batches: List[List[Dict[str, Any]]] = []
+        current: List[Dict[str, Any]] = []
+        current_chunks = 0
+
+        for doc in documents:
+            content = doc.get('content') or ''
+            estimated = max(1, len(content) // chunk_size) if content else 0
+
+            if current and current_chunks + estimated > max_chunks_per_batch:
+                batches.append(current)
+                current = []
+                current_chunks = 0
+
+            current.append(doc)
+            current_chunks += estimated
+
+            if current_chunks >= max_chunks_per_batch:
+                batches.append(current)
+                current = []
+                current_chunks = 0
+
+        if current:
+            batches.append(current)
+
+        return batches
+
+    def _load_faiss_for_append(self):
+        """加载已有 Faiss 索引用于追加
+
+        Returns:
+            tuple: (index, faiss_ids, chunk_ids)；元数据不一致时 index 为 None（改为重建）
+        """
+        index = None
+        metadata = {}
+
+        if os.path.exists(self.chunk_faiss_index_path):
+            try:
+                index = faiss.read_index(self.chunk_faiss_index_path)
+                metadata_path = self.chunk_faiss_index_path.replace('.faiss', '_metadata.pkl')
+                if os.path.exists(metadata_path):
+                    with open(metadata_path, 'rb') as f:
+                        metadata = pickle.load(f)
+            except Exception as e:
+                logger.warning(f"加载已有分块Faiss索引失败，将新建索引: {e}")
+                index = None
+                metadata = {}
+
+        faiss_ids = list(metadata.get('pregenerated_snowflake_ids', []))
+        chunk_ids = list(metadata.get('chunk_ids', []))
+
+        # 历史数据可能只写了索引没写 chunk_ids（例如任务中途被强杀），此时追加会导致映射错位
+        if index is not None and len(chunk_ids) != index.ntotal:
+            logger.warning(
+                f"Faiss索引行数({index.ntotal})与元数据chunk_ids({len(chunk_ids)})不一致，改为重建索引"
+            )
+            index = None
+            faiss_ids = []
+            chunk_ids = []
+
+        return index, faiss_ids, chunk_ids
+
+    def _write_faiss_index(self, index, faiss_ids: List[int], chunk_ids: List[int]) -> None:
+        """原子写入 Faiss 索引及元数据"""
+        if index is None:
+            return
+
+        index_dir = os.path.dirname(self.chunk_faiss_index_path)
+        if index_dir:
+            os.makedirs(index_dir, exist_ok=True)
+
+        # 先写临时文件再替换，避免中途失败破坏旧索引
+        tmp_path = self.chunk_faiss_index_path + '.tmp'
+        faiss.write_index(index, tmp_path)
+        os.replace(tmp_path, self.chunk_faiss_index_path)
+
+        metadata = {
+            'index_type': 'IndexFlatIP',
+            'dimension': int(index.d),
+            'total_chunks': int(index.ntotal),
+            'created_at': datetime.now().isoformat(),
+            'pregenerated_snowflake_ids': faiss_ids,
+            'chunk_ids': chunk_ids,
+            'embedding_batch_size': self.index_stats.get('embedding_batch_size')
+        }
+        metadata_path = self.chunk_faiss_index_path.replace('.faiss', '_metadata.pkl')
+        tmp_meta_path = metadata_path + '.tmp'
+        with open(tmp_meta_path, 'wb') as f:
+            pickle.dump(metadata, f)
+        os.replace(tmp_meta_path, metadata_path)
+
+        logger.info(f"分块Faiss索引写入完成: {index.ntotal} 条向量, {len(chunk_ids)} 个 chunk_id")
+
+    def _open_whoosh_for_write(self):
+        """打开（或创建）分块 Whoosh 索引"""
+        from whoosh import index as whoosh_index
+
+        os.makedirs(self.chunk_whoosh_index_path, exist_ok=True)
+        if whoosh_index.exists_in(self.chunk_whoosh_index_path):
+            return whoosh_index.open_dir(self.chunk_whoosh_index_path)
+        return whoosh_index.create_in(self.chunk_whoosh_index_path, self._chunk_whoosh_schema())
+
+    def _chunk_whoosh_schema(self):
+        """分块 Whoosh 索引的字段定义"""
+        from whoosh import fields
+        from whoosh.analysis import StandardAnalyzer
+
+        analyzer = StandardAnalyzer()
+        return fields.Schema(
+            id=fields.ID(stored=True, unique=True),
+            chunk_id=fields.ID(stored=True),
+            file_id=fields.NUMERIC(stored=True, numtype=int),
+            content=fields.TEXT(analyzer=analyzer, stored=True, phrase=True),
+            file_name=fields.TEXT(analyzer=analyzer, stored=True),
+            file_path=fields.ID(stored=True),
+            file_type=fields.ID(stored=True),
+            file_size=fields.NUMERIC(stored=True, sortable=True),
+            chunk_index=fields.NUMERIC(stored=True, numtype=int),
+            total_chunks=fields.NUMERIC(stored=True, numtype=int),
+            keywords=fields.KEYWORD(stored=True, commas=True),
+            embedding=fields.TEXT(stored=True),
+            modified_time=fields.ID(stored=True, sortable=True),
+            created_at=fields.ID(stored=True, sortable=True),
+            content_stored=fields.STORED(),
+            start_position=fields.NUMERIC(stored=True, numtype=int),
+            end_position=fields.NUMERIC(stored=True, numtype=int),
+            content_length=fields.NUMERIC(stored=True, numtype=int),
+            title=fields.TEXT(analyzer=analyzer, stored=True),
+            source_type=fields.ID(stored=True),
+            source_url=fields.ID(stored=True)
+        )
+
+    def _build_whoosh_doc(self, chunk: Dict[str, Any], doc_id: str) -> Dict[str, Any]:
+        """构造 Whoosh 文档"""
+        modified_time = chunk.get('modified_time', datetime.now())
+        created_at = chunk.get('created_at', datetime.now())
+        modified_timestamp = int(modified_time.timestamp()) if isinstance(modified_time, datetime) else int(float(modified_time))
+        created_timestamp = int(created_at.timestamp()) if isinstance(created_at, datetime) else int(float(created_at))
+
+        return {
+            'id': doc_id,
+            'chunk_id': chunk.get('chunk_id', ''),
+            'file_id': chunk.get('file_id', 0),
+            'content': chunk.get('content', ''),
+            'content_stored': chunk.get('content', ''),
+            'file_name': chunk.get('file_name', ''),
+            'file_path': chunk.get('file_path', ''),
+            'file_type': chunk.get('file_type', ''),
+            'file_size': chunk.get('file_size', 0),
+            'chunk_index': chunk.get('chunk_index', 0),
+            'start_position': chunk.get('start_position', 0),
+            'end_position': chunk.get('end_position', 0),
+            'content_length': chunk.get('content_length', len(chunk.get('content', ''))),
+            'total_chunks': chunk.get('total_chunks', 1),
+            'keywords': ' '.join(chunk.get('keywords', [])),
+            'embedding': str(chunk.get('embedding', [])),
+            'modified_time': str(modified_timestamp),
+            'created_at': str(created_timestamp),
+            'title': chunk.get('file_name', ''),
+            'source_type': chunk.get('source_type'),
+            'source_url': chunk.get('source_url')
+        }
+
+    def _add_chunks_to_whoosh(
+        self,
+        ix,
+        chunks: List[Dict[str, Any]],
+        whoosh_ids: List[str],
+        clear_file_ids: Optional[List[int]] = None,
+        saved_chunk_ids: Optional[List[int]] = None
+    ) -> None:
+        """批量追加分块到 Whoosh，并删除同文件的旧文档
+
+        按 file_id 删除可以覆盖历史遗留的孤儿文档（例如上次任务被强杀时只写入了索引未写数据库）。
+        """
+        from whoosh.writing import AsyncWriter
+
+        writer = AsyncWriter(ix)
+
+        for file_id in (clear_file_ids or []):
+            try:
+                writer.delete_by_term('file_id', int(file_id))
+            except Exception as e:
+                logger.debug(f"删除文件 {file_id} 的旧Whoosh文档失败: {e}")
+
+        for i, (chunk, doc_id) in enumerate(zip(chunks, whoosh_ids)):
+            doc = self._build_whoosh_doc(chunk, doc_id)
+            if saved_chunk_ids and i < len(saved_chunk_ids):
+                doc['chunk_id'] = str(saved_chunk_ids[i])
+            writer.add_document(**doc)
+
+        writer.commit()
+
+    def _save_chunks_bulk(
+        self,
+        chunks: List[Dict[str, Any]],
+        faiss_ids: List[int],
+        whoosh_ids: List[str],
+        clear_file_ids: Optional[List[int]] = None
+    ):
+        """批量保存分块到数据库
+
+        Args:
+            chunks: 分块列表
+            faiss_ids: Faiss 索引ID列表
+            whoosh_ids: Whoosh 文档ID列表
+            clear_file_ids: 需要先清理旧分块的文件ID列表（每个文件只需清理一次）
+
+        Returns:
+            List[int]: 按 chunks 顺序排列的数据库ID列表
+        """
+        from app.core.database import SessionLocal
+        from app.models.file_chunk import FileChunkModel
+
+        db = SessionLocal()
+        try:
+            # 1. 清理同一文件的旧分块
+            if clear_file_ids:
+                ids = list(clear_file_ids)
+                for i in range(0, len(ids), 400):
+                    subset = ids[i:i + 400]
+                    db.query(FileChunkModel).filter(
+                        FileChunkModel.file_id.in_(subset)
+                    ).delete(synchronize_session=False)
+                db.commit()
+
+            # 2. 批量插入
+            now = datetime.now()
+            mappings = []
+            for i, chunk in enumerate(chunks):
+                mappings.append({
+                    'file_id': int(chunk['file_id']),
+                    'chunk_index': int(chunk['chunk_index']),
+                    'content': chunk['content'],
+                    'content_length': chunk.get('content_length', len(chunk['content'])),
+                    'start_position': int(chunk.get('start_position', 0)),
+                    'end_position': int(chunk.get('end_position', 0)),
+                    'faiss_index_id': faiss_ids[i] if i < len(faiss_ids) else None,
+                    'whoosh_doc_id': whoosh_ids[i] if i < len(whoosh_ids) else None,
+                    'is_indexed': True,
+                    'index_status': 'completed',
+                    'created_at': now,
+                    'indexed_at': now
+                })
+
+            for i in range(0, len(mappings), 1000):
+                db.bulk_insert_mappings(FileChunkModel, mappings[i:i + 1000])
+                db.commit()
+
+            # 3. 回查主键，按 chunks 顺序返回
+            file_ids = sorted({int(c['file_id']) for c in chunks})
+            id_map = {}
+            for i in range(0, len(file_ids), 400):
+                subset = file_ids[i:i + 400]
+                rows = db.query(
+                    FileChunkModel.id,
+                    FileChunkModel.file_id,
+                    FileChunkModel.chunk_index
+                ).filter(FileChunkModel.file_id.in_(subset)).all()
+                for row in rows:
+                    id_map[(int(row[1]), int(row[2]))] = int(row[0])
+
+            saved_ids = []
+            missing = 0
+            for chunk in chunks:
+                key = (int(chunk['file_id']), int(chunk['chunk_index']))
+                chunk_id = id_map.get(key)
+                if chunk_id is None:
+                    missing += 1
+                else:
+                    saved_ids.append(chunk_id)
+
+            if missing:
+                logger.warning(f"有 {missing} 个分块回查数据库主键失败")
+
+            logger.info(f"批量保存 {len(chunks)} 个分块到数据库完成，回查 {len(saved_ids)} 个ID")
+            return saved_ids
+
+        finally:
+            db.close()
 
     async def _chunk_document(self, document: Dict[str, Any]) -> List[Dict[str, Any]]:
         """对单个文档进行分块
@@ -300,12 +713,12 @@ class ChunkIndexService:
 
             # 1. 批量生成向量嵌入（优化版）
             embeddings = await self._generate_chunk_embeddings_optimized(chunks)
-            if not embeddings:
+            if embeddings is None or len(embeddings) == 0:
                 logger.error("向量嵌入生成失败")
                 return False
 
             # 2. 创建优化的Faiss索引
-            dimension = len(embeddings[0])
+            dimension = int(embeddings.shape[1])
 
             # 根据数据量选择最佳索引类型
             if len(chunks) < 10000:
@@ -362,116 +775,115 @@ class ChunkIndexService:
             logger.error(f"详细错误信息: {traceback.format_exc()}")
             return False
 
-    async def _generate_chunk_embeddings_optimized(self, chunks: List[Dict[str, Any]]) -> List[List[float]]:
-        """优化的批量生成分块向量嵌入
+    async def _generate_chunk_embeddings_optimized(
+        self,
+        chunks: List[Dict[str, Any]],
+        batch_size: int = 256,
+        should_stop: Optional[callable] = None,
+        progress_callback: Optional[callable] = None
+    ) -> np.ndarray:
+        """优化的批量生成分块向量嵌入（返回 float32 数组）
+
+        与旧实现相比：
+        - 返回 np.ndarray，避免构造数亿个 Python float 对象
+        - 单次推理批大小可配置（GPU 建议 256 以上）
+        - 支持停止信号与进度回调
 
         Args:
             chunks: 分块列表
+            batch_size: 单次推理的批大小
+            should_stop: 停止信号检查函数
+            progress_callback: 进度回调 callback(processed, total)
 
         Returns:
-            List[List[float]]: 向量嵌入列表
+            np.ndarray: 形状为 (len(chunks), dim) 的 float32 数组
+
+        Raises:
+            IndexBuildStopped: 用户停止任务
         """
         try:
             if not chunks:
-                return []
+                return np.zeros((0, 1024), dtype=np.float32)
 
-            # 动态调整批次大小
             total_chunks = len(chunks)
-            base_batch_size = self.index_stats['embedding_batch_size']
+            batch_size = max(8, int(batch_size))
 
-            # 根据内容长度和系统资源调整批次大小
-            avg_content_length = sum(len(chunk.get('content', '')) for chunk in chunks) / total_chunks
-
-            if avg_content_length > 1000:  # 长内容
-                batch_size = max(base_batch_size // 2, 8)
-            elif avg_content_length < 200:  # 短内容
-                batch_size = min(base_batch_size * 2, 64)
-            else:
-                batch_size = base_batch_size
-
-            logger.info(f"开始优化批量生成 {total_chunks} 个分块的向量嵌入，批次大小: {batch_size}, 平均内容长度: {avg_content_length:.1f}")
-
-            embeddings = []
-            failed_chunks = []
-
-            # 预处理：过滤和验证内容
-            valid_chunks = []
-            valid_indices = []
+            # 过滤过短内容，记录原始位置以便对齐
+            valid_texts: List[str] = []
+            valid_indices: List[int] = []
 
             for i, chunk in enumerate(chunks):
-                content = chunk.get('content', '').strip()
-                if content and len(content) > 10:  # 过滤太短的内容
-                    valid_chunks.append(chunk)
+                content = (chunk.get('content') or '').strip()
+                if content and len(content) > 10:
+                    valid_texts.append(content)
                     valid_indices.append(i)
-                else:
-                    failed_chunks.append((i, chunk))
-                    logger.warning(f"跳过无效分块 {i}: 内容太短或为空")
 
-            # 批量处理
-            total_batches = (len(valid_chunks) + batch_size - 1) // batch_size
+            failed_count = total_chunks - len(valid_texts)
+            if failed_count:
+                logger.warning(f"有 {failed_count} 个分块内容过短，使用零向量占位")
 
-            for batch_idx in range(total_batches):
-                start_idx = batch_idx * batch_size
-                end_idx = min(start_idx + batch_size, len(valid_chunks))
+            logger.info(
+                f"开始批量生成 {len(valid_texts)} 个分块的向量嵌入，"
+                f"批大小: {batch_size}, 分块总数: {total_chunks}"
+            )
 
-                batch_chunks = valid_chunks[start_idx:end_idx]
-                batch_texts = [chunk['content'] for chunk in batch_chunks]
+            embeddings = None
+            processed = 0
+            total = len(valid_texts)
+
+            for start in range(0, total, batch_size):
+                if should_stop and should_stop():
+                    raise IndexBuildStopped("索引任务已被停止")
+
+                end = min(start + batch_size, total)
+                batch_texts = valid_texts[start:end]
 
                 try:
-                    # 批量生成嵌入
-                    batch_embeddings = await ai_model_service.batch_text_embedding(
+                    batch_embeddings = await ai_model_service.batch_text_embedding_array(
                         batch_texts,
+                        batch_size=batch_size,
                         normalize_embeddings=True
                     )
-
-                    if len(batch_embeddings) != len(batch_texts):
-                        logger.warning(f"批次 {batch_idx + 1}/{total_batches} 嵌入数量不匹配: 期望{len(batch_texts)}, 实际{len(batch_embeddings)}")
-                        # 截断或填充
-                        if len(batch_embeddings) < len(batch_texts):
-                            batch_embeddings.extend([[0.0] * 768] * (len(batch_texts) - len(batch_embeddings)))
-                        else:
-                            batch_embeddings = batch_embeddings[:len(batch_texts)]
-
-                    embeddings.extend(batch_embeddings)
-
-                    # 进度日志
-                    processed = min(end_idx, len(valid_chunks))
-                    progress = (processed / len(valid_chunks)) * 100
-                    logger.debug(f"向量嵌入进度: {processed}/{len(valid_chunks)} ({progress:.1f}%)")
-
                 except Exception as batch_error:
-                    logger.error(f"批次 {batch_idx + 1}/{total_batches} 处理失败: {batch_error}")
-                    # 为失败的批次添加零向量
-                    zero_embedding = [0.0] * 768  # BGE-M3维度
-                    embeddings.extend([zero_embedding] * len(batch_texts))
+                    logger.error(f"向量嵌入批次失败 (起始 {start}): {batch_error}")
+                    processed += len(batch_texts)
+                    continue
 
-            # 处理失败的分块
-            if failed_chunks:
-                logger.warning(f"有 {len(failed_chunks)} 个分块处理失败，使用零向量占位")
-                zero_embedding = [0.0] * 768
-                for i, chunk in failed_chunks:
-                    # 在正确位置插入零向量
-                    embeddings.insert(i, zero_embedding)
+                if batch_embeddings is None or batch_embeddings.shape[0] != len(batch_texts):
+                    actual = 0 if batch_embeddings is None else batch_embeddings.shape[0]
+                    logger.warning(
+                        f"向量嵌入数量不匹配: 期望 {len(batch_texts)}, 实际 {actual}"
+                    )
+                    processed += len(batch_texts)
+                    continue
 
-            logger.info(f"向量嵌入生成完成 - 成功: {len(embeddings) - len(failed_chunks)}, 失败: {len(failed_chunks)}")
+                if embeddings is None:
+                    embeddings = np.zeros(
+                        (total_chunks, int(batch_embeddings.shape[1])),
+                        dtype=np.float32
+                    )
 
-            # 验证最终数量
-            if len(embeddings) != total_chunks:
-                logger.error(f"最终嵌入数量不匹配: 期望{total_chunks}, 实际{len(embeddings)}")
-                # 调整到正确数量
-                if len(embeddings) > total_chunks:
-                    embeddings = embeddings[:total_chunks]
-                else:
-                    zero_embedding = [0.0] * 768
-                    embeddings.extend([zero_embedding] * (total_chunks - len(embeddings)))
+                # 按原始位置回填，保证与 chunks 顺序严格对齐
+                for offset, chunk_index in enumerate(valid_indices[start:end]):
+                    embeddings[chunk_index] = batch_embeddings[offset]
 
+                processed += len(batch_texts)
+                if progress_callback:
+                    progress_callback(processed, total)
+
+            if embeddings is None:
+                embeddings = np.zeros((total_chunks, 1024), dtype=np.float32)
+
+            logger.info(f"向量嵌入生成完成 - 成功: {len(valid_texts)}, 占位: {failed_count}")
             return embeddings
 
+        except IndexBuildStopped:
+            raise
         except Exception as e:
             logger.error(f"优化生成分块向量嵌入失败: {e}")
             import traceback
             logger.error(f"详细错误信息: {traceback.format_exc()}")
-            return []
+            return np.zeros((len(chunks), 1024), dtype=np.float32)
 
     async def _generate_chunk_embeddings(self, chunks: List[Dict[str, Any]]) -> List[List[float]]:
         """批量生成分块向量嵌入（向后兼容方法）
@@ -848,13 +1260,12 @@ class ChunkIndexService:
         return faiss_exists or whoosh_exists
 
     def _update_index_stats(self, chunked_count: int):
-        """更新索引统计信息"""
-        # 估算总分块数（假设平均每个文档3个分块）
-        estimated_chunks = chunked_count * 3
+        """更新索引统计信息
 
+        注意：总分块数由流式构建过程写入真实值，这里不再使用估算值累加。
+        """
         self.index_stats['total_documents_processed'] += chunked_count
         self.index_stats['chunked_documents'] += chunked_count
-        self.index_stats['total_chunks_created'] += estimated_chunks
 
         # 计算平均分块数
         total_docs = self.index_stats['total_documents_processed']
@@ -948,11 +1359,11 @@ class ChunkIndexService:
 
             # 生成新向量的嵌入
             embeddings = await self._generate_chunk_embeddings(new_chunks)
-            if not embeddings:
+            if embeddings is None or len(embeddings) == 0:
                 return False
 
             # 添加新向量
-            embeddings_array = np.array(embeddings, dtype=np.float32)
+            embeddings_array = np.ascontiguousarray(embeddings, dtype=np.float32)
             index.add(embeddings_array)
 
             # 保存更新后的索引
@@ -1342,11 +1753,11 @@ class ChunkIndexService:
             embeddings = await self._generate_chunk_embeddings_optimized(chunks)
 
             # 2. 创建优化的Faiss索引
-            if not embeddings:
+            if embeddings is None or len(embeddings) == 0:
                 logger.error("没有向量嵌入，无法创建索引")
                 return False
 
-            dimension = len(embeddings[0])
+            dimension = int(embeddings.shape[1])
             logger.info(f"Faiss索引维度: {dimension}")
 
             # 创建Flat索引
@@ -1387,7 +1798,7 @@ class ChunkIndexService:
 
             build_time = time.time() - start_time
             logger.info(f"分块Faiss索引构建成功（雪花ID） - 类型: {index_type}, 维度: {dimension}, 分块数: {index.ntotal}, 耗时: {build_time:.2f}秒")
-            logger.info(f"使用雪花ID: {pregenerated_ids}")
+            logger.debug(f"使用雪花ID数量: {len(pregenerated_ids)}")
 
             return True
 
@@ -1412,93 +1823,22 @@ class ChunkIndexService:
                 logger.error(f"分块数量({len(chunks)})与ID数量({len(pregenerated_ids)})不匹配")
                 return False
 
-            from whoosh import fields, index
-            from whoosh.analysis import StandardAnalyzer
             from whoosh.writing import AsyncWriter
 
-            # 1. 确保索引目录存在
-            if not os.path.exists(self.chunk_whoosh_index_path):
-                os.makedirs(self.chunk_whoosh_index_path, exist_ok=True)
+            # 1. 打开（或创建）索引
+            ix = self._open_whoosh_for_write()
 
-            # 2. 定义分块索引字段
-            analyzer = StandardAnalyzer()
-            chunk_schema = fields.Schema(
-                id=fields.ID(stored=True, unique=True),
-                chunk_id=fields.ID(stored=True),
-                file_id=fields.NUMERIC(stored=True, numtype=int),
-                content=fields.TEXT(analyzer=analyzer, stored=True, phrase=True),
-                file_name=fields.TEXT(analyzer=analyzer, stored=True),
-                file_path=fields.ID(stored=True),
-                file_type=fields.ID(stored=True),
-                file_size=fields.NUMERIC(stored=True, sortable=True),
-                chunk_index=fields.NUMERIC(stored=True, numtype=int),
-                total_chunks=fields.NUMERIC(stored=True, numtype=int),
-                keywords=fields.KEYWORD(stored=True, commas=True),
-                embedding=fields.TEXT(stored=True),
-                modified_time=fields.ID(stored=True, sortable=True),
-                created_at=fields.ID(stored=True, sortable=True),  # 改为ID字段存储时间戳
-                # 添加缺失的字段
-                content_stored=fields.STORED(),
-                start_position=fields.NUMERIC(stored=True, numtype=int),
-                end_position=fields.NUMERIC(stored=True, numtype=int),
-                content_length=fields.NUMERIC(stored=True, numtype=int),
-                title=fields.TEXT(analyzer=analyzer, stored=True),  # 标题字段
-                # 数据源信息（插件系统）
-                source_type=fields.ID(stored=True),
-                source_url=fields.ID(stored=True)
-            )
-
-            # 3. 创建索引
-            if index.exists_in(self.chunk_whoosh_index_path):
-                ix = index.open_dir(self.chunk_whoosh_index_path)
-            else:
-                ix = index.create_in(self.chunk_whoosh_index_path, chunk_schema)
-
-            # 4. 构建索引文档
+            # 2. 构建索引文档
             writer = AsyncWriter(ix)
 
             for chunk, doc_id in zip(chunks, pregenerated_ids):
-                # 处理日期时间字段 - 使用Unix时间戳
-                modified_time = chunk.get('modified_time', datetime.now())
-                created_at = chunk.get('created_at', datetime.now())
+                writer.add_document(**self._build_whoosh_doc(chunk, doc_id))
 
-                # 转换为Unix时间戳（秒级）
-                modified_timestamp = int(modified_time.timestamp()) if isinstance(modified_time, datetime) else int(float(modified_time))
-                created_timestamp = int(created_at.timestamp()) if isinstance(created_at, datetime) else int(float(created_at))
-
-                # 使用雪花ID作为文档ID，存储完整信息避免搜索时查数据库
-                doc = {
-                    'id': doc_id,
-                    'chunk_id': chunk.get('chunk_id', ''),
-                    'file_id': chunk.get('file_id', 0),
-                    'content': chunk.get('content', ''),
-                    'content_stored': chunk.get('content', ''),  # 原始内容存储
-                    'file_name': chunk.get('file_name', ''),
-                    'file_path': chunk.get('file_path', ''),  # 完整文件路径
-                    'file_type': chunk.get('file_type', ''),
-                    'file_size': chunk.get('file_size', 0),  # 文件大小
-                    'chunk_index': chunk.get('chunk_index', 0),
-                    'start_position': chunk.get('start_position', 0),
-                    'end_position': chunk.get('end_position', 0),
-                    'content_length': chunk.get('content_length', len(chunk.get('content', ''))),
-                    'total_chunks': chunk.get('total_chunks', 1),
-                    'keywords': ' '.join(chunk.get('keywords', [])),
-                    'embedding': str(chunk.get('embedding', [])),
-                    'modified_time': str(modified_timestamp),  # 使用时间戳字符串
-                    'created_at': str(created_timestamp),    # 使用时间戳字符串
-                    'title': chunk.get('file_name', ''),  # 从文件名提取作为标题
-                    # 数据源信息（插件系统）
-                    'source_type': chunk.get('source_type'),
-                    'source_url': chunk.get('source_url')
-                }
-
-                writer.add_document(**doc)
-
-            # 5. 提交写入
+            # 3. 提交写入
             writer.commit()
 
             logger.info(f"分块Whoosh索引构建成功（雪花ID） - 文档数: {len(chunks)}")
-            logger.info(f"使用雪花ID: {pregenerated_ids}")
+            logger.debug(f"使用雪花ID数量: {len(pregenerated_ids)}")
 
             return True
 

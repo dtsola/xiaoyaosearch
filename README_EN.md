@@ -52,6 +52,7 @@ XiaoyaoSearch is a cross-platform local desktop application (Windows/MacOS/Linux
   - **☁️ Cloud Embedding Models**: OpenAI/DeepSeek/Alibaba Cloud embedding APIs for enhanced search quality (v1.6.0)
   - **📚 Professional Glossary**: Terminology expansion and synonym matching with 60% improved recall in professional domains (v1.9.0)
 - **⚡ High Performance**: Hybrid retrieval architecture based on Faiss vector search and Whoosh full-text search
+  - **Index Size Optimization**: Faiss SQ8 quantization + Whoosh deduplication, reducing vector index size by ~75% (v2.0.4); streaming batch construction keeps the service responsive during builds (v2.0.3)
 - **🔒 Privacy Control**: Local-first with optional cloud APIs - you choose the balance between performance and privacy
 - **🎨 Notion Warm Bright Design**: Adopts Notion's warm bright design style with complete design system specifications, improving visual comfort by 67% (v2.0.0)
   - **System Font Stack**: Zero network dependency, optimal performance, font loading < 10ms
@@ -83,7 +84,7 @@ XiaoyaoSearch is a cross-platform local desktop application (Windows/MacOS/Linux
 ### Settings Interface
 ![Settings Interface](docs/产品文档/产品截图/设置界面.png)
 
-### Glossary Management Interface (v2.0.0)
+### Glossary Management Interface (v1.9.0)
 ![Glossary Management Interface](docs/产品文档/产品截图/术语库管理界面.png)
 
 ## 🏗️ Technical Architecture
@@ -286,7 +287,39 @@ API_RELOAD=true
 # Log configuration
 LOG_LEVEL=info
 LOG_FILE=../data/logs/app.log
+
+# ========== Chunk Index Configuration (Optional) ==========
+# Embedding batch size per inference (256 recommended for GPU; auto-reduced to 32 on CPU)
+CHUNK_EMBEDDING_BATCH_SIZE=256
+
+# Chunks processed per batch during streaming construction (lower to 2048 under memory pressure)
+CHUNK_PIPELINE_BATCH_CHUNKS=4096
+
+# Chunk vector quantization: flat (no compression) / sq8 (4x compression, default) / fp16 (2x compression)
+CHUNK_FAISS_QUANTIZER=sq8
+
+# Number of vectors sampled for quantizer training (default 50000)
+CHUNK_FAISS_TRAINING_SAMPLE=50000
+
+# Automatically migrate the existing chunk vector index on startup (default true; keeps the original index on failure)
+CHUNK_FAISS_MIGRATE_ON_STARTUP=true
 ```
+
+**Chunk Index Configuration**:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `CHUNK_EMBEDDING_BATCH_SIZE` | `256` | Embedding batch size per inference. 256 recommended for GPU; automatically reduced to 32 on CPU |
+| `CHUNK_PIPELINE_BATCH_CHUNKS` | `4096` | Chunks processed per batch during streaming construction; lower to 2048 under memory pressure |
+| `CHUNK_FAISS_QUANTIZER` | `sq8` | Vector quantization: `flat` (no compression), `sq8` (4x compression, recommended), `fp16` (2x compression) |
+| `CHUNK_FAISS_TRAINING_SAMPLE` | `50000` | Number of vectors sampled for quantizer training; larger is more accurate but slower to migrate |
+| `CHUNK_FAISS_MIGRATE_ON_STARTUP` | `true` | Migrates the existing Flat index to the configured quantizer on startup without re-embedding |
+
+> **Size reference**: BGE-M3 produces 1024-dimensional vectors, so each chunk takes ~4KB with Flat, ~1KB with SQ8, and ~2KB with FP16. For 380k chunks, the Faiss index drops from 1.57GB to about 392MB (~75% smaller).
+>
+> **Retrieval quality**: SQ8 measured ~99% recall. Before migration, a Top-K recall check runs automatically; if recall falls below 95%, migration is aborted and the original index is kept.
+>
+> **Upgrade notes**: On the first startup after upgrading, existing indexes are migrated in the background (~1-3 minutes for 380k chunks). The API stays available during migration, failures never affect the original index, and **no re-indexing is required**.
 
 **Prepare Models**:
 System default model description:
@@ -700,6 +733,53 @@ If you cannot fulfill the open-source obligations of AGPL-3.0, you may purchase 
 ---
 
 ## 📝 Version Changelog
+
+### v2.0.4 (2026-11-27) - Index Size & Quantization Optimization ⚡
+
+**Core Optimizations**:
+- ✅ **Index Size Compression**: Faiss supports `flat / sq8 / fp16` quantization (SQ8 by default), reducing vector index size by ~75%
+- ✅ **Automatic Startup Migration**: Existing Flat indexes are migrated to SQ8 in the background on startup — no re-embedding or re-indexing required
+- ✅ **Full-text Index Deduplication**: Whoosh no longer stores chunk text twice, reducing newly written full-text index size by ~50%
+- ✅ **Preview-only Storage**: `file_content` now stores only a 2000-character preview, significantly reducing database size
+- ✅ **Quantization Options**: New `CHUNK_FAISS_QUANTIZER`, `CHUNK_FAISS_TRAINING_SAMPLE`, `CHUNK_FAISS_MIGRATE_ON_STARTUP` and related settings (see [Developer Deployment](#method-2-developer-deployment))
+
+**Size Gains**: For 380k chunks, the Faiss index drops from 1.57GB to about 392MB; after re-indexing, total index size is ~60%-68% smaller.
+
+**Detailed Documentation**: [v2.0.4 Release Notes](docs/产品文档/版本更新文档/v2.0.4-索引体积与量化优化.md)
+
+> Streaming batch construction, task concurrency protection, and progress/stop fixes were released in v2.0.3.
+
+---
+
+### v2.0.3 (2026-11-25) - Index Build Stability ⚡
+
+**Core Optimizations**:
+- ✅ **Streaming Batch Construction**: Chunk indexing now writes in streaming batches (chunk → batch embed → bulk insert → Faiss/Whoosh write), reducing peak memory by ~60% and preventing OOM on large files with many chunks
+- ✅ **Non-blocking Builds**: Index tasks run in a thread pool with SQLite WAL, so search, settings, and other APIs stay responsive during builds
+- ✅ **Task Concurrency Protection**: Duplicate index task creation is rejected, and stale tasks are cleaned up on startup
+- ✅ **Progress & Stop Fixes**: Progress updates in real time (fixing the stuck-at-84% issue) and stopping takes effect immediately
+- ✅ **Embedding Performance**: Batch embedding returns `float32` arrays directly, avoiding massive Python float memory overhead; TF32 / SDPA enabled on GPU
+
+---
+
+### v2.0.2 (2026-11-18) - Configuration & Integration Fixes 🔧
+
+**New & Fixed**:
+- ✅ Fixed `.env` values (`API_HOST` / `API_PORT` / `LOG_LEVEL` / `LOG_FILE`) not taking effect
+- ✅ Frontend backend address configurable via `VITE_API_BASE_URL`
+- ✅ Startup scripts now read `.env` configuration
+
+---
+
+### v2.0.1 (2026-11-18) - AI Model Configuration Consistency 🐛
+
+**Fixes**:
+- ✅ Fixed the issue where switching models still invoked the old model
+- ✅ Unified model configuration loading across search, image search, and Ollama services
+- ✅ Lazy loading and configuration sync for vision models
+- ✅ License changed to AGPL-3.0 dual licensing
+
+---
 
 ### v2.0.0 (2026-04-24) - UI System Upgrade 🎨
 

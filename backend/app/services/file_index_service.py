@@ -23,6 +23,9 @@ from app.core.logging_config import logger
 from app.core.config import get_settings
 settings = get_settings()
 
+# file_content 表只保留正文预览，完整内容由 file_chunks 存储，避免同一份正文重复占空间
+FILE_CONTENT_PREVIEW_LIMIT = 2000
+
 
 class FileIndexService:
     """文件索引服务
@@ -817,7 +820,8 @@ class FileIndexService:
                         content_record = FileContentModel(
                             file_id=db_file.id,
                             title=document.get('title', ''),
-                            content=content_text,
+                            # 只存预览，完整正文由 file_chunks 保存
+                            content=content_text[:FILE_CONTENT_PREVIEW_LIMIT],
                             content_length=len(content_text),
                             word_count=len(content_text.split()) if content_text.strip() else 0,
                             language=document.get('language', 'unknown'),

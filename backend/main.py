@@ -260,6 +260,36 @@ async def lifespan(app: FastAPI):
             logger.info("继续运行，但术语扩展功能可能不可用")
         # =====================================
 
+        # ========== 分块向量索引量化迁移（后台执行，不阻塞启动） ==========
+        try:
+            from app.core.config import get_settings as _get_settings
+
+            if _get_settings().chunk.faiss_migrate_on_startup:
+                import threading as _threading
+                import time as _time
+
+                def _run_index_migration():
+                    _time.sleep(5)  # 等待启动流程稳定
+                    try:
+                        from app.services.chunk_index_service import get_chunk_index_service
+                        service = get_chunk_index_service()
+                        logger.info(
+                            f"[索引迁移] 开始检查: 配置={_get_settings().chunk.faiss_quantizer}, "
+                            f"索引={service.chunk_faiss_index_path}"
+                        )
+                        service.migrate_index_if_needed()
+                    except Exception as migration_error:
+                        logger.warning(f"[索引迁移] 后台迁移失败: {migration_error}")
+
+                _threading.Thread(
+                    target=_run_index_migration,
+                    daemon=True,
+                    name="index-quantizer-migration"
+                ).start()
+                logger.info("[索引迁移] 已安排后台检查分块向量索引")
+        except Exception as e:
+            logger.warning(f"[索引迁移] 启动迁移安排失败: {e}")
+
         logger.info("✅ 小遥搜索服务启动完成")
         doc_host, doc_port = get_api_address()
         logger.info(f"📖 API文档: http://{doc_host}:{doc_port}/docs")

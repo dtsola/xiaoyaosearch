@@ -6,7 +6,9 @@
 """
 
 import os
+import gc
 import pickle
+import threading
 import time
 from typing import Dict, List, Any, Optional
 from datetime import datetime
@@ -83,6 +85,9 @@ class ChunkIndexService:
             'embedding_batch_size': settings.processing.index_batch_size,
             'last_index_time': None
         }
+
+        # 索引文件读写锁（迁移与构建/追加不能同时进行）
+        self._index_io_lock = threading.Lock()
 
         # 确保索引目录存在
         os.makedirs(os.path.dirname(self.chunk_faiss_index_path), exist_ok=True)
@@ -403,71 +408,335 @@ class ChunkIndexService:
 
         return batches
 
+    # ==================== Faiss 向量量化 ====================
+
+    def _configured_quantizer(self) -> str:
+        """读取配置的分块向量量化方式（flat / sq8 / fp16）"""
+        from app.core.config import get_settings
+        value = str(getattr(get_settings().chunk, 'faiss_quantizer', 'sq8') or 'sq8').strip().lower()
+        if value not in ('flat', 'sq8', 'fp16'):
+            logger.warning(f"未知的分块向量量化配置 '{value}'，回退为 sq8")
+            return 'sq8'
+        return value
+
+    def _faiss_quantizer_type(self, name: str):
+        """量化配置名 -> faiss ScalarQuantizer 类型"""
+        if name == 'sq8':
+            return faiss.ScalarQuantizer.QT_8bit
+        if name == 'fp16':
+            return faiss.ScalarQuantizer.QT_fp16
+        return None
+
+    def _infer_index_quantizer(self, index, metadata: Optional[Dict[str, Any]] = None) -> str:
+        """判断索引当前的量化类型"""
+        if index is None:
+            return 'none'
+        if isinstance(index, faiss.IndexScalarQuantizer):
+            meta_quantizer = str((metadata or {}).get('quantizer', '')).lower()
+            if meta_quantizer in ('sq8', 'fp16'):
+                return meta_quantizer
+            try:
+                qtype = index.sq.qtype
+                if qtype == faiss.ScalarQuantizer.QT_8bit:
+                    return 'sq8'
+                if qtype == faiss.ScalarQuantizer.QT_fp16:
+                    return 'fp16'
+            except Exception:
+                pass
+            return 'quantized'
+        # read_index 读回来的 IndexFlatIP 在 Python 绑定里是 IndexFlat，不能用 IndexFlatIP 判断
+        if isinstance(index, faiss.IndexFlat):
+            return 'flat'
+        return 'unknown'
+
+    def _quantize_flat_index(self, flat_index, target: str, progress_callback: Optional[callable] = None):
+        """把 FlatIP 索引转换为标量量化索引（不重新嵌入）"""
+        qtype = self._faiss_quantizer_type(target)
+        if qtype is None:
+            return flat_index
+
+        ntotal = int(flat_index.ntotal)
+        dimension = int(flat_index.d)
+        quantized = faiss.IndexScalarQuantizer(dimension, qtype, faiss.METRIC_INNER_PRODUCT)
+
+        # 均匀采样训练
+        from app.core.config import get_settings
+        settings = get_settings()
+        sample_limit = max(1000, int(getattr(settings.chunk, 'faiss_training_sample', 50000)))
+        sample_n = min(ntotal, sample_limit)
+        sample_indices = np.linspace(0, ntotal - 1, sample_n).astype('int64')
+        sample = flat_index.reconstruct_batch(sample_indices)
+        quantized.train(np.ascontiguousarray(sample, dtype=np.float32))
+        del sample
+        gc.collect()
+
+        # 分批重建
+        batch_size = 20000
+        for start in range(0, ntotal, batch_size):
+            end = min(start + batch_size, ntotal)
+            keys = np.arange(start, end).astype('int64')
+            vectors = flat_index.reconstruct_batch(keys)
+            quantized.add(np.ascontiguousarray(vectors, dtype=np.float32))
+            if progress_callback:
+                progress_callback(end, ntotal)
+
+        if int(quantized.ntotal) != ntotal:
+            raise RuntimeError(f"量化后向量数量不一致: {quantized.ntotal} != {ntotal}")
+
+        return quantized
+
+    def _verify_quantization(self, flat_index, quantized_index, sample_queries: int = 50, k: int = 20) -> float:
+        """用真实向量对比 Flat 与量化索引的 Top-K 重合率"""
+        ntotal = int(flat_index.ntotal)
+        if ntotal == 0 or quantized_index is None or int(quantized_index.ntotal) != ntotal:
+            return 0.0
+
+        count = min(sample_queries, ntotal)
+        kk = min(k, ntotal)
+        query_indices = np.linspace(0, ntotal - 1, count).astype('int64')
+        queries = np.ascontiguousarray(flat_index.reconstruct_batch(query_indices), dtype=np.float32)
+
+        _, flat_results = flat_index.search(queries, kk)
+        _, quantized_results = quantized_index.search(queries, kk)
+
+        recalls = []
+        for flat_row, quantized_row in zip(flat_results, quantized_results):
+            flat_set = {int(x) for x in flat_row if x >= 0}
+            quantized_set = {int(x) for x in quantized_row if x >= 0}
+            recalls.append(len(flat_set & quantized_set) / kk)
+
+        return float(np.mean(recalls)) if recalls else 0.0
+
     def _load_faiss_for_append(self):
         """加载已有 Faiss 索引用于追加
 
         Returns:
             tuple: (index, faiss_ids, chunk_ids)；元数据不一致时 index 为 None（改为重建）
         """
-        index = None
-        metadata = {}
-
-        if os.path.exists(self.chunk_faiss_index_path):
-            try:
-                index = faiss.read_index(self.chunk_faiss_index_path)
-                metadata_path = self.chunk_faiss_index_path.replace('.faiss', '_metadata.pkl')
-                if os.path.exists(metadata_path):
-                    with open(metadata_path, 'rb') as f:
-                        metadata = pickle.load(f)
-            except Exception as e:
-                logger.warning(f"加载已有分块Faiss索引失败，将新建索引: {e}")
-                index = None
-                metadata = {}
-
-        faiss_ids = list(metadata.get('pregenerated_snowflake_ids', []))
-        chunk_ids = list(metadata.get('chunk_ids', []))
-
-        # 历史数据可能只写了索引没写 chunk_ids（例如任务中途被强杀），此时追加会导致映射错位
-        if index is not None and len(chunk_ids) != index.ntotal:
-            logger.warning(
-                f"Faiss索引行数({index.ntotal})与元数据chunk_ids({len(chunk_ids)})不一致，改为重建索引"
-            )
+        with self._index_io_lock:
             index = None
-            faiss_ids = []
-            chunk_ids = []
+            metadata = {}
 
-        return index, faiss_ids, chunk_ids
+            if os.path.exists(self.chunk_faiss_index_path):
+                try:
+                    index = faiss.read_index(self.chunk_faiss_index_path)
+                    metadata_path = self.chunk_faiss_index_path.replace('.faiss', '_metadata.pkl')
+                    if os.path.exists(metadata_path):
+                        with open(metadata_path, 'rb') as f:
+                            metadata = pickle.load(f)
+                except Exception as e:
+                    logger.warning(f"加载已有分块Faiss索引失败，将新建索引: {e}")
+                    index = None
+                    metadata = {}
+
+            faiss_ids = list(metadata.get('pregenerated_snowflake_ids', []))
+            chunk_ids = list(metadata.get('chunk_ids', []))
+
+            # 历史数据可能只写了索引没写 chunk_ids（例如任务中途被强杀），此时追加会导致映射错位
+            if index is not None and len(chunk_ids) != index.ntotal:
+                logger.warning(
+                    f"Faiss索引行数({index.ntotal})与元数据chunk_ids({len(chunk_ids)})不一致，改为重建索引"
+                )
+                index = None
+                faiss_ids = []
+                chunk_ids = []
+
+            # 增量更新前完成量化转换，避免每次追加都保持 Flat
+            if index is not None:
+                current = self._infer_index_quantizer(index, metadata)
+                target = self._configured_quantizer()
+                if current == 'flat' and target != 'flat' and int(index.ntotal) > 0:
+                    try:
+                        logger.info(f"增量更新前将分块向量索引从 flat 转换为 {target}（{index.ntotal} 条）")
+                        index = self._quantize_flat_index(index, target)
+                    except Exception as e:
+                        logger.error(f"增量更新前量化失败，继续使用 Flat: {e}")
+                elif current in ('sq8', 'fp16') and target == 'flat':
+                    logger.warning("当前索引已量化，切回 flat 需要重建索引；本次继续使用现有索引")
+
+            return index, faiss_ids, chunk_ids
 
     def _write_faiss_index(self, index, faiss_ids: List[int], chunk_ids: List[int]) -> None:
-        """原子写入 Faiss 索引及元数据"""
+        """原子写入 Faiss 索引及元数据（按配置量化）"""
         if index is None:
             return
 
-        index_dir = os.path.dirname(self.chunk_faiss_index_path)
-        if index_dir:
-            os.makedirs(index_dir, exist_ok=True)
+        target = self._configured_quantizer()
 
-        # 先写临时文件再替换，避免中途失败破坏旧索引
-        tmp_path = self.chunk_faiss_index_path + '.tmp'
-        faiss.write_index(index, tmp_path)
-        os.replace(tmp_path, self.chunk_faiss_index_path)
+        with self._index_io_lock:
+            # 落盘前量化（流式构建期间保持 Flat 便于追加）
+            if target != 'flat' and isinstance(index, faiss.IndexFlat) and int(index.ntotal) > 0:
+                try:
+                    logger.info(f"写入前量化分块向量索引: flat -> {target}（{index.ntotal} 条）")
+                    index = self._quantize_flat_index(index, target)
+                except Exception as e:
+                    logger.error(f"分块向量索引量化失败，保持 Flat: {e}")
 
-        metadata = {
-            'index_type': 'IndexFlatIP',
-            'dimension': int(index.d),
-            'total_chunks': int(index.ntotal),
-            'created_at': datetime.now().isoformat(),
-            'pregenerated_snowflake_ids': faiss_ids,
-            'chunk_ids': chunk_ids,
-            'embedding_batch_size': self.index_stats.get('embedding_batch_size')
-        }
-        metadata_path = self.chunk_faiss_index_path.replace('.faiss', '_metadata.pkl')
-        tmp_meta_path = metadata_path + '.tmp'
-        with open(tmp_meta_path, 'wb') as f:
-            pickle.dump(metadata, f)
-        os.replace(tmp_meta_path, metadata_path)
+            index_dir = os.path.dirname(self.chunk_faiss_index_path)
+            if index_dir:
+                os.makedirs(index_dir, exist_ok=True)
 
-        logger.info(f"分块Faiss索引写入完成: {index.ntotal} 条向量, {len(chunk_ids)} 个 chunk_id")
+            # 先写临时文件再替换，避免中途失败破坏旧索引
+            tmp_path = self.chunk_faiss_index_path + '.tmp'
+            faiss.write_index(index, tmp_path)
+            os.replace(tmp_path, self.chunk_faiss_index_path)
+
+            written_quantizer = self._infer_index_quantizer(index)
+            if written_quantizer not in ('flat', 'sq8', 'fp16') and target in ('sq8', 'fp16'):
+                written_quantizer = target
+
+            metadata = {
+                'index_type': 'IndexScalarQuantizer' if isinstance(index, faiss.IndexScalarQuantizer) else 'IndexFlatIP',
+                'quantizer': written_quantizer,
+                'dimension': int(index.d),
+                'total_chunks': int(index.ntotal),
+                'created_at': datetime.now().isoformat(),
+                'pregenerated_snowflake_ids': faiss_ids,
+                'chunk_ids': chunk_ids,
+                'embedding_batch_size': self.index_stats.get('embedding_batch_size')
+            }
+            metadata_path = self.chunk_faiss_index_path.replace('.faiss', '_metadata.pkl')
+            tmp_meta_path = metadata_path + '.tmp'
+            with open(tmp_meta_path, 'wb') as f:
+                pickle.dump(metadata, f)
+            os.replace(tmp_meta_path, metadata_path)
+
+            logger.info(
+                f"分块Faiss索引写入完成: {index.ntotal} 条向量, {len(chunk_ids)} 个 chunk_id, "
+                f"量化方式: {written_quantizer}"
+            )
+
+    def migrate_index_if_needed(self) -> bool:
+        """启动时把已有分块向量索引迁移为配置的量化方式（不重新嵌入）
+
+        Returns:
+            bool: 是否执行了迁移
+        """
+        path = self.chunk_faiss_index_path
+        if not os.path.exists(path):
+            return False
+
+        target = self._configured_quantizer()
+        if target == 'flat':
+            logger.debug("[索引迁移] 配置为 flat，跳过")
+            return False
+
+        if not hasattr(faiss, 'IndexScalarQuantizer'):
+            logger.warning("[索引迁移] 当前 Faiss 不支持标量量化，保持 Flat")
+            return False
+
+        # 有索引任务在跑时跳过，任务结束时会以量化方式写盘
+        try:
+            from app.services.file_index_service import get_file_index_service
+            if get_file_index_service().index_status.get('is_building'):
+                logger.info("[索引迁移] 检测到索引任务正在运行，跳过本次迁移")
+                return False
+        except Exception:
+            pass
+
+        metadata_path = path.replace('.faiss', '_metadata.pkl')
+        if not os.path.exists(metadata_path):
+            logger.warning("[索引迁移] 元数据文件不存在，跳过迁移")
+            return False
+
+        with self._index_io_lock:
+            try:
+                with open(metadata_path, 'rb') as f:
+                    metadata = pickle.load(f)
+                chunk_ids = metadata.get('chunk_ids', [])
+
+                try:
+                    # 使用 mmap 读取，避免迁移时把整个 Flat 索引加载进内存
+                    index = faiss.read_index(path, faiss.IO_FLAG_MMAP | faiss.IO_FLAG_READ_ONLY)
+                except Exception:
+                    index = faiss.read_index(path)
+
+                ntotal = int(index.ntotal)
+                if ntotal == 0:
+                    return False
+
+                if len(chunk_ids) != ntotal:
+                    logger.warning(
+                        f"[索引迁移] 元数据 chunk_ids({len(chunk_ids)}) 与索引行数({ntotal}) 不一致，"
+                        "跳过迁移；该索引需要重建"
+                    )
+                    return False
+
+                current = self._infer_index_quantizer(index, metadata)
+                if current == target:
+                    logger.info(f"[索引迁移] 当前索引已是 {target}，跳过")
+                    return False
+                if current != 'flat':
+                    logger.warning(
+                        f"[索引迁移] 当前索引类型为 {current}，无法自动转换为 {target}；"
+                        "如需切回 flat 请重建索引"
+                    )
+                    return False
+
+                logger.info(f"[索引迁移] 检测到分块向量索引需要量化: flat -> {target}，共 {ntotal} 条")
+
+                last_logged = {'pct': -10}
+
+                def _progress(done: int, total: int):
+                    pct = int(done * 100 / total) if total else 100
+                    if pct - last_logged['pct'] >= 10:
+                        last_logged['pct'] = pct
+                        logger.info(f"[索引迁移] 进度 {pct}% ({done}/{total})")
+
+                quantized = self._quantize_flat_index(index, target, _progress)
+                recall = self._verify_quantization(index, quantized)
+                logger.info(f"[索引迁移] 召回校验: {recall * 100:.2f}% (阈值 95%)")
+                if recall < 0.95:
+                    logger.warning("[索引迁移] 召回低于阈值，放弃迁移，保留原索引")
+                    return False
+
+                tmp_index = path + '.migrating.tmp'
+                faiss.write_index(quantized, tmp_index)
+
+                new_metadata = dict(metadata)
+                new_metadata.update({
+                    'quantizer': target,
+                    'index_type': 'IndexScalarQuantizer',
+                    'dimension': int(quantized.d),
+                    'total_chunks': int(quantized.ntotal),
+                    'migrated_at': datetime.now().isoformat(),
+                    'migration_recall': recall,
+                })
+                tmp_meta = metadata_path + '.migrating.tmp'
+                with open(tmp_meta, 'wb') as f:
+                    pickle.dump(new_metadata, f)
+
+                old_size = os.path.getsize(path)
+
+                # Windows 下 mmap 的文件可能仍被占用，替换前先释放索引对象
+                del index, quantized
+                gc.collect()
+
+                os.replace(tmp_index, path)
+                os.replace(tmp_meta, metadata_path)
+                new_size = os.path.getsize(path)
+                logger.info(
+                    f"[索引迁移] 写入完成: {old_size / 1024 / 1024:.0f}MB -> {new_size / 1024 / 1024:.0f}MB"
+                )
+
+                try:
+                    from app.services.chunk_search_service import reload_chunk_search_service
+                    reload_chunk_search_service()
+                    logger.info("[索引迁移] 完成，搜索索引已重新加载")
+                except Exception as e:
+                    logger.warning(f"[索引迁移] 刷新搜索服务失败: {e}")
+
+                return True
+
+            except Exception as e:
+                logger.error(f"[索引迁移] 迁移失败，保留原索引: {e}")
+                for tmp in (path + '.migrating.tmp', metadata_path + '.migrating.tmp'):
+                    try:
+                        if os.path.exists(tmp):
+                            os.remove(tmp)
+                    except Exception:
+                        pass
+                return False
 
     def _open_whoosh_for_write(self):
         """打开（或创建）分块 Whoosh 索引"""
@@ -520,7 +789,6 @@ class ChunkIndexService:
             'chunk_id': chunk.get('chunk_id', ''),
             'file_id': chunk.get('file_id', 0),
             'content': chunk.get('content', ''),
-            'content_stored': chunk.get('content', ''),
             'file_name': chunk.get('file_name', ''),
             'file_path': chunk.get('file_path', ''),
             'file_type': chunk.get('file_type', ''),
@@ -1012,7 +1280,6 @@ class ChunkIndexService:
                                 file_type=chunk.get('file_type', ''),
                                 file_size=int(chunk.get('file_size', 0)),
                                 content=content,
-                                content_stored=content,
                                 chunk_index=int(chunk.get('chunk_index', i)),
                                 start_position=int(chunk.get('start_position', 0)),
                                 end_position=int(chunk.get('end_position', len(content))),
@@ -2251,7 +2518,6 @@ class ChunkIndexService:
                             file_type=fields.get('file_type'),
                             file_size=fields.get('file_size'),
                             content=fields.get('content'),
-                            content_stored=fields.get('content_stored'),
                             chunk_index=fields.get('chunk_index'),
                             start_position=fields.get('start_position'),
                             end_position=fields.get('end_position'),

@@ -80,6 +80,11 @@ class ChunkConfig(BaseSettings):
     embedding_batch_size: int = Field(default=256, description="单次向量推理的批大小（GPU 建议 256，CPU 建议 32）")
     pipeline_batch_chunks: int = Field(default=4096, description="流式构建时每批处理的分块数上限")
 
+    # Faiss 向量量化配置
+    faiss_quantizer: str = Field(default="sq8", description="分块向量量化方式: flat / sq8 / fp16")
+    faiss_training_sample: int = Field(default=50000, description="量化训练采样数量")
+    faiss_migrate_on_startup: bool = Field(default=True, description="启动时自动将已有索引迁移为配置的量化方式")
+
     class Config:
         env_prefix = "CHUNK_"
 
